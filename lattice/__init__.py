@@ -6,4 +6,3 @@ from .ildg import GaugeField
 from .ndarray import Elemental, Jpsi2gamma
 from .process import processBar
 from .timeslice import GaugeFieldTimeSlice, EigenVecsTimeSlice
-from .gamma import gamma

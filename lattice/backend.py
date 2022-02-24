@@ -10,9 +10,8 @@ def getBackend():
     global BACKEND
     if BACKEND is None:
         import numpy
-        return numpy
-    else:
-        return BACKEND
+        BACKEND = numpy
+    return BACKEND
 
 
 def setBackend(backend):

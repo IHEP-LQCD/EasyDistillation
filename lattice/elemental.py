@@ -1,6 +1,5 @@
 from math import comb
 from typing import List, Tuple
-import opt_einsum as oe
 
 from .abstract import FileData
 from .backend import getBackend
@@ -33,20 +32,19 @@ class ElementalUtil:
     difList = None
     momList = None
     # cacheD = None
-
-    @staticmethod
-    def einsum(subscripts, *operands):
-        # return oe.contract(subscripts, A, B, backend=re.search(r"'\w+'", str(numpy)).group(0)[1:-1])
-        return oe.contract(subscripts, *operands)
+    einsum = None
 
     @staticmethod
     def prepare(difList: List[Tuple[int]], momList: List[Tuple[int]]):
+        from opt_einsum import contract
+
         numpy = getBackend()
         ElementalUtil.U = numpy.zeros((4, 16 ** 3, 3, 3), "<c16")
         ElementalUtil.V = numpy.zeros((70, 16 ** 3, 3), "<c8")
         ElementalUtil.VPV = numpy.zeros((len(difList), len(momList), 70, 70), "<c16")
         ElementalUtil.difList = difList
         ElementalUtil.momList = momList
+        ElementalUtil.einsum = contract
 
     # @staticmethod
     # def clearCache():
