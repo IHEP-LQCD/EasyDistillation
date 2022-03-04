@@ -43,7 +43,7 @@ class TwoPoint:
 class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        GaugeField.__init__(ElementMetaData([128, 4, 16**3, 3, 3], ">c16", 2))
+        GaugeField.__init__(self, ElementMetaData([128, 4, 16**3, 3, 3], ">c16", 2))
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.mod" if suffix is None else suffix
 
@@ -54,7 +54,7 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
 class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        EigenVector.__init__(ElementMetaData([128, 70, 16**3, 3], ">c8", 2), 70)
+        EigenVector.__init__(self, ElementMetaData([128, 70, 16**3, 3], ">c8", 2), 70)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
@@ -65,7 +65,7 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
 class PerambulatorBinary(BinaryFile, Perambulator):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        Perambulator.__init__(ElementMetaData([128, 128, 4, 4, 70, 70], "<c16", 0), 70)
+        Perambulator.__init__(self, ElementMetaData([128, 128, 4, 4, 70, 70], "<c16", 0), 70)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
 
@@ -76,7 +76,7 @@ class PerambulatorBinary(BinaryFile, Perambulator):
 class ElementalBinary(BinaryFile, Elemental):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        Elemental.__init__(ElementMetaData([40, 27, 128, 70, 70], "<c16", 0), 70)
+        Elemental.__init__(self, ElementMetaData([40, 27, 128, 70, 70], "<c16", 0), 70)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson" if suffix is None else suffix
 
@@ -87,7 +87,7 @@ class ElementalBinary(BinaryFile, Elemental):
 class Jpsi2gammaBinary(BinaryFile, TwoPoint):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        TwoPoint.__init__(ElementMetaData([128, 2, 3, 4, 27, 128], "<f8", 0))
+        TwoPoint.__init__(self, ElementMetaData([128, 2, 3, 4, 27, 128], "<f8", 0))
         self.prefix = prefix
         self.suffix = ".mesonspec.2pt.bin" if suffix is None else suffix
 
@@ -98,7 +98,7 @@ class Jpsi2gammaBinary(BinaryFile, TwoPoint):
 class GaugeFieldIldg(IldgFile, GaugeField):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        GaugeField.__init__(ElementMetaData([128, 16**3, 4, 3, 3], ">c16", 0))
+        GaugeField.__init__(self, ElementMetaData([128, 16**3, 4, 3, 3], ">c16", 0))
         self.prefix = prefix
         self.suffix = ".lime" if suffix is None else suffix
 
@@ -109,7 +109,7 @@ class GaugeFieldIldg(IldgFile, GaugeField):
 class ElementalNpy(NdarrayFile, Elemental):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        Elemental.__init__(None)
+        Elemental.__init__(self, None)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson.npy" if suffix is None else suffix
 
@@ -120,7 +120,7 @@ class ElementalNpy(NdarrayFile, Elemental):
 class Jpsi2gammaNpy(NdarrayFile, TwoPoint):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        TwoPoint.__init__(None)
+        TwoPoint.__init__(self, None)
         self.prefix = prefix
         self.suffix = ".2pt.npy" if suffix is None else suffix
 
@@ -131,10 +131,10 @@ class Jpsi2gammaNpy(NdarrayFile, TwoPoint):
 class OnePointNpy(NdarrayFile, OnePoint):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        OnePoint.__init__(None)
+        # [2, 123, 128]
+        OnePoint.__init__(self, None)
         self.prefix = prefix
         self.suffix = ".1pt.npy" if suffix is None else suffix
 
     def __getitem__(self, key: str):
-        # [2, 123, 128]
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
