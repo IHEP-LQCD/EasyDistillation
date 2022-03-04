@@ -1,8 +1,9 @@
-from math import comb
+from math import comb, prod
 from typing import List, Tuple
 
 from .abstract import FileData
 from .backend import getBackend
+from .constant import Nd, Nc
 from .timeslice import GaugeFieldTimeSlice, EigenVecsTimeSlice
 
 
@@ -26,50 +27,44 @@ class MomentaPhase:
 
 
 class ElementalUtil:
+    lattSize = None
+    Nx = None
+    Ne = None
     U = None
     V = None
     VPV = None
-    difList = None
-    momList = None
-    # cacheD = None
+    derivs = None
+    momenta = None
     einsum = None
 
     @staticmethod
-    def prepare(difList: List[Tuple[int]], momList: List[Tuple[int]]):
+    def prepare(derivs: List[Tuple[int]], momenta: List[Tuple[int]], lattSize: List[int], eigenNum: int):
         from opt_einsum import contract
 
         numpy = getBackend()
-        ElementalUtil.U = numpy.zeros((4, 16 ** 3, 3, 3), "<c16")
-        ElementalUtil.V = numpy.zeros((70, 16 ** 3, 3), "<c8")
-        ElementalUtil.VPV = numpy.zeros((len(difList), len(momList), 70, 70), "<c16")
-        ElementalUtil.difList = difList
-        ElementalUtil.momList = momList
+        Nx = prod(lattSize[0:3])
+        Ne = eigenNum
+        ElementalUtil.Nx = Nx
+        ElementalUtil.Ne = Ne
+        ElementalUtil.U = numpy.zeros((Nd, Nx, Nc, Nc), "<c16")
+        ElementalUtil.V = numpy.zeros((Ne, Nx, Nc), "<c8")
+        ElementalUtil.VPV = numpy.zeros((len(derivs), len(momenta), Ne, Ne), "<c16")
+        ElementalUtil.derivs = derivs
+        ElementalUtil.momenta = momenta
         ElementalUtil.einsum = contract
-
-    # @staticmethod
-    # def clearCache():
-    #     ElementalUtil.cacheD = {}
+        ElementalUtil.Nx = Nx
+        ElementalUtil.Ne = Ne
 
     @staticmethod
     def D(V, U, d):
         numpy = getBackend()
-        Vf = numpy.roll(V.reshape(70, 16, 16, 16, 3), -1, 3 - d).reshape(70, -1, 3)
+        Ne = ElementalUtil.Ne
+        Lz, Ly, Lx = ElementalUtil.lattSize[0:3][::-1]
+        Vf = numpy.roll(V.reshape(Ne, Lz, Ly, Lx, Nc), -1, 3 - d).reshape(Ne, -1, Nc)
         UVf = ElementalUtil.einsum("xab,exb->exa", U[d], Vf)
         UVb = ElementalUtil.einsum("xba,exb->exa", U[d].conj(), V)
-        UVb = numpy.roll(UVb.reshape(70, 16, 16, 16, 3), 1, 3 - d).reshape(70, -1, 3)
+        UVb = numpy.roll(UVb.reshape(Ne, Lz, Ly, Lx, Nc), 1, 3 - d).reshape(Ne, -1, Nc)
         return UVf - UVb
-
-    # @staticmethod
-    # def nD(V, U, ds):
-    #     if ds in ElementalUtil.cacheD:
-    #         ret = ElementalUtil.cacheD[ds]
-    #     else:
-    #         print(ds, end=" ")
-    #         ret = V
-    #         for d in ds:
-    #             ret = ElementalUtil.D(ret, U, d)
-    #         ElementalUtil.cacheD[ds] = ret
-    #     return ret
 
     @staticmethod
     def nD(V, U, ds):
@@ -89,20 +84,19 @@ class ElementalData:
         U = ElementalUtil.U
         V = ElementalUtil.V
         VPV = ElementalUtil.VPV
-        # ElementalUtil.clearCache()
-        if ElementalUtil.difList != [()]:
+        if ElementalUtil.derivs != [()]:
             for d in range(U.shape[0]):
                 U[d] = self.U[t, d]
         for e in range(V.shape[0]):
             V[e] = self.V[t, e]
-        for idif, dif in enumerate(ElementalUtil.difList):
-            VPV[idif] = 0
-            for lr in range(len(dif) + 1):
-                coeff = (-1) ** lr * comb(len(dif), lr)
-                right = ElementalUtil.nD(V, U, dif[:lr])
-                left = ElementalUtil.nD(V, U, dif[lr:][::-1])
-                for imom, mom in enumerate(ElementalUtil.momList):
-                    VPV[idif, imom] += ElementalUtil.einsum("x,exc,fxc->ef", coeff * self.P[mom], left.conj(), right)
+        for idrv, drv in enumerate(ElementalUtil.derivs):
+            VPV[idrv] = 0
+            for lr in range(len(drv) + 1):
+                coeff = (-1) ** lr * comb(len(drv), lr)
+                right = ElementalUtil.nD(V, U, drv[:lr])
+                left = ElementalUtil.nD(V, U, drv[lr:][::-1])
+                for imom, mom in enumerate(ElementalUtil.momenta):
+                    VPV[idrv, imom] += ElementalUtil.einsum("x,exc,fxc->ef", coeff * self.P[mom], left.conj(), right)
         # for idif, dif in enumerate(ElementalUtil.difList):
         #     VPV[idif] = 0
         #     for lr in range(len(dif) + 1):
@@ -129,14 +123,14 @@ class Elemental:
         lattSize: List[int],
         gaugeField: GaugeFieldTimeSlice,
         eigenVecs: EigenVecsTimeSlice,
-        difList: List[Tuple[int]] = [()],
-        momList: List[Tuple[int]] = [(0, 0, 0)],
+        derivs: List[Tuple[int]] = [()],
+        momenta: List[Tuple[int]] = [(0, 0, 0)],
     ) -> None:
         self.lattSize = lattSize
         self.U = gaugeField
         self.V = eigenVecs
         self.P = MomentaPhase(*lattSize[0:3])
-        ElementalUtil.prepare(difList, momList)
+        ElementalUtil.prepare(derivs, momenta, lattSize, 70)
 
     def __getitem__(self, val: str):
         Udata = self.U[val]
