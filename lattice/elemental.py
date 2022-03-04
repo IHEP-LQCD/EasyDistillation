@@ -4,7 +4,7 @@ from typing import List, Tuple
 from .abstract import FileData
 from .backend import getBackend
 from .constant import Nd, Nc
-from .timeslice import GaugeFieldTimeSlice, EigenVecsTimeSlice
+from .preset import GaugeField, EigenVector
 
 
 class MomentaPhase:
@@ -121,8 +121,8 @@ class Elemental:
     def __init__(
         self,
         lattSize: List[int],
-        gaugeField: GaugeFieldTimeSlice,
-        eigenVecs: EigenVecsTimeSlice,
+        gaugeField: GaugeField,
+        eigenVecs: EigenVector,
         derivs: List[Tuple[int]] = [()],
         momenta: List[Tuple[int]] = [(0, 0, 0)],
     ) -> None:
@@ -130,7 +130,7 @@ class Elemental:
         self.U = gaugeField
         self.V = eigenVecs
         self.P = MomentaPhase(*lattSize[0:3])
-        ElementalUtil.prepare(derivs, momenta, lattSize, 70)
+        ElementalUtil.prepare(derivs, momenta, lattSize, eigenVecs.Ne)
 
     def __getitem__(self, val: str):
         Udata = self.U[val]

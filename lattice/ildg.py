@@ -88,15 +88,3 @@ class IldgFile(File):
                 offset, xmlTree = self.readMetaData(f)
             self.data = IldgFileData(key, elem, offset, xmlTree)
         return self.data
-
-
-class GaugeField(IldgFile):
-    def __init__(self, prefix: str, suffix: str) -> None:
-        super().__init__()
-        self.id = "su3gauge"
-        self.prefix = prefix
-        self.suffix = ".lime" if suffix is None else suffix
-
-    def __getitem__(self, key: str):
-        elem = ElementMetaData([128, 16 ** 3, 4, 3, 3], ">c16", 0)
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", elem)

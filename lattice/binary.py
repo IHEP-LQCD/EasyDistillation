@@ -61,36 +61,3 @@ class BinaryFile(File):
             self.file = key
             self.data = BinaryFileData(key, elem)
         return self.data
-
-
-class Perambulator(BinaryFile):
-    def __init__(self, prefix: str, suffix: str) -> None:
-        super().__init__()
-        self.prefix = prefix
-        self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
-
-    def __getitem__(self, key: str):
-        elem = ElementMetaData([128, 128, 4, 4, 70, 70], "<c16", 0)
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", elem)
-
-
-class Elemental(BinaryFile):
-    def __init__(self, prefix: str, suffix: str) -> None:
-        super().__init__()
-        self.prefix = prefix
-        self.suffix = ".stout.n20.f0.12.nev70.meson" if suffix is None else suffix
-
-    def __getitem__(self, key: str):
-        elem = ElementMetaData([40, 27, 128, 70, 70], "<c16", 0)
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", elem)
-
-
-class Jpsi2gamma(BinaryFile):
-    def __init__(self, prefix: str, suffix: str) -> None:
-        super().__init__()
-        self.prefix = prefix
-        self.suffix = ".mesonspec.2pt.bin" if suffix is None else suffix
-
-    def __getitem__(self, key: str):
-        elem = ElementMetaData([128, 2, 3, 4, 27, 128], "<f8", 0)
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", elem)
