@@ -1,4 +1,5 @@
 from .backend import getBackend, setBackend
+from .constant import Nd, Ns, Nc
 from .dispatch import Dispatch
 from .elemental import Elemental as ElementalGenerator
 from .process import processBar

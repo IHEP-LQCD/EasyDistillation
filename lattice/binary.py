@@ -32,12 +32,6 @@ class BinaryFileData(FileData):
         if isinstance(key, int):
             key = (key,)
         s = time()
-        # ret = numpy.fromfile(
-        #     self.file,
-        #     dtype=self.dtype,
-        #     count=self.getCount(key),
-        #     offset=self.getOffset(key),
-        # ).reshape(self.shape[len(key) :])
         ret = numpy.asarray(
             numpy_base.memmap(
                 self.file,
