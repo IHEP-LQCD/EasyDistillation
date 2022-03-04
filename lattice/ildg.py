@@ -7,7 +7,7 @@ from typing import Dict, Tuple
 import xml.etree.ElementTree as ET
 
 from .abstract import ElementMetaData, FileData, File
-from .backend import getBackend
+from .backend import getBackend, getNumpy
 
 
 class IldgFileData(FileData):
@@ -15,12 +15,12 @@ class IldgFileData(FileData):
         self.file = file
         self.offset = offset[0]
         tag = re.match(r"\{.*\}", xmlTree.getroot().tag).group(0)
-        # lattSize = [
-        #     int(xmlTree.find(f"{tag}lx").text),
-        #     int(xmlTree.find(f"{tag}ly").text),
-        #     int(xmlTree.find(f"{tag}lz").text),
-        #     int(xmlTree.find(f"{tag}lt").text),
-        # ]
+        self.lattSize = [
+            int(xmlTree.find(f"{tag}lx").text),
+            int(xmlTree.find(f"{tag}ly").text),
+            int(xmlTree.find(f"{tag}lz").text),
+            int(xmlTree.find(f"{tag}lt").text),
+        ]
         self.shape = elem.shape
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
         self.dtype = elem.dtype
@@ -41,15 +41,19 @@ class IldgFileData(FileData):
 
     def __getitem__(self, key: Tuple[int]):
         numpy = getBackend()
+        numpy_ori = getNumpy()
         if isinstance(key, int):
             key = (key,)
         s = time()
-        ret = numpy.fromfile(
-            self.file,
-            dtype=self.dtype,
-            count=self.getCount(key),
-            offset=self.offset + self.getOffset(key),
-        ).reshape(self.shape[len(key) :])
+        ret = numpy.asarray(
+            numpy_ori.memmap(
+                self.file,
+                dtype=self.dtype,
+                mode="r",
+                offset=self.offset,
+                shape=tuple(self.shape),
+            )[key]
+        )
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret
@@ -87,11 +91,11 @@ class IldgFile(File):
 
 
 class GaugeField(IldgFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
         self.id = "su3gauge"
-        self.prefix = f"{directory}/"
-        self.suffix = ".lime"
+        self.prefix = prefix
+        self.suffix = ".lime" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         elem = ElementMetaData([128, 16 ** 3, 4, 3, 3], ">c16", 0)

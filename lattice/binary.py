@@ -64,9 +64,9 @@ class BinaryFile(File):
 
 
 class Perambulator(BinaryFile):
-    def __init__(self, directory: str, suffix=None) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        self.prefix = f"{directory}/"
+        self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
 
     def __getitem__(self, key: str):
@@ -75,10 +75,10 @@ class Perambulator(BinaryFile):
 
 
 class Elemental(BinaryFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        self.prefix = f"{directory}/"
-        self.suffix = ".stout.n20.f0.12.nev70.meson"
+        self.prefix = prefix
+        self.suffix = ".stout.n20.f0.12.nev70.meson" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         elem = ElementMetaData([40, 27, 128, 70, 70], "<c16", 0)
@@ -86,10 +86,10 @@ class Elemental(BinaryFile):
 
 
 class Jpsi2gamma(BinaryFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        self.prefix = f"{directory}/"
-        self.suffix = ".mesonspec.2pt.bin"
+        self.prefix = prefix
+        self.suffix = ".mesonspec.2pt.bin" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         elem = ElementMetaData([128, 2, 3, 4, 27, 128], "<f8", 0)

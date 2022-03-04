@@ -89,6 +89,15 @@ class Dispatch:
             else:
                 yield line
 
+    @staticmethod
+    def process(input: str):
+        from .process import processBar
+
+        with open(input, "r") as f:
+            lines = f.readlines()
+        lines = [line.strip() for line in lines if line != ""]
+        return processBar(lines)
+
 
 def combine(output: str, line: str):
     with AtomicOpen(output, "a") as f:

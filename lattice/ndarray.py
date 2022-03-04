@@ -33,30 +33,30 @@ class NdarrayFile(File):
 
 
 class Elemental(NdarrayFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        self.prefix = f"{directory}/"
-        self.suffix = ".stout.n20.f0.12.nev70.meson.npy"
+        self.prefix = prefix
+        self.suffix = ".stout.n20.f0.12.nev70.meson.npy" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", None)
 
 
 class Jpsi2gamma(NdarrayFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        self.prefix = f"{directory}/"
-        self.suffix = ".2pt.npy"
+        self.prefix = prefix
+        self.suffix = ".2pt.npy" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", None)
 
 
 class OnePoint(NdarrayFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        self.prefix = f"{directory}/"
-        self.suffix = ".1pt.npy"
+        self.prefix = prefix
+        self.suffix = ".1pt.npy" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         # [2, 123, 128]

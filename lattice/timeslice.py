@@ -105,11 +105,11 @@ class QDPLazyDiskMapObjFile(File):
 
 
 class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
         self.id = "gaugeFieldTimeSlice"
-        self.prefix = f"{directory}/"
-        self.suffix = ".stout.n20.f0.12.mod"
+        self.prefix = prefix
+        self.suffix = ".stout.n20.f0.12.mod" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         elem = ElementMetaData([128, 4, 16 ** 3, 3, 3], ">c16", 2)
@@ -117,11 +117,11 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile):
 
 
 class EigenVecsTimeSlice(QDPLazyDiskMapObjFile):
-    def __init__(self, directory: str) -> None:
+    def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
         self.id = "eigenVecsTimeSlice"
-        self.prefix = f"{directory}/"
-        self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod"
+        self.prefix = prefix
+        self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
     def __getitem__(self, key: str):
         elem = ElementMetaData([128, 70, 16 ** 3, 3], ">c8", 2)
