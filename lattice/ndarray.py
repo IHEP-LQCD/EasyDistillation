@@ -31,8 +31,8 @@ class NdarrayFile(File):
         self.file: str = None
         self.data: NdarrayFileData = None
 
-    def getFileData(self, key: str, elem: FileMetaData) -> FileData:
-        if self.file != key:
-            self.file = key
-            self.data = NdarrayFileData(key, elem)
+    def getFileData(self, name: str, elem: FileMetaData) -> NdarrayFileData:
+        if self.file != name:
+            self.file = name
+            self.data = NdarrayFileData(name, elem)
         return self.data

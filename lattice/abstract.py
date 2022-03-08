@@ -16,5 +16,5 @@ class FileData(metaclass=abc.ABCMeta):
 
 class File(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def getFileData(self, key: str, elem: FileMetaData) -> FileData:
+    def getFileData(self, name: str, elem: FileMetaData) -> FileData:
         pass

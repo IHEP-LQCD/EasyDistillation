@@ -50,8 +50,8 @@ class BinaryFile(File):
         self.file: str = None
         self.data: BinaryFileData = None
 
-    def getFileData(self, key: str, elem: FileMetaData) -> FileData:
-        if self.file != key:
-            self.file = key
-            self.data = BinaryFileData(key, elem)
+    def getFileData(self, name: str, elem: FileMetaData) -> BinaryFileData:
+        if self.file != name:
+            self.file = name
+            self.data = BinaryFileData(name, elem)
         return self.data

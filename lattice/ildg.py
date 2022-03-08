@@ -81,10 +81,10 @@ class IldgFile(File):
         xmlTree = ET.ElementTree(ET.fromstring(f.read(objPosSize["ildg-format"][1]).strip(b"\x00").decode("utf-8")))
         return offset, xmlTree
 
-    def getFileData(self, key: str, elem: FileMetaData) -> FileData:
-        if self.file != key:
-            self.file = key
-            with open(key, "rb") as f:
+    def getFileData(self, name: str, elem: FileMetaData) -> IldgFileData:
+        if self.file != name:
+            self.file = name
+            with open(name, "rb") as f:
                 offset, xmlTree = self.readMetaData(f)
-            self.data = IldgFileData(key, elem, offset, xmlTree)
+            self.data = IldgFileData(name, elem, offset, xmlTree)
         return self.data

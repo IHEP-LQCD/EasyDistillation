@@ -99,10 +99,10 @@ class QDPLazyDiskMapObjFile(File):
             offsets[key] = val
         return offsets, xmlTree
 
-    def getFileData(self, key: str, elem: FileMetaData) -> QDPLazyDiskMapObjFileData:
-        if self.file != key:
-            self.file = key
-            with open(key, "rb") as f:
+    def getFileData(self, name: str, elem: FileMetaData) -> QDPLazyDiskMapObjFileData:
+        if self.file != name:
+            self.file = name
+            with open(name, "rb") as f:
                 offsets, xmlTree = self.readMetaData(f)
-            self.data = QDPLazyDiskMapObjFileData(key, elem, offsets, xmlTree)
+            self.data = QDPLazyDiskMapObjFileData(name, elem, offsets, xmlTree)
         return self.data
