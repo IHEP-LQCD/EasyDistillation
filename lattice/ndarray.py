@@ -1,12 +1,12 @@
 from time import time
 from typing import Tuple
 
-from .abstract import ElementMetaData, FileData, File
+from .abstract import FileMetaData, FileData, File
 from .backend import getBackend, getNumpy
 
 
 class NdarrayFileData(FileData):
-    def __init__(self, file: str, elem: ElementMetaData) -> None:
+    def __init__(self, file: str, elem: FileMetaData) -> None:
         self.file = file
         self.timeInSec = 0.0
         self.sizeInByte = 0
@@ -15,7 +15,12 @@ class NdarrayFileData(FileData):
         numpy = getBackend()
         numpy_ori = getNumpy()
         s = time()
-        ret = numpy.asarray(numpy_ori.load(self.file, "r")[key])
+        ret = numpy.asarray(
+            numpy_ori.load(
+                self.file,
+                mmap_mode="r",
+            )[key]
+        )  # yapf: disable
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret
@@ -26,7 +31,7 @@ class NdarrayFile(File):
         self.file: str = None
         self.data: NdarrayFileData = None
 
-    def getFileData(self, key: str, elem: ElementMetaData) -> FileData:
+    def getFileData(self, key: str, elem: FileMetaData) -> FileData:
         if self.file != key:
             self.file = key
             self.data = NdarrayFileData(key, elem)

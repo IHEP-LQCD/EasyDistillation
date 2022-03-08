@@ -6,8 +6,8 @@ from time import time
 from typing import Dict, Tuple
 import xml.etree.ElementTree as ET
 
-from .abstract import ElementMetaData, FileData, File
-from .backend import getBackend
+from .abstract import FileMetaData, FileData, File
+from .backend import getBackend, getNumpy
 
 
 def readStr(f: BufferedReader) -> str:
@@ -27,16 +27,16 @@ def readPos(f: BufferedReader) -> int:
 
 
 class QDPLazyDiskMapObjFileData(FileData):
-    def __init__(self, file: str, elem: ElementMetaData, offsets: Dict[Tuple[int], int], xmlTree: ET.ElementTree) -> None:
+    def __init__(self, file: str, elem: FileMetaData, offsets: Dict[Tuple[int], int], xmlTree: ET.ElementTree) -> None:
         self.file = file
         self.extra = elem.extra
-        self.extraShape = elem.shape[0 : elem.extra]
+        self.extraShape = elem.shape[0:elem.extra]
         self.offsets = offsets
         lattSize = [int(x) for x in xmlTree.find("lattSize").text.split(" ")]
         self.lattSize = lattSize.copy()
         decay_dir = int(xmlTree.find("decay_dir").text)
         assert decay_dir == 3
-        self.shape = elem.shape[elem.extra :]
+        self.shape = elem.shape[elem.extra:]
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
         self.dtype = elem.dtype
         self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
@@ -51,24 +51,34 @@ class QDPLazyDiskMapObjFileData(FileData):
 
     def getOffset(self, key: Tuple[int]):
         offset = 0
-        for a, b in zip(key, self.stride[0 : len(key)]):
+        for a, b in zip(key, self.stride[0:len(key)]):
             offset += a * b
         return offset * self.bytes
 
     def __getitem__(self, key: Tuple[int]):
         numpy = getBackend()
+        numpy_ori = getNumpy()
         if isinstance(key, int):
-            key = (key,)
-        if key[0 : self.extra] not in self.offsets:
+            key = (key, )
+        if key[0:self.extra] not in self.offsets:
             raise IndexError(f"index {key} is out of bounds for axes")
         else:
             s = time()
-            ret = numpy.fromfile(
-                self.file,
-                dtype=self.dtype,
-                count=self.getCount(key[self.extra :]),
-                offset=self.offsets[key[0 : self.extra]] + self.getOffset(key[self.extra :]),
-            ).reshape(self.shape[len(key[self.extra :]) :])
+            ret = numpy.asarray(
+                numpy_ori.memmap(
+                    self.file,
+                    dtype=self.dtype,
+                    mode="r",
+                    offset=self.offsets[key[0:self.extra]],
+                    shape=self.shape,
+                )[key[self.extra:]]
+            )  # yapf: disable
+            # ret = numpy.fromfile(
+            #     self.file,
+            #     dtype=self.dtype,
+            #     count=self.getCount(key[self.extra :]),
+            #     offset=self.offsets[key[0 : self.extra]] + self.getOffset(key[self.extra :]),
+            # ).reshape(self.shape[len(key[self.extra :]) :])
             self.timeInSec += time() - s
             self.sizeInByte += ret.nbytes
             return ret
@@ -95,7 +105,7 @@ class QDPLazyDiskMapObjFile(File):
             offsets[key] = val
         return offsets, xmlTree
 
-    def getFileData(self, key: str, elem: ElementMetaData) -> QDPLazyDiskMapObjFileData:
+    def getFileData(self, key: str, elem: FileMetaData) -> QDPLazyDiskMapObjFileData:
         if self.file != key:
             self.file = key
             with open(key, "rb") as f:

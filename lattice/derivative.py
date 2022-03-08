@@ -10,7 +10,7 @@ class DerivPart:
         return f"{self.coeff:.3f} * {self.deriv}"
 
     def normalize(self, sumsq):
-        self.coeff *= sumsq ** -0.5
+        self.coeff *= sumsq**-0.5
 
 
 class Deriv:
@@ -18,7 +18,7 @@ class Deriv:
         sumsq = 0
         self.parts: List[DerivPart] = []
         for part in parts:
-            sumsq += part[0] ** 2
+            sumsq += part[0]**2
             self.parts.append(DerivPart(part[0], part[1]))
         for part in self.parts:
             part.normalize(sumsq)
@@ -30,7 +30,7 @@ class Deriv:
 
 _naming_scheme = {
     "_": [
-        Deriv([[1, ""]])
+        Deriv([[1, ""]]),
     ],
     "d": [
         Deriv([[1, "1"]]),

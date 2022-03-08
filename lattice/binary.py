@@ -3,12 +3,12 @@ import re
 from time import time
 from typing import Tuple
 
-from .abstract import ElementMetaData, FileData, File
+from .abstract import FileMetaData, FileData, File
 from .backend import getBackend, getNumpy
 
 
 class BinaryFileData(FileData):
-    def __init__(self, file: str, elem: ElementMetaData) -> None:
+    def __init__(self, file: str, elem: FileMetaData) -> None:
         self.file = file
         self.shape = elem.shape
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
@@ -22,7 +22,7 @@ class BinaryFileData(FileData):
 
     def getOffset(self, key: Tuple[int]):
         offset = 0
-        for a, b in zip(key, self.stride[0 : len(key)]):
+        for a, b in zip(key, self.stride[0:len(key)]):
             offset += a * b
         return offset * self.bytes
 
@@ -30,7 +30,7 @@ class BinaryFileData(FileData):
         numpy = getBackend()
         numpy_base = getNumpy()
         if isinstance(key, int):
-            key = (key,)
+            key = (key, )
         s = time()
         ret = numpy.asarray(
             numpy_base.memmap(
@@ -39,7 +39,7 @@ class BinaryFileData(FileData):
                 mode="r",
                 shape=tuple(self.shape),
             )[key]
-        )
+        )  # yapf: disable
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret
@@ -50,7 +50,7 @@ class BinaryFile(File):
         self.file: str = None
         self.data: BinaryFileData = None
 
-    def getFileData(self, key: str, elem: ElementMetaData) -> FileData:
+    def getFileData(self, key: str, elem: FileMetaData) -> FileData:
         if self.file != key:
             self.file = key
             self.data = BinaryFileData(key, elem)

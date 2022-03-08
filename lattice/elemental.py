@@ -92,7 +92,7 @@ class ElementalData:
         for idrv, drv in enumerate(ElementalUtil.derivs):
             VPV[idrv] = 0
             for lr in range(len(drv) + 1):
-                coeff = (-1) ** lr * comb(len(drv), lr)
+                coeff = (-1)**lr * comb(len(drv), lr)
                 right = ElementalUtil.nD(V, U, drv[:lr])
                 left = ElementalUtil.nD(V, U, drv[lr:][::-1])
                 for imom, mom in enumerate(ElementalUtil.momenta):

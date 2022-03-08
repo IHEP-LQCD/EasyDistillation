@@ -2,7 +2,7 @@ import abc
 from typing import Any, List, NamedTuple, Tuple
 
 
-class ElementMetaData(NamedTuple):
+class FileMetaData(NamedTuple):
     shape: List[int]
     dtype: str
     extra: Any
@@ -16,5 +16,5 @@ class FileData(metaclass=abc.ABCMeta):
 
 class File(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def getFileData(self, key: str, elem: ElementMetaData) -> FileData:
+    def getFileData(self, key: str, elem: FileMetaData) -> FileData:
         pass
