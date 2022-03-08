@@ -69,16 +69,10 @@ class QDPLazyDiskMapObjFileData(FileData):
                     self.file,
                     dtype=self.dtype,
                     mode="r",
-                    offset=self.offsets[key[0:self.extra]],
-                    shape=self.shape,
+                    offset=self.offsets[key[:self.extra]],
+                    shape=tuple(self.shape),
                 )[key[self.extra:]]
             )  # yapf: disable
-            # ret = numpy.fromfile(
-            #     self.file,
-            #     dtype=self.dtype,
-            #     count=self.getCount(key[self.extra :]),
-            #     offset=self.offsets[key[0 : self.extra]] + self.getOffset(key[self.extra :]),
-            # ).reshape(self.shape[len(key[self.extra :]) :])
             self.timeInSec += time() - s
             self.sizeInByte += ret.nbytes
             return ret

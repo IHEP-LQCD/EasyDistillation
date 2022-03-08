@@ -44,6 +44,7 @@ class ElementalUtil:
         numpy = getBackend()
         Nx = prod(lattSize[0:3])
         Ne = eigenNum
+        ElementalUtil.lattSize = lattSize
         ElementalUtil.Nx = Nx
         ElementalUtil.Ne = Ne
         ElementalUtil.U = numpy.zeros((Nd, Nx, Nc, Nc), "<c16")
