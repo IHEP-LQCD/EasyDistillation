@@ -1,3 +1,9 @@
 .vscode
+.idea
+DATA
 
 __pycache__
+
+test.py
+*.txt
+*.tmp

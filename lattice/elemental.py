@@ -53,8 +53,6 @@ class ElementalUtil:
         ElementalUtil.derivs = derivs
         ElementalUtil.momenta = momenta
         ElementalUtil.einsum = contract
-        ElementalUtil.Nx = Nx
-        ElementalUtil.Ne = Ne
 
     @staticmethod
     def D(V, U, d):
