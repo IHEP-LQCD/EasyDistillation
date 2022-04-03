@@ -1,5 +1,4 @@
 from io import SEEK_CUR, BufferedReader
-from math import prod
 import re
 import struct
 from time import time
@@ -8,6 +7,13 @@ import xml.etree.ElementTree as ET
 
 from .abstract import FileMetaData, FileData, File
 from .backend import getBackend, getNumpy
+
+
+def prod(a):
+    p = 1
+    for i in a:
+        p *= i
+    return p
 
 
 class IldgFileData(FileData):
@@ -52,7 +58,7 @@ class IldgFileData(FileData):
                 mode="r",
                 offset=self.offset,
                 shape=tuple(self.shape),
-            )[key]
+            )[key].copy().astype("<c16")
         )  # yapf: disable
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes

@@ -3,6 +3,7 @@ from typing import Tuple
 
 from .abstract import FileMetaData, FileData, File
 from .backend import getBackend, getNumpy
+from .sliceloader import npyloader as loader
 
 
 class NdarrayFileData(FileData):
@@ -16,11 +17,16 @@ class NdarrayFileData(FileData):
         numpy_ori = getNumpy()
         s = time()
         ret = numpy.asarray(
-            numpy_ori.load(
+            loader(
                 self.file,
-                mmap_mode="r",
             )[key]
         )  # yapf: disable
+        # ret = numpy.asarray(
+        #     numpy_ori.load(
+        #         self.file,
+        #         mmap_mode="r",
+        #     )[key].copy()
+        # )  # yapf: disable
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret

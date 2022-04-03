@@ -6,19 +6,19 @@ from .backend import getBackend
 
 class _Constant:
     @staticmethod
-    @lru_cache
+    @lru_cache(1)
     def zero():
         numpy = getBackend()
         return numpy.zeros((4, 4))
 
     @staticmethod
-    @lru_cache
+    @lru_cache(1)
     def one():
         numpy = getBackend()
         return numpy.identity(4)
 
     @staticmethod
-    @lru_cache
+    @lru_cache(1)
     def gamma_0():
         numpy = getBackend()
         return numpy.array(
@@ -31,7 +31,7 @@ class _Constant:
         )
 
     @staticmethod
-    @lru_cache
+    @lru_cache(1)
     def gamma_1():
         numpy = getBackend()
         return numpy.array(
@@ -44,7 +44,7 @@ class _Constant:
         )
 
     @staticmethod
-    @lru_cache
+    @lru_cache(1)
     def gamma_2():
         numpy = getBackend()
         return numpy.array(
@@ -57,7 +57,7 @@ class _Constant:
         )
 
     @staticmethod
-    @lru_cache
+    @lru_cache(1)
     def gamma_3():
         numpy = getBackend()
         return numpy.array(

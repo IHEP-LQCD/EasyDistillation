@@ -1,10 +1,21 @@
-from math import comb, prod
+from math import factorial
 from typing import List, Tuple
 
 from .abstract import FileData
 from .backend import getBackend
 from .constant import Nd, Nc
 from .preset import GaugeField, EigenVector
+
+
+def prod(a):
+    p = 1
+    for i in a:
+        p *= i
+    return p
+
+
+def comb(n, i):
+    return factorial(n) // (factorial(i) * factorial(n - i))
 
 
 class MomentaPhase:
@@ -85,7 +96,7 @@ class ElementalData:
         VPV = ElementalUtil.VPV
         if ElementalUtil.derivs != [()]:
             for d in range(U.shape[0]):
-                U[d] = self.U[t, d]
+                U[d] = self.U[t, :, d]
         for e in range(V.shape[0]):
             V[e] = self.V[t, e]
         for idrv, drv in enumerate(ElementalUtil.derivs):

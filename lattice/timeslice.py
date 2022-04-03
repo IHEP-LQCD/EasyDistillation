@@ -1,5 +1,4 @@
 from io import BufferedReader
-from math import prod
 import re
 import struct
 from time import time
@@ -24,6 +23,13 @@ def readTuple(f: BufferedReader) -> Tuple[int]:
 
 def readPos(f: BufferedReader) -> int:
     return struct.unpack(">qq", f.read(16))[1]
+
+
+def prod(a):
+    p = 1
+    for i in a:
+        p *= i
+    return p
 
 
 class QDPLazyDiskMapObjFileData(FileData):
@@ -71,7 +77,7 @@ class QDPLazyDiskMapObjFileData(FileData):
                     mode="r",
                     offset=self.offsets[key[:self.extra]],
                     shape=tuple(self.shape),
-                )[key[self.extra:]]
+                )[key[self.extra:]].copy().astype("<c8")
             )  # yapf: disable
             self.timeInSec += time() - s
             self.sizeInByte += ret.nbytes

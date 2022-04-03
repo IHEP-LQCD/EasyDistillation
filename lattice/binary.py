@@ -1,10 +1,17 @@
-from math import prod
 import re
 from time import time
 from typing import Tuple
 
 from .abstract import FileMetaData, FileData, File
 from .backend import getBackend, getNumpy
+from .sliceloader import binloader as loader
+
+
+def prod(a):
+    p = 1
+    for i in a:
+        p *= i
+    return p
 
 
 class BinaryFileData(FileData):
@@ -28,16 +35,13 @@ class BinaryFileData(FileData):
 
     def __getitem__(self, key: Tuple[int]):
         numpy = getBackend()
-        numpy_base = getNumpy()
-        if isinstance(key, int):
-            key = (key, )
         s = time()
         ret = numpy.asarray(
-            numpy_base.memmap(
+            loader(
                 self.file,
                 dtype=self.dtype,
-                mode="r",
                 shape=tuple(self.shape),
+                offset=0,
             )[key]
         )  # yapf: disable
         self.timeInSec += time() - s
