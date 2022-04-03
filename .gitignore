@@ -5,5 +5,9 @@ DATA
 __pycache__
 
 test.py
+logs
 *.txt
 *.tmp
+*.svg
+*.png
+*.pdf

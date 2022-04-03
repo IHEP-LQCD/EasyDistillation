@@ -54,7 +54,7 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
 class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        EigenVector.__init__(self, FileMetaData([128, 70, 16**3, 3], ">c8", 2), 70)
+        EigenVector.__init__(self, FileMetaData([128, 50, 16**3, 3], ">c8", 2), 50)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
@@ -65,7 +65,7 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
 class PerambulatorBinary(BinaryFile, Perambulator):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        Perambulator.__init__(self, FileMetaData([128, 128, 4, 4, 70, 70], "<c16", 0), 70)
+        Perambulator.__init__(self, FileMetaData([128, 128, 4, 4, 50, 50], "<c16", 0), 70)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
 
@@ -109,7 +109,7 @@ class GaugeFieldIldg(IldgFile, GaugeField):
 class ElementalNpy(NdarrayFile, Elemental):
     def __init__(self, prefix: str, suffix: str) -> None:
         super().__init__()
-        Elemental.__init__(self, None)
+        Elemental.__init__(self, None, 50)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson.npy" if suffix is None else suffix
 
