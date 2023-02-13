@@ -22,7 +22,7 @@ class OperatorPart:
 
 
 class Operator:
-    def __init__(self, parts: list) -> None:
+    def __init__(self, parts: list, hermition: int) -> None:
         from copy import deepcopy as cp
 
         sumsq = 0
@@ -32,6 +32,7 @@ class Operator:
             self.parts.append(OperatorPart(part[0], part[1], cp(part[2])))
         for part in self.parts:
             part.normalize(sumsq)
+        self.hermition = hermition
 
     def __repr__(self) -> str:
         ret = [part for part in self.parts]
@@ -44,7 +45,7 @@ def only_gamma(gamma_name: GAMMA_NAME):
     hermition = gamma_hermition(gamma_name) * deriv_hermition("_")
     return [Operator([
         [1, gamma[i], deriv[0]],
-    ]) for i in range(len(gamma))]
+    ], hermition) for i in range(len(gamma))]
 
 
 def multiply(gamma_name: GAMMA_NAME, deriv_name: DERIV_NAME):
@@ -55,13 +56,13 @@ def multiply(gamma_name: GAMMA_NAME, deriv_name: DERIV_NAME):
     return [
         Operator([
             [1, gamma[0], deriv[0]],
-        ]),
+        ], hermition),
         Operator([
             [1, gamma[0], deriv[1]],
-        ]),
+        ], hermition),
         Operator([
             [1, gamma[0], deriv[2]],
-        ]),
+        ], hermition),
     ]
 
 
@@ -74,7 +75,7 @@ def dot(gamma_name: GAMMA_NAME, deriv_name: DERIV_NAME):
         [1, gamma[0], deriv[0]],
         [1, gamma[1], deriv[1]],
         [1, gamma[2], deriv[2]],
-    ])]
+    ], hermition)]
 
 
 def epsilon_ijk(gamma_name: GAMMA_NAME, deriv_name: DERIV_NAME):
@@ -86,15 +87,15 @@ def epsilon_ijk(gamma_name: GAMMA_NAME, deriv_name: DERIV_NAME):
         Operator([
             [1, gamma[1], deriv[2]],
             [-1, gamma[2], deriv[1]],
-        ]),
+        ], hermition),
         Operator([
             [1, gamma[2], deriv[0]],
             [-1, gamma[0], deriv[2]],
-        ]),
+        ], hermition),
         Operator([
             [1, gamma[0], deriv[1]],
             [-1, gamma[1], deriv[0]],
-        ]),
+        ], hermition),
     ]
 
 
@@ -107,15 +108,15 @@ def abs_epslion_ijk(gamma_name: GAMMA_NAME, deriv_name: DERIV_NAME):
         Operator([
             [1, gamma[1], deriv[2]],
             [1, gamma[2], deriv[1]],
-        ]),
+        ], hermition),
         Operator([
             [1, gamma[2], deriv[0]],
             [1, gamma[0], deriv[2]],
-        ]),
+        ], hermition),
         Operator([
             [1, gamma[0], deriv[1]],
             [1, gamma[1], deriv[0]],
-        ]),
+        ], hermition),
     ]
 
 
@@ -128,10 +129,10 @@ def Q_ijk(gamma_name: GAMMA_NAME, deriv_name: DERIV_NAME):
         Operator([
             [1, gamma[0], deriv[0]],
             [-1, gamma[1], deriv[1]],
-        ]),
+        ], hermition),
         Operator([
             [-1, gamma[0], deriv[0]],
             [-1, gamma[1], deriv[1]],
             [2, gamma[2], deriv[2]],
-        ]),
+        ], hermition),
     ]
