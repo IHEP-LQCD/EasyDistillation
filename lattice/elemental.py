@@ -5,6 +5,9 @@ from .filedata.abstract import FileData
 from .backend import getBackend
 from .preset import GaugeField, EigenVector
 
+Nd = 4
+Nc = 3
+
 
 def prod(a):
     p = 1
@@ -25,15 +28,12 @@ class MomentaPhase:
         self.Z = numpy.arange(Lz).reshape(Lz, 1, 1).repeat(Ly, 1).repeat(Lx, 2) * 2j * numpy.pi / Lz
         self.cache = {}
 
-    def __call__(self, Px, Py, Pz):
-        key = (Px, Py, Pz)
+    def calc(self, key: Tuple[int]):
+        Px, Py, Pz = key
         if key not in self.cache:
             numpy = getBackend()
             self.cache[key] = numpy.exp(Px * self.X + Py * self.Y + Pz * self.Z)
         return self.cache[key]
-
-    def __getitem__(self, key: Tuple[int]):
-        return self.__call__(*key).reshape(-1)
 
 
 class ElementalUtil:
@@ -49,7 +49,6 @@ class ElementalUtil:
 
     @staticmethod
     def prepare(derivs: List[Tuple[int]], momenta: List[Tuple[int]], lattSize: List[int], eigenNum: int):
-        from . import Nd, Nc
         from opt_einsum import contract
 
         numpy = getBackend()
@@ -106,7 +105,10 @@ class ElementalData:
                 right = ElementalUtil.nD(V, U, drv[:lr])
                 left = ElementalUtil.nD(V, U, drv[lr:][::-1])
                 for imom, mom in enumerate(ElementalUtil.momenta):
-                    VPV[idrv, imom] += ElementalUtil.einsum("x,exc,fxc->ef", coeff * self.P[mom], left.conj(), right)
+                    VPV[idrv, imom] += ElementalUtil.einsum(
+                        "x,exc,fxc->ef",
+                        coeff * self.P.calc(mom).reshape(-1), left.conj(), right
+                    )
         # for idif, dif in enumerate(ElementalUtil.difList):
         #     VPV[idif] = 0
         #     for lr in range(len(dif) + 1):

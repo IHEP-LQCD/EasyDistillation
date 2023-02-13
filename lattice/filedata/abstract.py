@@ -16,9 +16,5 @@ class FileData(metaclass=abc.ABCMeta):
 
 class File(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def __getitem__(self, key: Tuple[int]):
-        pass
-
-    @abc.abstractmethod
     def getFileData(self, name: str, elem: FileMetaData) -> FileData:
         pass
