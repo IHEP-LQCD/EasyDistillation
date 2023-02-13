@@ -1,10 +1,10 @@
 from copy import deepcopy
 
-from .abstract import FileMetaData
-from .binary import BinaryFile
-from .ildg import IldgFile
-from .timeslice import QDPLazyDiskMapObjFile
-from .ndarray import NdarrayFile
+from .filedata.abstract import FileData, FileMetaData
+from .filedata.binary import BinaryFile
+from .filedata.ildg import IldgFile
+from .filedata.timeslice import QDPLazyDiskMapObjFile
+from .filedata.ndarray import NdarrayFile
 
 
 class GaugeField:
@@ -47,7 +47,7 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.mod" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -58,7 +58,7 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -69,7 +69,7 @@ class PerambulatorBinary(BinaryFile, Perambulator):
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -80,7 +80,7 @@ class ElementalBinary(BinaryFile, Elemental):
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -91,7 +91,7 @@ class Jpsi2gammaBinary(BinaryFile, TwoPoint):
         self.prefix = prefix
         self.suffix = ".mesonspec.2pt.bin" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -102,7 +102,7 @@ class GaugeFieldIldg(IldgFile, GaugeField):
         self.prefix = prefix
         self.suffix = ".lime" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -113,7 +113,7 @@ class ElementalNpy(NdarrayFile, Elemental):
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson.npy" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -124,7 +124,7 @@ class Jpsi2gammaNpy(NdarrayFile, TwoPoint):
         self.prefix = prefix
         self.suffix = ".2pt.npy" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
@@ -136,5 +136,5 @@ class OnePointNpy(NdarrayFile, OnePoint):
         self.prefix = prefix
         self.suffix = ".1pt.npy" if suffix is None else suffix
 
-    def __getitem__(self, key: str):
+    def load(self, key: str):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)

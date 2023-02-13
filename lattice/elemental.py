@@ -1,9 +1,8 @@
 from math import factorial
 from typing import List, Tuple
 
-from .abstract import FileData
+from .filedata.abstract import FileData
 from .backend import getBackend
-from .constant import Nd, Nc
 from .preset import GaugeField, EigenVector
 
 
@@ -50,6 +49,7 @@ class ElementalUtil:
 
     @staticmethod
     def prepare(derivs: List[Tuple[int]], momenta: List[Tuple[int]], lattSize: List[int], eigenNum: int):
+        from . import Nd, Nc
         from opt_einsum import contract
 
         numpy = getBackend()
@@ -90,7 +90,7 @@ class ElementalData:
         self.V = V
         self.P = P
 
-    def __call__(self, t: int):
+    def calc(self, t: int):
         U = ElementalUtil.U
         V = ElementalUtil.V
         VPV = ElementalUtil.VPV
@@ -127,7 +127,7 @@ class ElementalData:
         return self.U.sizeInByte + self.V.sizeInByte
 
 
-class Elemental:
+class ElementalGenerator:
     def __init__(
         self,
         lattSize: List[int],
@@ -142,8 +142,8 @@ class Elemental:
         self.P = MomentaPhase(*lattSize[0:3])
         ElementalUtil.prepare(derivs, momenta, lattSize, eigenVecs.Ne)
 
-    def __getitem__(self, val: str):
-        Udata = self.U[val]
-        Vdata = self.V[val]
+    def load(self, val: str):
+        Udata = self.U.load(val)
+        Vdata = self.V.load(val)
         assert self.lattSize == Udata.lattSize and self.lattSize == Vdata.lattSize
         return ElementalData(Udata, Vdata, self.P)

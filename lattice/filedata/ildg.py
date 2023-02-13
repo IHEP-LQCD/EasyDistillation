@@ -6,7 +6,7 @@ from typing import Dict, Tuple
 import xml.etree.ElementTree as ET
 
 from .abstract import FileMetaData, FileData, File
-from .backend import getBackend, getNumpy
+from ..backend import getBackend, getNumpy
 
 
 def prod(a):

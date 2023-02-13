@@ -22,12 +22,12 @@ res = cupy.zeros((128, len(difList), len(momList), 50, 50), "<c16")
 dispatcher = lattice.Dispatch("cfglist.txt", "ehe")
 
 for cfg in dispatcher:
-    elem = elementals[cfg]
+    elem = elementals.load(cfg)
     print(cfg, end=" ")
 
     s = time()
     for t in range(128):
-        res[t] = elem(t)
+        res[t] = elem.calc(t)
     print(f"{time() - s:.2f}Sec", end=" ")
     print(f"{elem.sizeInByte / elem.timeInSec / 1024 ** 2:.2f}MB/s")
     cupy.save(f"{outPrefix}{cfg}{outSuffix}", res.transpose(1, 2, 0, 3, 4))

@@ -3,8 +3,7 @@ from time import time
 from typing import Tuple
 
 from .abstract import FileMetaData, FileData, File
-from .backend import getBackend, getNumpy
-from .sliceloader import binloader as loader
+from ..backend import getBackend, getNumpy
 
 
 def prod(a):
@@ -35,15 +34,25 @@ class BinaryFileData(FileData):
 
     def __getitem__(self, key: Tuple[int]):
         numpy = getBackend()
+        numpy_ori = getNumpy()
         s = time()
+        # ret = numpy.asarray(
+        #     loader(
+        #         self.file,
+        #         dtype=self.dtype,
+        #         shape=tuple(self.shape),
+        #         offset=0,
+        #     )[key]
+        # )  # yapf: disable
         ret = numpy.asarray(
-            loader(
+            numpy_ori.memmap(
                 self.file,
                 dtype=self.dtype,
-                shape=tuple(self.shape),
+                mode="r",
                 offset=0,
-            )[key]
-        )  # yapf: disable
+                shape=tuple(self.shape),
+            )[key].copy()
+        )
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret

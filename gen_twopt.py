@@ -22,12 +22,12 @@ Gamma = gamma5
 
 dispatcher = lattice.Dispatch("cfglist.only.txt")
 for cfg in dispatcher:
-    p = perambulator[cfg]  # (128, 128, 4, 4, 50, 50)
-    e = elemental[cfg]  # (9, 27, 128, 50, 50)
+    p = perambulator.load(cfg)  # (128, 128, 4, 4, 50, 50)
+    e = elemental.load(cfg)  # (9, 27, 128, 50, 50)
 
     s = time()
     twopt = np.zeros((9, 27, 128), "<c16")
-    elem = e[()]
+    elem = e[:]
     for t in lattice.processBar(range(128)):
         pera = p[t]
         for d in range(9):

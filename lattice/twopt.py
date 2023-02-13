@@ -1,10 +1,10 @@
 from typing import Dict, List
 from opt_einsum import contract
 
-from .abstract import FileData
-from .product import Operator
+from .filedata.abstract import FileData
+from .operator import Operator
 from .backend import getBackend
-from .gamma import instance, gamma
+from .operator.gamma import instance, gamma
 
 
 def solve(operators: List[Operator], derivDict, elemental: FileData):
@@ -42,7 +42,10 @@ def calcTwopt(operators: List[Operator], elemental: FileData, perambulator: File
         tau_bw = contract("ij,tkjba,kl->tilab", gamma(15), tau.conj(), gamma(15))
         for idx in range(len(operators)):
             phi = phis[idx]
-            ret[idx] += contract("tijab,xjk,xtpbc,tklcd,yli,ypad->tp", tau_bw, phi[0], numpy.roll(phi[1], -t, 1), tau, phi[0], phi[1][:, t].conj())
+            ret[idx] += contract(
+                "tijab,xjk,xtpbc,tklcd,yli,ypad->tp", tau_bw, phi[0], numpy.roll(phi[1], -t, 1), tau, phi[0],
+                phi[1][:, t].conj()
+            )
     ret /= 128
 
     return ret

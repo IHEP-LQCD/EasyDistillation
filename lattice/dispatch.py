@@ -2,7 +2,9 @@ from io import FileIO
 import os
 import random
 from time import sleep
-from typing import Iterator, Union
+from typing import Iterator, Iterable, TypeVar
+
+T = TypeVar("T")
 
 if os.name == "nt":
     import msvcrt
@@ -30,15 +32,6 @@ elif os.name == "posix":
             fcntl.lockf(f, fcntl.LOCK_UN)
 
 
-def rand(seed: Union[int, float, str, bytes, bytearray] = None) -> str:
-    if seed is None:
-        ret = 0x456789AB
-    else:
-        random.seed(seed)
-        ret = random.randint(0, 0xFFFFFFFF)
-    return hex(ret)[2:].upper()
-
-
 class AtomicOpen:
     def __init__(self, path, *args, **kwargs):
         self.file = open(path, *args, **kwargs)
@@ -60,9 +53,28 @@ class AtomicOpen:
             return True
 
 
+def processBar(input: Iterable[T], length: int = 100, filled: str = "#", empty: str = "-") -> Iterator[T]:
+    total = len(input)
+    i = 0
+    for j in input:
+        percentage = i / total
+        num = int(percentage * length)
+        print(f"\r[{filled * num + empty * (length - num)}] {percentage * 100 : 6.2f}%", end=" ")
+        yield j
+        i += 1
+    print(f"\r[{filled * length}] {100.0 : 6.2f}%")
+
+
+def rand(suffix: str = None) -> str:
+    ret = str(suffix)
+    if suffix is None:
+        ret = hex(random.randint(0, 0xFFFFFFFF))[2:].upper()
+    return ret
+
+
 class Dispatch:
-    def __init__(self, input: str, seed: Union[int, float, str, bytes, bytearray] = None) -> None:
-        tmp = f"{input}.{rand(seed=seed)}.tmp"
+    def __init__(self, input: str, suffix: str = None) -> None:
+        tmp = f"{input}.{rand(suffix=suffix)}.tmp"
         self.tmp = tmp
         try:
             with AtomicOpen(tmp, "x+") as f:
@@ -91,8 +103,6 @@ class Dispatch:
 
     @staticmethod
     def process(input: str):
-        from .process import processBar
-
         with open(input, "r") as f:
             lines = f.readlines()
         lines = [line.strip() for line in lines if line != ""]

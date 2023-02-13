@@ -1,8 +1,8 @@
 from typing import List, Tuple
 
-from lattice.abstract import FileData
+from lattice import Nd, Nc
+from lattice.filedata.abstract import FileData
 from lattice.backend import getBackend
-from lattice.constant import Nd, Nc
 from lattice.preset import GaugeField, EigenVector
 
 
@@ -93,7 +93,7 @@ class ElementalData:
         self.V = V
         self.P = P
 
-    def __call__(self, t: int):
+    def calc(self, t: int):
         U = ElementalUtil.U
         V = ElementalUtil.V
         VPV = ElementalUtil.VPV
@@ -119,7 +119,7 @@ class ElementalData:
         return self.U.sizeInByte + self.V.sizeInByte
 
 
-class Elemental:
+class ElementalGenerator:
     def __init__(
         self,
         lattSize: List[int],
@@ -134,9 +134,9 @@ class Elemental:
         self.P = MomentaPhase(*lattSize[0:3])
         ElementalUtil.prepare(distance, momenta, lattSize, eigenVecs.Ne)
 
-    def __getitem__(self, val: str):
-        Udata = self.U[val]
-        Vdata = self.V[val]
+    def load(self, val: str):
+        Udata = self.U.load(val)
+        Vdata = self.V.load(val)
         assert self.lattSize == Udata.lattSize and self.lattSize == Vdata.lattSize
         return ElementalData(Udata, Vdata, self.P)
 
@@ -163,19 +163,19 @@ momList = mom_dict.dictToList()
 outPrefix = R"DATA/charm.b28.16_128.wo_stout.corrected/04.meson/"
 outSuffix = R".npy"
 
-elementals = Elemental(lattSize, confs, eigs, distance, momList)
+elementals = ElementalGenerator(lattSize, confs, eigs, distance, momList)
 
 res = cupy.zeros((128, distance + 1, len(momList), 50, 50), "<c16")
 
 dispatcher = lattice.Dispatch("cfglist.only.txt")
 
 for cfg in dispatcher:
-    elem = elementals[cfg]
+    elem = elementals.load(cfg)
     print(cfg, end=" ")
 
     s = time()
     for t in range(128):
-        res[t] = elem(t)
+        res[t] = elem.calc(t)
     print(f"{time() - s:.2f}Sec", end=" ")
     print(f"{elem.sizeInByte / elem.timeInSec / 1024 ** 2:.2f}MB/s")
     cupy.save(f"{outPrefix}{cfg}{outSuffix}", res.transpose(1, 2, 0, 3, 4))
