@@ -1,11 +1,12 @@
 import abc
-from typing import Any, List, NamedTuple, Tuple
+from typing import Any, List, Tuple
 
 
-class FileMetaData(NamedTuple):
-    shape: List[int]
-    dtype: str
-    extra: Any
+class FileMetaData:
+    def __init__(self, shape:List[int], dtype:str="<c16", extra:Any =None):
+        self.shape = shape
+        self.dtype = dtype
+        self.extra = extra
 
 
 class FileData(metaclass=abc.ABCMeta):
