@@ -1,11 +1,11 @@
 from copy import deepcopy
+from typing import List
 
 from .filedata.abstract import FileData, FileMetaData
 from .filedata.binary import BinaryFile
 from .filedata.ildg import IldgFile
 from .filedata.timeslice import QDPLazyDiskMapObjFile
 from .filedata.ndarray import NdarrayFile
-
 
 class GaugeField:
     def __init__(self, elem: FileMetaData) -> None:
@@ -41,9 +41,9 @@ class TwoPoint:
 
 
 class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
-    def __init__(self, prefix: str, suffix: str) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 4, 16**3, 3, 3]) -> None:
         super().__init__()
-        GaugeField.__init__(self, FileMetaData([128, 4, 16**3, 3, 3], ">c16", 2))
+        GaugeField.__init__(self, FileMetaData(shape, ">c16", 2))
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.mod" if suffix is None else suffix
 
@@ -52,9 +52,9 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
 
 
 class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
-    def __init__(self, prefix: str, suffix: str) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 70, 16**3, 3], totNe:int=70) -> None:
         super().__init__()
-        EigenVector.__init__(self, FileMetaData([128, 50, 16**3, 3], ">c8", 2), 50)
+        EigenVector.__init__(self, FileMetaData(shape, ">c8", 2), totNe)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
@@ -63,9 +63,9 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
 
 
 class PerambulatorBinary(BinaryFile, Perambulator):
-    def __init__(self, prefix: str, suffix: str) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 128, 4, 4, 70, 70], totNe:int=70) -> None:
         super().__init__()
-        Perambulator.__init__(self, FileMetaData([128, 128, 4, 4, 50, 50], "<c16", 0), 70)
+        Perambulator.__init__(self, FileMetaData(shape, "<c16", 0), totNe)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
 
@@ -74,9 +74,9 @@ class PerambulatorBinary(BinaryFile, Perambulator):
 
 
 class ElementalBinary(BinaryFile, Elemental):
-    def __init__(self, prefix: str, suffix: str) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int]=[40, 27, 128, 70, 70], totNe:int=70) -> None:
         super().__init__()
-        Elemental.__init__(self, FileMetaData([40, 27, 128, 70, 70], "<c16", 0), 70)
+        Elemental.__init__(self, FileMetaData(shape, "<c16", 0), totNe)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson" if suffix is None else suffix
 
@@ -85,9 +85,9 @@ class ElementalBinary(BinaryFile, Elemental):
 
 
 class Jpsi2gammaBinary(BinaryFile, TwoPoint):
-    def __init__(self, prefix: str, suffix: str) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 2, 3, 4, 27, 128]) -> None:
         super().__init__()
-        TwoPoint.__init__(self, FileMetaData([128, 2, 3, 4, 27, 128], "<f8", 0))
+        TwoPoint.__init__(self, FileMetaData(shape, "<f8", 0))
         self.prefix = prefix
         self.suffix = ".mesonspec.2pt.bin" if suffix is None else suffix
 
@@ -96,9 +96,9 @@ class Jpsi2gammaBinary(BinaryFile, TwoPoint):
 
 
 class GaugeFieldIldg(IldgFile, GaugeField):
-    def __init__(self, prefix: str, suffix: str) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 16**3, 4, 3, 3]) -> None:
         super().__init__()
-        GaugeField.__init__(self, FileMetaData([128, 16**3, 4, 3, 3], ">c16", 0))
+        GaugeField.__init__(self, FileMetaData(shape, ">c16", 0))
         self.prefix = prefix
         self.suffix = ".lime" if suffix is None else suffix
 
@@ -107,9 +107,9 @@ class GaugeFieldIldg(IldgFile, GaugeField):
 
 
 class ElementalNpy(NdarrayFile, Elemental):
-    def __init__(self, prefix: str, suffix: str) -> None:
+    def __init__(self, prefix: str, suffix: str, totNe:int=70) -> None:
         super().__init__()
-        Elemental.__init__(self, None, 50)
+        Elemental.__init__(self, None, totNe)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson.npy" if suffix is None else suffix
 

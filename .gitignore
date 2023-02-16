@@ -1,9 +1,7 @@
 .vscode
 .idea
 DATA
-
 __pycache__
-
 test.py
 logs
 *.txt
