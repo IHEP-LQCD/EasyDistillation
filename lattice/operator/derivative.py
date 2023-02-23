@@ -29,7 +29,7 @@ class Deriv:
 
 
 _naming_scheme = {
-    "_": [Deriv([[1, ""]]), ],
+    "": [Deriv([[1, ""]]), ],
     "d": [
         Deriv([[1, "1"]]),
         Deriv([[1, "2"]]),
@@ -52,7 +52,7 @@ _naming_scheme = {
 }
 
 _naming_hermition = {
-    "_": "+",
+    "": "+",
     "d": "-",
     "B": "-",
     "D": "+",
@@ -60,7 +60,7 @@ _naming_hermition = {
 }
 
 _naming_parity = {
-    "_": "+",
+    "": "+",
     "d": "-",
     "B": "+",
     "D": "+",
@@ -68,7 +68,7 @@ _naming_parity = {
 }
 
 _naming_charge_conjugation = {
-    "_": "+",
+    "": "+",
     "d": "-",
     "B": "-",
     "D": "+",
@@ -76,7 +76,7 @@ _naming_charge_conjugation = {
 }
 
 _naming_time_reversal = {
-    "_": "+",
+    "": "+",
     "d": "+",
     "B": "+",
     "D": "+",
