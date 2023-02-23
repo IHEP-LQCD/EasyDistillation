@@ -41,8 +41,8 @@ class Operator:
 
 def only_gamma(gamma_name: GAMMA_NAME):
     gamma = gamma_scheme(gamma_name)
-    deriv = deriv_scheme("_")
-    hermition = gamma_hermition(gamma_name) * deriv_hermition("_")
+    deriv = deriv_scheme("")
+    hermition = gamma_hermition(gamma_name) * deriv_hermition("")
     return [Operator([
         [1, gamma[i], deriv[0]],
     ], hermition) for i in range(len(gamma))]
