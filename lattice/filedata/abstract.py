@@ -3,7 +3,7 @@ from typing import Any, List, Tuple
 
 
 class FileMetaData:
-    def __init__(self, shape:List[int], dtype:str="<c16", extra:Any =None):
+    def __init__(self, shape: List[int], dtype: str = "<c16", extra: Any = None):
         self.shape = shape
         self.dtype = dtype
         self.extra = extra
