@@ -7,6 +7,7 @@ from .filedata.ildg import IldgFile
 from .filedata.timeslice import QDPLazyDiskMapObjFile
 from .filedata.ndarray import NdarrayFile
 
+
 class GaugeField:
     def __init__(self, elem: FileMetaData) -> None:
         self.elem = deepcopy(elem)
@@ -41,7 +42,7 @@ class TwoPoint:
 
 
 class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
-    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 4, 16**3, 3, 3]) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 4, 16**3, 3, 3]) -> None:
         super().__init__()
         GaugeField.__init__(self, FileMetaData(shape, ">c16", 2))
         self.prefix = prefix
@@ -52,7 +53,7 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
 
 
 class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
-    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 70, 16**3, 3], totNe:int=70) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 70, 16**3, 3], totNe: int = 70) -> None:
         super().__init__()
         EigenVector.__init__(self, FileMetaData(shape, ">c8", 2), totNe)
         self.prefix = prefix
@@ -63,7 +64,7 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
 
 
 class PerambulatorBinary(BinaryFile, Perambulator):
-    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 128, 4, 4, 70, 70], totNe:int=70) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Perambulator.__init__(self, FileMetaData(shape, "<c16", 0), totNe)
         self.prefix = prefix
@@ -74,7 +75,7 @@ class PerambulatorBinary(BinaryFile, Perambulator):
 
 
 class ElementalBinary(BinaryFile, Elemental):
-    def __init__(self, prefix: str, suffix: str, shape: List[int]=[40, 27, 128, 70, 70], totNe:int=70) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [40, 27, 128, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Elemental.__init__(self, FileMetaData(shape, "<c16", 0), totNe)
         self.prefix = prefix
@@ -85,7 +86,7 @@ class ElementalBinary(BinaryFile, Elemental):
 
 
 class Jpsi2gammaBinary(BinaryFile, TwoPoint):
-    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 2, 3, 4, 27, 128]) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 2, 3, 4, 27, 128]) -> None:
         super().__init__()
         TwoPoint.__init__(self, FileMetaData(shape, "<f8", 0))
         self.prefix = prefix
@@ -96,7 +97,7 @@ class Jpsi2gammaBinary(BinaryFile, TwoPoint):
 
 
 class GaugeFieldIldg(IldgFile, GaugeField):
-    def __init__(self, prefix: str, suffix: str, shape: List[int]=[128, 16**3, 4, 3, 3]) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 16**3, 4, 3, 3]) -> None:
         super().__init__()
         GaugeField.__init__(self, FileMetaData(shape, ">c16", 0))
         self.prefix = prefix
@@ -107,7 +108,7 @@ class GaugeFieldIldg(IldgFile, GaugeField):
 
 
 class ElementalNpy(NdarrayFile, Elemental):
-    def __init__(self, prefix: str, suffix: str, totNe:int=70) -> None:
+    def __init__(self, prefix: str, suffix: str, totNe: int = 70) -> None:
         super().__init__()
         Elemental.__init__(self, None, totNe)
         self.prefix = prefix
