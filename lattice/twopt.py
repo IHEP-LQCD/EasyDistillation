@@ -2,9 +2,9 @@ from typing import Dict, List
 from opt_einsum import contract
 
 from .filedata.abstract import FileData
-from .operator import Operator
+from .insertion import Operator
 from .backend import getBackend
-from .operator.gamma import instance, gamma
+from .insertion.gamma import instance, gamma
 
 
 def solve(operators: List[Operator], derivDict, elemental: FileData):

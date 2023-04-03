@@ -61,6 +61,26 @@ class _Constant:
         ])
 
 
+def gamma_str(n: int):
+    assert isinstance(n, int) and n >= 0 and n <= 15
+    if n == 0:
+        return ""
+    elif n == 15:
+        return "γ5"
+    elif n == 7:
+        return "γ4γ5"
+    elif n == 8:
+        return "γ4"
+    elif n in [14, 13, 11]:
+        return F"γ5γ{_naming_scheme['a1'].index(n)+1}"
+    elif n in [1, 2, 4]:
+        return F"γ{_naming_scheme['rho'].index(n)+1}"
+    elif n in [9, 10, 12]:
+        return F"γ4γ{_naming_scheme['rho(2)'].index(n)+1}"
+    elif n in [6, 5, 3]:
+        return F"γ4γ5γ{_naming_scheme['b1'].index(n)+1}"
+
+
 def gamma(n: int):
     assert isinstance(n, int) and n >= 0 and n <= 15
     numpy = getBackend()
@@ -83,7 +103,18 @@ _naming_scheme = {
     "b1": [6, 5, 3],  # g5gig4 1+-
 }
 
-_naming_hermition = {
+_naming_group = {
+    "a0": "A1",
+    "pi": "A1",
+    "pi(2)": "A1",
+    "b0": "A1",
+    "a1": "T1",
+    "rho": "T1",
+    "rho(2)": "T1",
+    "b1": "T1",
+}
+
+_naming_hermiticity = {
     "a0": "+",
     "pi": "-",
     "pi(2)": "+",
@@ -133,9 +164,24 @@ def scheme(name: str):
     return _naming_scheme[name]
 
 
-def hermition(name: str):
+def group(name: str):
     assert name in _naming_scheme
-    return 1 if _naming_hermition[name] == "+" else -1
+    return _naming_group[name]
+
+
+def parity(name: str):
+    assert name in _naming_scheme
+    return 1 if _naming_parity[name] == "+" else -1
+
+
+def charge_conjugation(name: str):
+    assert name in _naming_scheme
+    return 1 if _naming_charge_conjugation[name] == "+" else -1
+
+
+def hermiticity(name: str):
+    assert name in _naming_scheme
+    return 1 if _naming_hermiticity[name] == "+" else -1
 
 
 class GAMMA_NAME:
