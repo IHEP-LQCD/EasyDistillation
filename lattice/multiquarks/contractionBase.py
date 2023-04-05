@@ -6,10 +6,8 @@ import numpy as np
 import cupy
 import os
 from typing import  Union
-import random
-from hashlib import md5
 from ..insertion.gamma import gamma
-# from utils import mytimer
+from ..timer import mytimer
 
 class LatticeDesc:
     def __init__(self) -> None:
@@ -28,6 +26,33 @@ class LatticeDesc:
         # Sets=31 #(TimeSlice%Sets) should be zero
         self.tSub = int(self.TimeSlice/self.sets)
 
+
+
+from ..insertion import momDict_mom1, momDict_mom3, momDict_mom9
+from ..insertion import derivDict as derivDict
+
+def momlist(n, que):
+    imax = int(np.sqrt(n))
+    mom = []
+    # num = 0
+    if n==0:
+        momDict0 = momDict_mom1
+    elif n==3:
+        momDict0 = momDict_mom3                          
+    elif n==9:
+        momDict0 = momDict_mom9
+    else:
+        raise ValueError(f"Unsupport mom = {n}")                           
+    for i in range(-imax, imax+1, 1):
+        for j in range(-imax, imax+1, 1):
+            for l in range(-imax, imax+1, 1):
+                if(i**2+j**2+l**2 <= n):
+                    if(i**2+j**2+l**2 == que):
+                        strKey = f"{l} {j} {i}"
+                        mom.append(momDict0[strKey])
+                        print(f"mom list: {momDict0[strKey]}:({l},{j},{i})")
+                    # num = num+1
+    return mom
 
 # Euclidean Gamma Matrix: 
 # gamma_i(Euclid) = (-i * gamma_i(Minkov, Dirac rep)).conj()  
@@ -129,31 +154,7 @@ gammaSum3Dict = {
     "gamma4gamma5gamma3": (Gamma4 @ Gamma5 @ Gamma3),
 }
 
-from ..insertion import momDict_mom1, momDict_mom3, momDict_mom9
-from ..insertion import derivDict as derivDict
 
-def momlist(n, que):
-    imax = int(np.sqrt(n))
-    mom = []
-    # num = 0
-    if n==0:
-        momDict0 = momDict_mom1
-    elif n==3:
-        momDict0 = momDict_mom3                          
-    elif n==9:
-        momDict0 = momDict_mom9
-    else:
-        raise ValueError(f"Unsupport mom = {n}")                           
-    for i in range(-imax, imax+1, 1):
-        for j in range(-imax, imax+1, 1):
-            for l in range(-imax, imax+1, 1):
-                if(i**2+j**2+l**2 <= n):
-                    if(i**2+j**2+l**2 == que):
-                        strKey = f"{l} {j} {i}"
-                        mom.append(momDict0[strKey])
-                        print(f"mom list: {momDict0[strKey]}:({l},{j},{i})")
-                    # num = num+1
-    return mom
 
 
 class Elementals(LatticeDesc):
