@@ -15,6 +15,8 @@ from .derivative import (
     hermiticity as derivative_hermiticity,
 )
 
+from .deriv_dict import derivDict, detivDictToList
+from .mom_dict import momDict_mom1, momDict_mom3, momDict_mom9, momDictToList
 
 class Operator:
     def __init__(self, parts, momentum) -> None:

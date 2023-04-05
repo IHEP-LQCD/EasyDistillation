@@ -1,3 +1,7 @@
+momDict_mom1 = {
+    0: "0 0 0",
+}
+
 momDict_mom3 = {
     0: "0 0 0",
     1: "0 0 1",
@@ -157,10 +161,14 @@ momDict_mom9 = {
 
 def momDictToList(mom:int=9):
     momDict = None
-    if mom==3:
+    if mom==1:
+        momDict = momDict_mom1
+    elif mom==3:
         momDict = momDict_mom3
-    if mom==9:
+    elif mom==9:
         momDict = momDict_mom9
+    else:
+        raise ValueError(F"Unknown mom max = {mom}")
     momList = []
     for val in momDict.values():
         momList.append(tuple([int(p) for p in val.split(" ")]))
