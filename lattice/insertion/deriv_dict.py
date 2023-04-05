@@ -1,4 +1,4 @@
-difDict = {
+derivDict = {
     0: "",
     1: "1",
     2: "2",
@@ -43,7 +43,7 @@ difDict = {
 
 
 def detivDictToList():
-    difList = []
-    for val in difDict.values():
-        difList.append(tuple([int(p) - 1 for p in val.split(" ") if p != ""]))
-    return difList
+    derivList = []
+    for val in derivDict.values():
+        derivList.append(tuple([int(p) - 1 for p in val.split(" ") if p != ""]))
+    return derivList
