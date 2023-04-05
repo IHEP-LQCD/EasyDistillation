@@ -1,20 +1,15 @@
 import functools
-import os
 from time import perf_counter
-# if use cpu
-import numpy as np
-from scipy.sparse import linalg
+if True:
+    import numpy as np
+    from scipy.sparse import linalg
+else:
+    import cupy as np
+    from cupyx.scipy.sparse import linalg
 
-# import cupy as np
-# from cupyx.scipy.sparse import linalg
-
-from pyquda import core, mpi
+from pyquda import core
 from pyquda.utils import gauge_utils
 from pyquda.field import Nc, Nd
-from lattice.dispatch import Dispatch
-
-os.environ["QUDA_RESOURCE_PATH"] = ".cache"
-mpi.init()
 
 
 def _Amatmat(colvec, colmat, colmat_dag, latt_size):
@@ -55,25 +50,3 @@ def laplace_eigs(gaugePath: str, eigvecPath: str, nstep: int, rho: float, num_ev
 
     # [Ne, Lt, Lz * Ly * Lx * Nc]
     np.save(eigvecPath, V.transpose(2, 0, 1))
-
-
-key = 0
-lightkey = [
-    "-0.05766",
-    "-0.05862",
-    "-0.05945",
-    "-0.06016",
-][key]
-
-if __name__ == "__main__":
-    print("Start")
-    dispatcher = Dispatch("cfglist.txt", suffix=f"2.8-evecs-{key}")
-    # genEvecs("3500")
-    for cfg in dispatcher:
-        print(cfg)
-
-        prefix = F"/dg_hpc/LQCD/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml{lightkey}_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/00.cfgs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml{lightkey}_cfg_"
-        suffix = ".lime"
-        out_prefix = F"clqcd_nf2_clov_L16_T128_b2.0_xi5_ml{lightkey}_cfg_"
-        out_suffix = ".lime.npy"
-        laplace_eigs(F"{prefix}{cfg}{suffix}", F"{out_prefix}{cfg}{out_suffix}", 10, 0.12, 10, 1e-7)
