@@ -15,15 +15,20 @@ Lx, Ly, Lz, Lt = latt_size
 Vol = Lx * Ly * Lz * Lt
 Nd = 4
 
+# numpy load Ndarray file
 gaugeDataNpy = np.load(os.path.join(test_dir, "weak_field.npy")).reshape(Nd, 8, 4, 4, 4, 3, 3)
+
+# numpy load binary file
 gaugeDataBinary = np.fromfile(
-    os.path.join(test_dir, "weak_field.bin"), "<c16", count=np.prod([8, 4, 4, 4, Nd, 3, 3])
+    os.path.join(test_dir, "weak_field.bin"), "<c16", count=np.prod([Nd, 8, 4, 4, 4, 3, 3])
 ).reshape(Nd, 8, 4, 4, 4, 3, 3)
 
-# gauge ILDG file shape [Lt, Lz, Ly, Lx, Nd, Nc, Nc]
+# Note: !!! gauge ILDG file shape [Lt, Lz, Ly, Lx, Nd, Nc, Nc] <- chroma convention
 gaugeIldg = GaugeFieldIldg(os.path.join(test_dir, "weak_field"), ".lime", shape=[8, 4, 4, 4, Nd, 3, 3])
 
 gaugeDataIldg = gaugeIldg.load("")[1:3, :, 5:8, :, :, :, :].transpose(4, 0, 1, 2, 3, 5, 6)
+
+# check load results.
 print("gauge reading res 1 = ", np.linalg.norm(gaugeDataIldg - gaugeDataNpy[:, 1:3, :, 5:8, :, :, :]))
 
 gaugeDataIldg = gaugeIldg.load("")[:].transpose(4, 0, 1, 2, 3, 5, 6)

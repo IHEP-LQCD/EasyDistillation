@@ -147,7 +147,6 @@ class ElementalGenerator:
 
 import cupy
 import lattice
-import mom_dict
 from time import time
 
 lattice.setBackend(cupy)
@@ -163,7 +162,7 @@ eigs = lattice.EigenVectorTimeSlice(
     ".lime",
 )
 distance = 8
-momList = mom_dict.dictToList()
+momList = lattice.mom_dict.momDictToList(9)
 outPrefix = R"DATA/charm.b28.16_128.wo_stout.corrected/04.meson/"
 outSuffix = R".npy"
 
