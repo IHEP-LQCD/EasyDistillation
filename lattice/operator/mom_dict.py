@@ -1,4 +1,34 @@
-momDict = {
+momDict_mom3 = {
+    0: "0 0 0",
+    1: "0 0 1",
+    2: "0 0 -1",
+    3: "0 1 0",
+    4: "0 -1 0",
+    5: "1 0 0",
+    6: "-1 0 0",
+    7: "0 1 1",
+    8: "0 1 -1",
+    9: "0 -1 1",
+    10: "0 -1 -1",
+    11: "1 0 1",
+    12: "1 0 -1",
+    13: "-1 0 1",
+    14: "-1 0 -1",
+    15: "1 1 0",
+    16: "1 -1 0",
+    17: "-1 1 0",
+    18: "-1 -1 0",
+    19: "1 1 1",
+    20: "1 1 -1",
+    21: "1 -1 1",
+    22: "1 -1 -1",
+    23: "-1 1 1",
+    24: "-1 1 -1",
+    25: "-1 -1 1",
+    26: "-1 -1 -1",
+}
+
+momDict_mom9 = {
     0: "0 0 -3",
     1: "-1 -2 -2",
     2: "0 -2 -2",
@@ -125,8 +155,13 @@ momDict = {
 }
 
 
-def dictToList():
+def momDictToList(mom:int=9):
+    momDict = None
+    if mom==3:
+        momDict = momDict_mom3
+    if mom==9:
+        momDict = momDict_mom9
     momList = []
-    for key, val in momDict.items():
+    for val in momDict.values():
         momList.append(tuple([int(p) for p in val.split(" ")]))
     return momList

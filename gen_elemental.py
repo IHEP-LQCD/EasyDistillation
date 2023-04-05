@@ -1,7 +1,5 @@
 import cupy
 import lattice
-import dif_dict
-import mom9_dict as mom_dict
 from time import time
 
 lattice.setBackend(cupy)
@@ -10,8 +8,8 @@ lattSize = [16, 16, 16, 128]
 
 confs = lattice.GaugeFieldIldg(R"/hpcfs/lqcd/qcd/gongming/productions/charm.b28.16_128.wo_stout.corrected/", ".lime")
 eigs = lattice.EigenVectorTimeSlice(R"/hpcfs/lqcd/qcd/rqzhang/new_charm/laplacevector_ihep/test.3d.eigs.mod-", ".lime")
-difList = dif_dict.dictToList()[0:13]
-momList = mom_dict.dictToList()
+difList = lattice.deriv_dict.derivDictToList()[0:13]
+momList = lattice.mom_dict.momDictToList(9)
 outPrefix = R"DATA/charm.b28.16_128.wo_stout.corrected/04.meson.deriv_2.mom2_max_9/"
 outSuffix = R".npy"
 
