@@ -24,7 +24,7 @@ class Operator:
         self.momentum = momentum
 
 
-class OperatorName:
+class Insertion:
     def __init__(self, gamma, derivative, projection) -> None:
         self.gamma = gamma_scheme(gamma)
         self.derivative = derivative_scheme(derivative)
