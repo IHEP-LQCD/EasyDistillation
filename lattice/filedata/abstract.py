@@ -10,6 +10,11 @@ class FileMetaData:
 
 
 class FileData(metaclass=abc.ABCMeta):
+    shape = None
+    dtype = None
+    timeInSec = 0.0
+    sizeInByte = 0
+
     @abc.abstractmethod
     def __getitem__(self, key: Tuple[int]):
         pass

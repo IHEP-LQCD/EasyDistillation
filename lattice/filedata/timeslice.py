@@ -35,6 +35,8 @@ def prod(a):
 class QDPLazyDiskMapObjFileData(FileData):
     def __init__(self, file: str, elem: FileMetaData, offsets: Dict[Tuple[int], int], xmlTree: ET.ElementTree) -> None:
         self.file = file
+        self.shape = elem.shape[elem.extra:]
+        self.dtype = elem.dtype
         self.extra = elem.extra
         self.extraShape = elem.shape[0:elem.extra]
         self.offsets = offsets
@@ -42,9 +44,7 @@ class QDPLazyDiskMapObjFileData(FileData):
         self.lattSize = lattSize.copy()
         decay_dir = int(xmlTree.find("decay_dir").text)
         assert decay_dir == 3
-        self.shape = elem.shape[elem.extra:]
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
-        self.dtype = elem.dtype
         self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
         self.timeInSec = 0.0
         self.sizeInByte = 0

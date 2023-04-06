@@ -8,6 +8,8 @@ from ..backend import getBackend, getNumpy
 class NdarrayFileData(FileData):
     def __init__(self, file: str, elem: FileMetaData) -> None:
         self.file = file
+        self.shape = elem.shape
+        self.dtype = elem.dtype
         self.timeInSec = 0.0
         self.sizeInByte = 0
 

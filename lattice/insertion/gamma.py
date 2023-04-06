@@ -72,13 +72,13 @@ def gamma_str(n: int):
     elif n == 8:
         return "γ4"
     elif n in [14, 13, 11]:
-        return F"γ5γ{_naming_scheme['a1'].index(n)+1}"
+        return F"γ5γ{[14, 13, 11].index(n)+1}"
     elif n in [1, 2, 4]:
-        return F"γ{_naming_scheme['rho'].index(n)+1}"
+        return F"γ{[1, 2, 4].index(n)+1}"
     elif n in [9, 10, 12]:
-        return F"γ4γ{_naming_scheme['rho(2)'].index(n)+1}"
+        return F"γ4γ{[9, 10, 12].index(n)+1}"
     elif n in [6, 5, 3]:
-        return F"γ4γ5γ{_naming_scheme['b1'].index(n)+1}"
+        return F"γ4γ5γ{[6, 5, 3].index(n)+1}"
 
 
 def gamma(n: int):
@@ -93,69 +93,69 @@ def gamma(n: int):
 
 
 _naming_scheme = {
-    "a0": [0],  # g0 0++
-    "pi": [15],  # g5 0-+
-    "pi(2)": [7],  # g5g4 0-+
-    "b0": [8],  # g4 0+-
-    "a1": [14, 13, 11],  # g5gi 1++
-    "rho": [1, 2, 4],  # gi 1--
-    "rho(2)": [9, 10, 12],  # gig4 1--
-    "b1": [6, 5, 3],  # g5gig4 1+-
+    R"$a_0$": [0],  # g0 0++
+    R"$\pi$": [15],  # g5 0-+
+    R"$\pi(2)$": [7],  # g5g4 0-+
+    R"$b_0$": [8],  # g4 0+-
+    R"$a_1$": [14, 13, 11],  # g5gi 1++
+    R"$\rho$": [1, 2, 4],  # gi 1--
+    R"$\rho(2)$": [9, 10, 12],  # gig4 1--
+    R"$b_1$": [6, 5, 3],  # g5gig4 1+-
 }
 
 _naming_group = {
-    "a0": "A1",
-    "pi": "A1",
-    "pi(2)": "A1",
-    "b0": "A1",
-    "a1": "T1",
-    "rho": "T1",
-    "rho(2)": "T1",
-    "b1": "T1",
+    R"$a_0$": "A1",
+    R"$\pi$": "A1",
+    R"$\pi(2)$": "A1",
+    R"$b_0$": "A1",
+    R"$a_1$": "T1",
+    R"$\rho$": "T1",
+    R"$\rho(2)$": "T1",
+    R"$b_1$": "T1",
 }
 
 _naming_hermiticity = {
-    "a0": "+",
-    "pi": "-",
-    "pi(2)": "+",
-    "b0": "+",
-    "a1": "-",
-    "rho": "-",
-    "rho(2)": "+",
-    "b1": "-",
+    R"$a_0$": "+",
+    R"$\pi$": "-",
+    R"$\pi(2)$": "+",
+    R"$b_0$": "+",
+    R"$a_1$": "-",
+    R"$\rho$": "-",
+    R"$\rho(2)$": "+",
+    R"$b_1$": "-",
 }
 
 _naming_parity = {
-    "a0": "+",
-    "pi": "-",
-    "pi(2)": "-",
-    "b0": "+",
-    "a1": "+",
-    "rho": "-",
-    "rho(2)": "-",
-    "b1": "+",
+    R"$a_0$": "+",
+    R"$\pi$": "-",
+    R"$\pi(2)$": "-",
+    R"$b_0$": "+",
+    R"$a_1$": "+",
+    R"$\rho$": "-",
+    R"$\rho(2)$": "-",
+    R"$b_1$": "+",
 }
 
 _naming_charge_conjugation = {
-    "a0": "+",
-    "pi": "+",
-    "pi(2)": "+",
-    "b0": "-",
-    "a1": "+",
-    "rho": "-",
-    "rho(2)": "-",
-    "b1": "-",
+    R"$a_0$": "+",
+    R"$\pi$": "+",
+    R"$\pi(2)$": "+",
+    R"$b_0$": "-",
+    R"$a_1$": "+",
+    R"$\rho$": "-",
+    R"$\rho(2)$": "-",
+    R"$b_1$": "-",
 }
 
 _naming_time_reversal = {
-    "a0": "+",
-    "pi": "+",
-    "pi(2)": "+",
-    "b0": "+",
-    "a1": "+",
-    "rho": "+",
-    "rho(2)": "+",
-    "b1": "+",
+    R"$a_0$": "+",
+    R"$\pi$": "+",
+    R"$\pi(2)$": "+",
+    R"$b_0$": "+",
+    R"$a_1$": "+",
+    R"$\rho$": "+",
+    R"$\rho(2)$": "+",
+    R"$b_1$": "+",
 }
 
 
@@ -185,18 +185,11 @@ def hermiticity(name: str):
 
 
 class GAMMA_NAME:
-    A0 = "a0"
-    B0 = "b0"
-    PI = "pi"
-    PI_2 = "pi(2)"
-    RHO = "rho"
-    RHO_2 = "rho(2)"
-    A1 = "a1"
-    B1 = "b1"
-
-
-def instance(gamma_idxs: list):
-    ret = _Constant.one()
-    for idx in gamma_idxs:
-        ret = ret @ gamma(idx)
-    return ret
+    A0 = R"$a_0$"
+    B0 = R"$b_0$"
+    PI = R"$\pi$"
+    PI_2 = R"$\pi(2)$"
+    RHO = R"$\rho$"
+    RHO_2 = R"$\rho(2)$"
+    A1 = R"$a_1$"
+    B1 = R"$b_1$"

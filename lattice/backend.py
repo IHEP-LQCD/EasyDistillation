@@ -1,4 +1,5 @@
 BACKEND = None
+PYQUDA = None
 
 
 def getNumpy():
@@ -17,3 +18,23 @@ def getBackend():
 def setBackend(backend):
     global BACKEND
     BACKEND = backend
+
+
+def checkQUDA():
+    global PYQUDA
+    if PYQUDA is None:
+        try:
+            import os
+            from pyquda import mpi
+            os.environ["QUDA_RESOURCE_PATH"] = ".cache"
+            mpi.init()
+        except ImportError:
+            pass
+        except RuntimeError:
+            pass
+        else:
+            PYQUDA = True
+    else:
+        PYQUDA = False
+
+    return PYQUDA
