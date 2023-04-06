@@ -24,22 +24,23 @@ _naming_scheme = {
     "": [
         [[1, 0]],  # 1
     ],
-    "d": [
+    R"$\nabla$": [
         [[1, 1]],  # dx
         [[1, 2]],  # dy
         [[1, 3]],  # dz
     ],
-    "B": [
-        [[1, 11], [-1, 9]],  # dydz-dzdy
-        [[1, 6], [-1, 10]],  # dzdx-dxdz
-        [[1, 7], [-1, 5]],  # dxdy-dydx
-    ],
-    "D": [
+    R"$\mathbb{B}$":
+        [
+            [[1, 11], [-1, 9]],  # dydz-dzdy
+            [[1, 6], [-1, 10]],  # dzdx-dxdz
+            [[1, 7], [-1, 5]],  # dxdy-dydx
+        ],
+    R"$\mathbb{D}$": [
         [[1, 11], [1, 9]],  # dydz+dzdy
         [[1, 6], [1, 10]],  # dzdx+dxdz
         [[1, 7], [1, 5]],  # dxdy+dydx
     ],
-    "E": [
+    R"$\mathbb{E}$": [
         [[1, 4], [-1, 8]],  # dxdx-dydy
         [[-1, 4], [-1, 8], [2, 12]],  # -dxdx-dydy+2dzdz
     ],
@@ -47,42 +48,42 @@ _naming_scheme = {
 
 _naming_group = {
     "": "A1",
-    "d": "T1",
-    "B": "T1",
-    "D": "T2",
-    "E": "E",
+    R"$\nabla$": "T1",
+    R"$\mathbb{B}$": "T1",
+    R"$\mathbb{D}$": "T2",
+    R"$\mathbb{E}$": R"$\mathbb{E}$",
 }
 
 _naming_hermiticity = {
     "": "+",
-    "d": "-",
-    "B": "-",
-    "D": "+",
-    "E": "+",
+    R"$\nabla$": "-",
+    R"$\mathbb{B}$": "-",
+    R"$\mathbb{D}$": "+",
+    R"$\mathbb{E}$": "+",
 }
 
 _naming_parity = {
     "": "+",
-    "d": "-",
-    "B": "+",
-    "D": "+",
-    "E": "+",
+    R"$\nabla$": "-",
+    R"$\mathbb{B}$": "+",
+    R"$\mathbb{D}$": "+",
+    R"$\mathbb{E}$": "+",
 }
 
 _naming_charge_conjugation = {
     "": "+",
-    "d": "-",
-    "B": "-",
-    "D": "+",
-    "E": "+",
+    R"$\nabla$": "-",
+    R"$\mathbb{B}$": "-",
+    R"$\mathbb{D}$": "+",
+    R"$\mathbb{E}$": "+",
 }
 
 _naming_time_reversal = {
     "": "+",
-    "d": "+",
-    "B": "+",
-    "D": "+",
-    "E": "+",
+    R"$\nabla$": "+",
+    R"$\mathbb{B}$": "+",
+    R"$\mathbb{D}$": "+",
+    R"$\mathbb{E}$": "+",
 }
 
 
@@ -112,4 +113,8 @@ def hermiticity(name: str):
 
 
 class DERIVATIVE_NAME:
-    pass
+    IDEN = ""
+    NABLA = R"$\nabla$"
+    B = R"$\mathbb{B}$"
+    D = R"$\mathbb{D}$"
+    E = R"$\mathbb{E}$"

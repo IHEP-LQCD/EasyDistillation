@@ -1,5 +1,5 @@
-from lattice import Dispatch, QUDA
-if QUDA():
+from lattice import Dispatch, checkQUDA
+if checkQUDA():
     from lattice.laplace_eigs import laplace_eigs
 else:
     raise ImportError("No QUDA avaliable")

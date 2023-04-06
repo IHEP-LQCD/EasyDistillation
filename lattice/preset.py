@@ -74,6 +74,17 @@ class PerambulatorBinary(BinaryFile, Perambulator):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
+class PerambulatorNpy(NdarrayFile, Perambulator):
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
+        super().__init__()
+        Perambulator.__init__(self, FileMetaData(shape, "<c8", 0), totNe)
+        self.prefix = prefix
+        self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
+
+    def load(self, key: str):
+        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+
+
 class ElementalBinary(BinaryFile, Elemental):
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [40, 27, 128, 70, 70], totNe: int = 70) -> None:
         super().__init__()
@@ -108,9 +119,9 @@ class GaugeFieldIldg(IldgFile, GaugeField):
 
 
 class ElementalNpy(NdarrayFile, Elemental):
-    def __init__(self, prefix: str, suffix: str, totNe: int = 70) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [4, 123, 128, 70, 70], totNe: int = 70) -> None:
         super().__init__()
-        Elemental.__init__(self, None, totNe)
+        Elemental.__init__(self, FileMetaData(shape, "<c8", 0), totNe)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.nev70.meson.npy" if suffix is None else suffix
 

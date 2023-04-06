@@ -1,4 +1,9 @@
 {
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--ignore=E203,W503,W504,E402",
+        "--max-line-length=119"
+    ],
     "python.formatting.provider": "yapf",
     "python.formatting.yapfArgs": [
         "--style",

@@ -17,8 +17,8 @@ class BinaryFileData(FileData):
     def __init__(self, file: str, elem: FileMetaData) -> None:
         self.file = file
         self.shape = elem.shape
-        self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
         self.dtype = elem.dtype
+        self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
         self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
         self.timeInSec = 0.0
         self.sizeInByte = 0
