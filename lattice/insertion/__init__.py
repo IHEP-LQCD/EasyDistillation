@@ -25,20 +25,21 @@ class PROJECTION_NAME:
     T1 = "T1"
     T2 = "T2"
 
-
 class Operator:
-    def __init__(self, parts, momentum) -> None:
+    def __init__(self, parts, momentum, name) -> None:
         self.parts = parts
         self.momentum = momentum
+        self.name = name
 
 
 class InsertionRow:
-    def __init__(self, parts, momenta) -> None:
+    def __init__(self, parts, momenta, name) -> None:
         self.parts = parts
         self.momenta = momenta
+        self.name = name
 
     def __call__(self, npx, npy, npz) -> Operator:
-        return Operator(self.parts, [list(self.momenta.values()).index(f"{npx} {npy} {npz}")])
+        return Operator(self.parts, [list(self.momenta.values()).index(f"{npx} {npy} {npz}")], name=self.name+F"_p{npx}{npy}{npz}")
 
     def __str__(self) -> str:
         from .gamma import gamma_str
@@ -62,6 +63,7 @@ class Insertion:
     def __init__(
         self, gamma: GAMMA_NAME, derivative: DERIVATIVE_NAME, projection: PROJECTION_NAME, momenta: Dict[int, str]
     ) -> None:
+        self.name = FR"{gamma}_{derivative}_{projection}".replace("$", "").replace("\\", "")
         self.gamma = gamma_scheme(gamma)
         self.derivative = derivative_scheme(derivative)
         self.parity = gamma_parity(gamma) * derivative_parity(derivative)
@@ -73,7 +75,7 @@ class Insertion:
         self.construct()
 
     def __getitem__(self, idx) -> InsertionRow:
-        return InsertionRow(self.rows[idx], self.momenta)
+        return InsertionRow(self.rows[idx], self.momenta, name=self.name)
 
     def __str__(self) -> str:
         ret = []
