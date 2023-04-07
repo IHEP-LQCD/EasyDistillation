@@ -4,33 +4,30 @@ from .insertion import Operator
 from .filedata.abstract import FileData
 
 
-def getElementalData(operators: List[Operator], coefficients: List[float], elemental: FileData):
+def getElementalData(operators: List[Operator], elemental: FileData):
     from .backend import getBackend
     from .insertion.gamma import gamma
 
-    assert (
-        len(operators) == len(coefficients)
-    ), F"Unmatched numbers of insertions {len(operators)} and coefficients {len(coefficients)}"
     numpy = getBackend()
     ret = []
     cache: Dict[int, numpy.ndarray] = {}
 
-    for idx in range(len(operators)):
-        parts, momentum, coefficient = operators[idx].parts, operators[idx].momentum, coefficients[idx]
+    for operator in operators:
+        parts = operator.parts
         ret_gamma = []
         ret_elemental = []
         for i in range(len(parts) // 2):
             ret_gamma.append(gamma(parts[i * 2]))
             elemental_part = parts[i * 2 + 1]
             for j in range(len(elemental_part)):
-                derivative_coeff, derivative = elemental_part[j]
-                derivative_coeff *= coefficient
-                if derivative not in cache:
-                    cache[derivative] = elemental[derivative, momentum]
+                elemental_coeff, derivative_idx, momentum_idx = elemental_part[j]
+                deriv_mom_tuple = tuple(derivative_idx, momentum_idx)
+                if deriv_mom_tuple not in cache:
+                    cache[deriv_mom_tuple] = elemental[derivative_idx, momentum_idx]
                 if j == 0:
-                    ret_elemental.append(derivative_coeff * cache[derivative])
+                    ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
                 else:
-                    ret_elemental[-1] += derivative_coeff * cache[derivative]
+                    ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
         ret.append((numpy.asarray(ret_gamma), numpy.asarray(ret_elemental)))
 
     return ret
