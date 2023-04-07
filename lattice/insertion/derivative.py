@@ -47,11 +47,11 @@ _naming_scheme = {
 }
 
 _naming_group = {
-    "": "A1",
-    R"$\nabla$": "T1",
-    R"$\mathbb{B}$": "T1",
-    R"$\mathbb{D}$": "T2",
-    R"$\mathbb{E}$": R"$\mathbb{E}$",
+    "": "A_1",
+    R"$\nabla$": "T_1",
+    R"$\mathbb{B}$": "T_1",
+    R"$\mathbb{D}$": "T_2",
+    R"$\mathbb{E}$": "E",
 }
 
 _naming_hermiticity = {
