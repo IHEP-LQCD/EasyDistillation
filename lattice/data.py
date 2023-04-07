@@ -21,7 +21,7 @@ def getElementalData(operators: List[Operator], elemental: FileData):
             elemental_part = parts[i * 2 + 1]
             for j in range(len(elemental_part)):
                 elemental_coeff, derivative_idx, momentum_idx = elemental_part[j]
-                deriv_mom_tuple = tuple(derivative_idx, momentum_idx)
+                deriv_mom_tuple = (derivative_idx, momentum_idx)
                 if deriv_mom_tuple not in cache:
                     cache[deriv_mom_tuple] = elemental[derivative_idx, momentum_idx]
                 if j == 0:

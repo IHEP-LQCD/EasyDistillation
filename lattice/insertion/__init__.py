@@ -41,11 +41,11 @@ class Operator:
         for idx in range(len(insertion_rows)):
             row, momentum, coefficient = insertion_rows[idx].row, insertion_rows[idx].momentum, coefficients[idx]
             for i in range(len(row) // 2):
-                gamma_part = row[i * 2]
+                parts.append(row[i * 2])
                 elemental_part = []
                 for derivative_coeff, derivative_idx in row[i * 2 + 1]:
                     elemental_part.append([coefficient * derivative_coeff, derivative_idx, momentum])
-                parts.append([gamma_part, elemental_part])
+                parts.append(elemental_part)
 
         self.name = name
         self.parts = parts
