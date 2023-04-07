@@ -16,7 +16,7 @@ def derivative_str(derivative):
     elif c == -1:
         partial.insert(0, "-")
     else:
-        partial.insert(0, c)
+        partial.insert(0, str(c))
     return "".join(partial)
 
 
