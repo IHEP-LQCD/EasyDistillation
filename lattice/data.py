@@ -15,7 +15,7 @@ def getElementalData(operators: List[Operator], coefficients: List[float], eleme
     ret = []
     cache: Dict[int, numpy.ndarray] = {}
 
-    for idx in len(operators):
+    for idx in range(len(operators)):
         parts, momentum, coefficient = operators[idx].parts, operators[idx].momentum, coefficients[idx]
         ret_gamma = []
         ret_elemental = []
