@@ -1,5 +1,7 @@
 .vscode
 .idea
+.cache
+*.so
 DATA
 __pycache__
 test.py
@@ -9,4 +11,3 @@ logs
 *.svg
 *.png
 *.pdf
-DATA
