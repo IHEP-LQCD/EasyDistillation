@@ -63,6 +63,17 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
         return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
+class EigenVectorNpy(NdarrayFile, EigenVector):
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [70, 128, 16**3, 3], totNe: int = 70) -> None:
+        super().__init__()
+        EigenVector.__init__(self, FileMetaData(shape, "<c16", 2), totNe)
+        self.prefix = prefix
+        self.suffix = ".lime.npy" if suffix is None else suffix
+
+    def load(self, key: str):
+        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+
+
 class PerambulatorBinary(BinaryFile, Perambulator):
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
         super().__init__()
