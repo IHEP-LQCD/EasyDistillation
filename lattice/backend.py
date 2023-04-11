@@ -28,10 +28,10 @@ def checkQUDA():
             from pyquda import mpi
             os.environ["QUDA_RESOURCE_PATH"] = ".cache"
             mpi.init()
-        except ImportError:
-            pass
-        except RuntimeError:
-            pass
+        except ImportError as e:
+            print(F"ImportError: {e}")
+        except RuntimeError as e:
+            print(F"RuntimeError: {e}")
         else:
             PYQUDA = True
     else:

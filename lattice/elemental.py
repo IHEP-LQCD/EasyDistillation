@@ -1,151 +1,87 @@
 from math import factorial
 from typing import List, Tuple
 
-from .filedata.abstract import FileData
-from .backend import getBackend
+from .backend import getBackend, getNumpy
 from .preset import GaugeField, EigenVector
+from .insertion.phase import MomentumPhase
 
 Nd = 4
 Nc = 3
-
-
-def prod(a):
-    p = 1
-    for i in a:
-        p *= i
-    return p
 
 
 def comb(n, i):
     return factorial(n) // (factorial(i) * factorial(n - i))
 
 
-class MomentaPhase:
-    def __init__(self, Lx: int, Ly: int, Lz: int) -> None:
-        numpy = getBackend()
-        self.X = numpy.arange(Lx).reshape(1, 1, Lx).repeat(Lz, 0).repeat(Ly, 1) * 2j * numpy.pi / Lx
-        self.Y = numpy.arange(Ly).reshape(1, Ly, 1).repeat(Lz, 0).repeat(Lx, 2) * 2j * numpy.pi / Ly
-        self.Z = numpy.arange(Lz).reshape(Lz, 1, 1).repeat(Ly, 1).repeat(Lx, 2) * 2j * numpy.pi / Lz
-        self.cache = {}
-
-    def calc(self, key: Tuple[int]):
-        Px, Py, Pz = key
-        if key not in self.cache:
-            numpy = getBackend()
-            self.cache[key] = numpy.exp(Px * self.X + Py * self.Y + Pz * self.Z)
-        return self.cache[key]
-
-
-class ElementalUtil:
-    lattSize = None
-    Nx = None
-    Ne = None
-    U = None
-    V = None
-    VPV = None
-    derivs = None
-    momenta = None
-    einsum = None
-
-    @staticmethod
-    def prepare(derivs: List[Tuple[int]], momenta: List[Tuple[int]], lattSize: List[int], eigenNum: int):
-        from opt_einsum import contract
-
-        numpy = getBackend()
-        Nx = prod(lattSize[0:3])
-        Ne = eigenNum
-        ElementalUtil.lattSize = lattSize
-        ElementalUtil.Nx = Nx
-        ElementalUtil.Ne = Ne
-        ElementalUtil.U = numpy.zeros((Nd, Nx, Nc, Nc), "<c16")
-        ElementalUtil.V = numpy.zeros((Ne, Nx, Nc), "<c8")
-        ElementalUtil.VPV = numpy.zeros((len(derivs), len(momenta), Ne, Ne), "<c16")
-        ElementalUtil.derivs = derivs
-        ElementalUtil.momenta = momenta
-        ElementalUtil.einsum = contract
-
-    @staticmethod
-    def D(V, U, d):
-        numpy = getBackend()
-        Ne = ElementalUtil.Ne
-        Lz, Ly, Lx = ElementalUtil.lattSize[0:3][::-1]
-        Vf = numpy.roll(V.reshape(Ne, Lz, Ly, Lx, Nc), -1, 3 - d).reshape(Ne, -1, Nc)
-        UVf = ElementalUtil.einsum("xab,exb->exa", U[d], Vf)
-        UVb = ElementalUtil.einsum("xba,exb->exa", U[d].conj(), V)
-        UVb = numpy.roll(UVb.reshape(Ne, Lz, Ly, Lx, Nc), 1, 3 - d).reshape(Ne, -1, Nc)
-        return UVf - UVb
-
-    @staticmethod
-    def nD(V, U, ds):
-        ret = V
-        for d in ds:
-            ret = ElementalUtil.D(ret, U, d)
-        return ret
-
-
-class ElementalData:
-    def __init__(self, U: FileData, V: FileData, P: MomentaPhase) -> None:
-        self.U = U
-        self.V = V
-        self.P = P
-
-    def calc(self, t: int):
-        U = ElementalUtil.U
-        V = ElementalUtil.V
-        VPV = ElementalUtil.VPV
-        if ElementalUtil.derivs != [()]:
-            for d in range(U.shape[0]):
-                U[d] = self.U[t, :, d]
-        for e in range(V.shape[0]):
-            V[e] = self.V[t, e]
-        for idrv, drv in enumerate(ElementalUtil.derivs):
-            VPV[idrv] = 0
-            for lr in range(len(drv) + 1):
-                coeff = (-1)**lr * comb(len(drv), lr)
-                right = ElementalUtil.nD(V, U, drv[:lr])
-                left = ElementalUtil.nD(V, U, drv[lr:][::-1])
-                for imom, mom in enumerate(ElementalUtil.momenta):
-                    VPV[idrv, imom] += ElementalUtil.einsum(
-                        "x,exc,fxc->ef",
-                        coeff * self.P.calc(mom).reshape(-1), left.conj(), right
-                    )
-        # for idif, dif in enumerate(ElementalUtil.difList):
-        #     VPV[idif] = 0
-        #     for lr in range(len(dif) + 1):
-        #         coeff = (-1) ** lr * comb(len(dif), lr)
-        #         for imom, mom in enumerate(ElementalUtil.momList):
-        #             right = ElementalUtil.einsum("x,exc->exc", coeff * self.P[mom], V)
-        #             right = ElementalUtil.nD(right, U, dif[:lr])
-        #             left = ElementalUtil.nD(V, U, dif[lr:][::-1])
-        #             VPV[idif, imom] += ElementalUtil.einsum("exc,fxc->ef", left.conj(), right)
-        return VPV
-
-    @property
-    def timeInSec(self):
-        return self.U.timeInSec + self.V.timeInSec
-
-    @property
-    def sizeInByte(self):
-        return self.U.sizeInByte + self.V.sizeInByte
-
-
 class ElementalGenerator:
     def __init__(
         self,
-        lattSize: List[int],
-        gaugeField: GaugeField,
-        eigenVecs: EigenVector,
-        derivs: List[Tuple[int]] = [()],
-        momenta: List[Tuple[int]] = [(0, 0, 0)],
+        latt_size: List[int],
+        gauge_field: GaugeField,
+        eigen_vector: EigenVector,
+        num_nabla: int = 0,
+        momentum_list: List[Tuple[int]] = [(0, 0, 0)]
     ) -> None:
-        self.lattSize = lattSize
-        self.U = gaugeField
-        self.V = eigenVecs
-        self.P = MomentaPhase(*lattSize[0:3])
-        ElementalUtil.prepare(derivs, momenta, lattSize, eigenVecs.Ne)
+        from .insertion.derivative import derivative
+        numpy = getBackend()
+        numpy_ori = getNumpy()
+        Lx, Ly, Lz, Lt = latt_size
 
-    def load(self, val: str):
-        Udata = self.U.load(val)
-        Vdata = self.V.load(val)
-        assert self.lattSize == Udata.lattSize and self.lattSize == Vdata.lattSize
-        return ElementalData(Udata, Vdata, self.P)
+        self.latt_size = latt_size
+        self.gauge_field = gauge_field
+        self.eigen_vector = eigen_vector
+        self.momentum_phase = MomentumPhase(Lx, Ly, Lz)
+        num_derivative = (3**(num_nabla + 1) - 1) // 2
+        self.derivative_list = [derivative(n) for n in range(num_derivative)]
+        self.momentum_list = momentum_list
+        Ne = eigen_vector.Ne
+        self.Ne = eigen_vector.Ne
+        self.U = numpy.zeros((Nd, Lz * Ly * Lx, Nc, Nc), "<c16")
+        self.V = numpy.zeros((Ne, Lz * Ly * Lx, Nc), "<c8")
+        self.VPV = numpy.zeros((num_derivative, len(momentum_list), Ne, Ne), "<c16")
+        self.elemental = numpy_ori.zeros((Lt, num_derivative, len(momentum_list), Ne, Ne), "<c16")
+
+    def nD(self, V, U, deriv):
+        from opt_einsum import contract
+        numpy = getBackend()
+        Lx, Ly, Lz, Lt = self.latt_size
+
+        Ne = self.Ne
+        for d in deriv:
+            Vf = numpy.roll(V.reshape(Ne, Lz, Ly, Lx, Nc), -1, 3 - d).reshape(Ne, -1, Nc)
+            UVf = contract("xab,exb->exa", U[d], Vf)
+            UdV = contract("xba,exb->exa", U[d].conj(), V)
+            UbdVb = numpy.roll(UdV.reshape(Ne, Lz, Ly, Lx, Nc), 1, 3 - d).reshape(Ne, -1, Nc)
+            V = UVf - UbdVb
+        return V
+
+    def load(self, key: str):
+        from opt_einsum import contract
+        Lx, Ly, Lz, Lt = self.latt_size
+
+        gauge_field = self.gauge_field.load(key)
+        eigen_vector = self.eigen_vector.load(key)
+        momentum_phase = self.momentum_phase
+        # assert self.latt_size == gauge_field.lattSize and self.latt_size == eigen_vector.lattSize
+        U = self.U
+        V = self.V
+        VPV = self.VPV
+        for t in range(Lt):
+            print(t)
+            if self.derivative_list != [()]:
+                for d in range(U.shape[0]):
+                    U[d] = gauge_field[t, :, d]
+            for e in range(V.shape[0]):
+                V[e] = eigen_vector[e, t].reshape(Lz * Ly * Lx, Nc)
+            for derivative_idx, derivative in enumerate(self.derivative_list):
+                VPV[derivative_idx] = 0
+                for num_nabla_right in range(len(derivative) + 1):
+                    coeff = (-1)**num_nabla_right * comb(len(derivative), num_nabla_right)
+                    right = self.nD(V, U, derivative[:num_nabla_right])
+                    left = self.nD(V, U, derivative[num_nabla_right:][::-1])
+                    for momentum_idx, momentum in enumerate(self.momentum_list):
+                        VPV[derivative_idx, momentum_idx] += contract(
+                            "x,exc,fxc->ef",
+                            coeff * momentum_phase.get(momentum).reshape(-1), left.conj(), right
+                        )
+            self.elemental[t] = VPV.get()

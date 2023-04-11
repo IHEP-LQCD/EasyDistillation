@@ -1,23 +1,36 @@
-def derivative_str(derivative):
-    c, n = derivative
+def derivative_str(derivative_coeff_index):
+    c, n = derivative_coeff_index
     assert isinstance(n, int) and n >= 0
-    dir = ["dx", "dy", "dz"]
-    partial = []
+    d = ["dx", "dy", "dz"]
+    ret = []
     num = -1
     while n >= 0:
         num += 1
         n = n - pow(3, num)
     n = n + pow(3, num)
     for _ in range(num):
-        partial.append(dir[n % 3])
+        ret.append(d[n % 3])
         n = n // 3
     if c == 1:
         pass
     elif c == -1:
-        partial.insert(0, "-")
+        ret.insert(0, "-")
     else:
-        partial.insert(0, str(c))
-    return "".join(partial)
+        ret.insert(0, str(c))
+    return "".join(ret)
+
+
+def derivative(n: int):
+    ret = []
+    num = -1
+    while n >= 0:
+        num += 1
+        n = n - pow(3, num)
+    n = n + pow(3, num)
+    for _ in range(num):
+        ret.append(n % 3)
+        n = n // 3
+    return tuple(ret[::-1])
 
 
 _naming_scheme = {

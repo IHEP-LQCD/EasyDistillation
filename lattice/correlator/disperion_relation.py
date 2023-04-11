@@ -14,7 +14,7 @@ def getMom2Oprator(insertionRow: InsertionRow, mom2: int) -> List[Operator]:
         if px**2 + py**2 + pz**2 == mom2:
             print(F"add mom: {i}")
             ret.append(insertionRow(px, py, pz))
-    return Operator(F"mom{mom2}", ret, [1]*len(ret))
+    return Operator(F"mom{mom2}", ret, [1] * len(ret))
 
 
 def twopointMom2(

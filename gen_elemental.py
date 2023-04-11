@@ -1,31 +1,32 @@
 import cupy
+# cupy.cuda.Device(3).use()
+from lattice import setBackend
+setBackend(cupy)
 import lattice
-from time import time
-
-lattice.setBackend(cupy)
+from lattice.elemental import ElementalGenerator
+from time import perf_counter
 
 lattSize = [16, 16, 16, 128]
 
-confs = lattice.GaugeFieldIldg(R"/hpcfs/lqcd/qcd/gongming/productions/charm.b28.16_128.wo_stout.corrected/", ".lime")
-eigs = lattice.EigenVectorTimeSlice(R"/hpcfs/lqcd/qcd/rqzhang/new_charm/laplacevector_ihep/test.3d.eigs.mod-", ".lime")
-difList = lattice.deriv_dict.derivDictToList()[0:13]
+confs = lattice.GaugeFieldIldg(
+    R"/dg_hpc/LQCD/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/00.cfgs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
+    ".lime", [128, 16**3, 4, 3, 3]
+)
+eigs = lattice.EigenVectorNpy(
+    R"/dg_hpc/LQCD/shichunjiang/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/02.laplace_eigs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
+    ".lime.npy", [70, 128, 16**3 * 3], 70
+)
+# eigs = lattice.EigenVectorNpy(R"./aaa.", ".evecs.npy", [70, 128, 16**3 * 3], 70)
 momList = lattice.mom_dict.momDictToList(9)
-outPrefix = R"DATA/charm.b28.16_128.wo_stout.corrected/04.meson.deriv_2.mom2_max_9/"
-outSuffix = R".npy"
+outPrefix = R"./aaa."
+outSuffix = R".elemental.npy"
 
-elementals = lattice.ElementalGenerator(lattSize, confs, eigs, difList, momList)
+elementals = ElementalGenerator(lattSize, confs, eigs, 1, momList)
 
-res = cupy.zeros((128, len(difList), len(momList), 50, 50), "<c16")
-
-dispatcher = lattice.Dispatch("cfglist.txt", "ehe")
-
-for cfg in dispatcher:
-    elem = elementals.load(cfg)
+for cfg in ["2000"]:
     print(cfg, end=" ")
+    s = perf_counter()
+    elementals.load(cfg)
 
-    s = time()
-    for t in range(128):
-        res[t] = elem.calc(t)
-    print(f"{time() - s:.2f}Sec", end=" ")
-    print(f"{elem.sizeInByte / elem.timeInSec / 1024 ** 2:.2f}MB/s")
-    cupy.save(f"{outPrefix}{cfg}{outSuffix}", res.transpose(1, 2, 0, 3, 4))
+    print(f"{perf_counter() - s:.2f}Sec", end=" ")
+    cupy.save(f"{outPrefix}{cfg}{outSuffix}", elementals.elemental.transpose(1, 2, 0, 3, 4))
