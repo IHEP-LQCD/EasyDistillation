@@ -2,9 +2,14 @@ BACKEND = None
 PYQUDA = None
 
 
-def get_numpy():
-    import numpy
-    return numpy
+def get_scipy():
+    global BACKEND
+    if BACKEND.__name__ == "numpy":
+        import scipy
+        return scipy
+    elif BACKEND.__name__ == "cupy":
+        from cupyx import scipy
+        return scipy
 
 
 def get_backend():
