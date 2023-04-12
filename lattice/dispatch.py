@@ -53,7 +53,7 @@ class AtomicOpen:
             return True
 
 
-def processBar(input: Iterable[T], length: int = 100, filled: str = "#", empty: str = "-") -> Iterator[T]:
+def processbar(input: Iterable[T], length: int = 100, filled: str = "#", empty: str = "-") -> Iterator[T]:
     total = len(input)
     i = 0
     for j in input:
@@ -73,12 +73,12 @@ def rand(suffix: str = None) -> str:
 
 
 class Dispatch:
-    def __init__(self, input: str, suffix: str = None) -> None:
-        tmp = f"{input}.{rand(suffix=suffix)}.tmp"
+    def __init__(self, filename: str, suffix: str = None) -> None:
+        tmp = f"{filename}.{rand(suffix=suffix)}.tmp"
         self.tmp = tmp
         try:
             with AtomicOpen(tmp, "x+") as f:
-                with open(input, "r") as fi:
+                with open(filename, "r") as fi:
                     f.write(fi.read())
         except FileExistsError:
             pass
@@ -102,11 +102,11 @@ class Dispatch:
                 yield line
 
     @staticmethod
-    def process(input: str):
-        with open(input, "r") as f:
+    def process(filename: str):
+        with open(filename, "r") as f:
             lines = f.readlines()
         lines = [line.strip() for line in lines if line != ""]
-        return processBar(lines)
+        return processbar(lines)
 
 
 def combine(output: str, line: str):

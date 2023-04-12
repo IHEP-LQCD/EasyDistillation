@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from .gamma import (
-    GAMMA_NAME,
+    GammaName,
     scheme as gamma_scheme,
     group as gamma_gourp,
     parity as gamma_parity,
@@ -9,7 +9,7 @@ from .gamma import (
     hermiticity as gamma_hermiticity,
 )
 from .derivative import (
-    DERIVATIVE_NAME,
+    DerivativeName,
     scheme as derivative_scheme,
     group as derivative_gourp,
     parity as derivative_parity,
@@ -18,7 +18,7 @@ from .derivative import (
 )
 
 
-class PROJECTION_NAME:
+class ProjectionName:
     A1 = "A_1"
     A2 = "A_2"
     E = "E"
@@ -59,12 +59,9 @@ class InsertionRow:
     def __call__(self, npx, npy, npz) -> InsertionRowMom:
         return InsertionRowMom(self.row, list(self.momentum_dict.values()).index(f"{npx} {npy} {npz}"))
 
-    def withMomenta(self, momentum_list):
-        pass
-
     def __str__(self) -> str:
-        from .gamma import gamma_str
-        from .derivative import derivative_str
+        from .gamma import output as gamma_str
+        from .derivative import output as derivative_str
         ret = ""
         parts = self.row
         for i in range(len(parts) // 2):
@@ -83,9 +80,9 @@ class InsertionRow:
 class Insertion:
     def __init__(
         self,
-        gamma: GAMMA_NAME,
-        derivative: DERIVATIVE_NAME,
-        projection: PROJECTION_NAME,
+        gamma: GammaName,
+        derivative: DerivativeName,
+        projection: ProjectionName,
         momentum_dict: Dict[int, str],
     ) -> None:
         self.gamma = gamma_scheme(gamma)

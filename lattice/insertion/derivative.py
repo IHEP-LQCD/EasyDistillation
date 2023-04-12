@@ -1,4 +1,4 @@
-def derivative_str(derivative_coeff_index):
+def output(derivative_coeff_index):
     c, n = derivative_coeff_index
     assert isinstance(n, int) and n >= 0
     d = ["dx", "dy", "dz"]
@@ -42,12 +42,11 @@ _naming_scheme = {
         [[1, 2]],  # dy
         [[1, 3]],  # dz
     ],
-    R"$\mathbb{B}$":
-        [
-            [[1, 11], [-1, 9]],  # dydz-dzdy
-            [[1, 6], [-1, 10]],  # dzdx-dxdz
-            [[1, 7], [-1, 5]],  # dxdy-dydx
-        ],
+    R"$\mathbb{B}$": [
+        [[1, 11], [-1, 9]],  # dydz-dzdy
+        [[1, 6], [-1, 10]],  # dzdx-dxdz
+        [[1, 7], [-1, 5]],  # dxdy-dydx
+    ],
     R"$\mathbb{D}$": [
         [[1, 11], [1, 9]],  # dydz+dzdy
         [[1, 6], [1, 10]],  # dzdx+dxdz
@@ -125,7 +124,7 @@ def hermiticity(name: str):
     return 1 if _naming_hermiticity[name] == "+" else -1
 
 
-class DERIVATIVE_NAME:
+class DerivativeName:
     IDEN = ""
     NABLA = R"$\nabla$"
     B = R"$\mathbb{B}$"

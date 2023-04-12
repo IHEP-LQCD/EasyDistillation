@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 from lattice.filedata.abstract import FileData
-from lattice.backend import getBackend
+from lattice.backend import get_backend
 from lattice.preset import GaugeField, EigenVector
 
 Nd = 4
@@ -17,7 +17,7 @@ def prod(a):
 
 class MomentaPhase:
     def __init__(self, Lx: int, Ly: int, Lz: int) -> None:
-        numpy = getBackend()
+        numpy = get_backend()
         self.X = numpy.arange(Lx).reshape(1, 1, Lx).repeat(Lz, 0).repeat(Ly, 1) * 2j * numpy.pi / Lx
         self.Y = numpy.arange(Ly).reshape(1, Ly, 1).repeat(Lz, 0).repeat(Lx, 2) * 2j * numpy.pi / Ly
         self.Z = numpy.arange(Lz).reshape(Lz, 1, 1).repeat(Ly, 1).repeat(Lx, 2) * 2j * numpy.pi / Lz
@@ -26,13 +26,13 @@ class MomentaPhase:
     def calc(self, key: Tuple[int]):
         Px, Py, Pz = key
         if key not in self.cache:
-            numpy = getBackend()
+            numpy = get_backend()
             self.cache[key] = numpy.exp(Px * self.X + Py * self.Y + Pz * self.Z)
         return self.cache[key]
 
 
 class ElementalUtil:
-    lattSize = None
+    latt_size = None
     Ne = None
     U = None
     V = None
@@ -43,12 +43,12 @@ class ElementalUtil:
     einsum = None
 
     @staticmethod
-    def prepare(distance: int, momenta: List[Tuple[int]], lattSize: List[int], Ne: int):
+    def prepare(distance: int, momenta: List[Tuple[int]], latt_size: List[int], Ne: int):
         from opt_einsum import contract
 
-        numpy = getBackend()
-        Nx = prod(lattSize[0:3])
-        ElementalUtil.lattSize = lattSize
+        numpy = get_backend()
+        Nx = prod(latt_size[0:3])
+        ElementalUtil.latt_size = latt_size
         ElementalUtil.Ne = Ne
         ElementalUtil.U = numpy.zeros((Nd, Nx, Nc, Nc), "<c16")
         ElementalUtil.V = numpy.zeros((Ne, Nx, Nc), "<c8")
@@ -63,10 +63,10 @@ class ElementalUtil:
         if distance == 0:
             return V
         elif distance == 1:
-            numpy = getBackend()
+            numpy = get_backend()
             Vd = ElementalUtil.Vd
             Ne = ElementalUtil.Ne
-            Lz, Ly, Lx = ElementalUtil.lattSize[0:3][::-1]
+            Lz, Ly, Lx = ElementalUtil.latt_size[0:3][::-1]
             for d in range(Nd - 1):
                 tmp = numpy.roll(V.reshape(Ne, Lz, Ly, Lx, Nc), -1, 3 - d).reshape(Ne, -1, Nc)
                 Vd[d] = ElementalUtil.einsum("xab,exb->exa", U[d], tmp)
@@ -74,10 +74,10 @@ class ElementalUtil:
                 Vd[-d - 1] = numpy.roll(tmp.reshape(Ne, Lz, Ly, Lx, Nc), 1, 3 - d).reshape(Ne, -1, Nc)
             return Vd.mean(0)
         else:
-            numpy = getBackend()
+            numpy = get_backend()
             Vd = ElementalUtil.Vd
             Ne = ElementalUtil.Ne
-            Lz, Ly, Lx = ElementalUtil.lattSize[0:3][::-1]
+            Lz, Ly, Lx = ElementalUtil.latt_size[0:3][::-1]
             for d in range(Nd - 1):
                 tmp = numpy.roll(Vd[d].reshape(Ne, Lz, Ly, Lx, Nc), -1, 3 - d).reshape(Ne, -1, Nc)
                 Vd[d] = ElementalUtil.einsum("xab,exb->exa", U[d], tmp)
@@ -116,11 +116,11 @@ class ElementalData:
 
     @property
     def timeInSec(self):
-        return self.U.timeInSec + self.V.timeInSec
+        return self.U.time_in_sec + self.V.time_in_sec
 
     @property
     def sizeInByte(self):
-        return self.U.sizeInByte + self.V.sizeInByte
+        return self.U.size_in_byte + self.V.size_in_byte
 
 
 class ElementalGenerator:
@@ -149,9 +149,9 @@ import cupy
 import lattice
 from time import time
 
-lattice.setBackend(cupy)
+lattice.set_backend(cupy)
 
-lattSize = [16, 16, 16, 128]
+latt_size = [16, 16, 16, 128]
 
 confs = lattice.GaugeFieldIldg(
     R"/hpcfs/lqcd/qcd/gongming/productions/charm.b28.16_128.wo_stout.corrected/",
@@ -162,13 +162,13 @@ eigs = lattice.EigenVectorTimeSlice(
     ".lime",
 )
 distance = 8
-momList = lattice.mom_dict.momDictToList(9)
+mom_list = lattice.mom_dict.mom_dict_to_list(9)
 outPrefix = R"DATA/charm.b28.16_128.wo_stout.corrected/04.meson/"
 outSuffix = R".npy"
 
-elementals = ElementalGenerator(lattSize, confs, eigs, distance, momList)
+elementals = ElementalGenerator(latt_size, confs, eigs, distance, mom_list)
 
-res = cupy.zeros((128, distance + 1, len(momList), 50, 50), "<c16")
+res = cupy.zeros((128, distance + 1, len(mom_list), 50, 50), "<c16")
 
 dispatcher = lattice.Dispatch("cfglist.only.txt")
 

@@ -5,10 +5,10 @@ import sys
 test_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(test_dir, ".."))
 from lattice import GaugeFieldIldg
-from lattice import setBackend
+from lattice import set_backend
 # import cupy as cp
 
-setBackend(np)
+set_backend(np)
 
 latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size

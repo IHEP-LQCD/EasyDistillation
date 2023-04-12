@@ -2,12 +2,12 @@ BACKEND = None
 PYQUDA = None
 
 
-def getNumpy():
+def get_numpy():
     import numpy
     return numpy
 
 
-def getBackend():
+def get_backend():
     global BACKEND
     if BACKEND is None:
         import numpy
@@ -15,12 +15,12 @@ def getBackend():
     return BACKEND
 
 
-def setBackend(backend):
+def set_backend(backend):
     global BACKEND
     BACKEND = backend
 
 
-def checkQUDA():
+def check_QUDA():
     global PYQUDA
     if PYQUDA is None:
         try:

@@ -159,17 +159,17 @@ momDict_mom9 = {
 }
 
 
-def momDictToList(mom:int=9):
-    momDict = None
-    if mom==1:
-        momDict = momDict_mom1
-    elif mom==3:
-        momDict = momDict_mom3
-    elif mom==9:
-        momDict = momDict_mom9
+def mom_dict_to_list(mom: int = 9):
+    mom_dict = None
+    if mom == 1:
+        mom_dict = momDict_mom1
+    elif mom == 3:
+        mom_dict = momDict_mom3
+    elif mom == 9:
+        mom_dict = momDict_mom9
     else:
         raise ValueError(F"Unknown mom max = {mom}")
-    momList = []
-    for val in momDict.values():
-        momList.append(tuple([int(p) for p in val.split(" ")]))
-    return momList
+    mom_list = []
+    for val in mom_dict.values():
+        mom_list.append(tuple([int(p) for p in val.split(" ")]))
+    return mom_list
