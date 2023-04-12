@@ -2,7 +2,7 @@ from time import time
 from typing import Tuple
 
 from .abstract import FileMetaData, FileData, File
-from ..backend import get_backend, get_numpy
+from ..backend import get_backend
 
 
 class NdarrayFileData(FileData):
@@ -14,8 +14,8 @@ class NdarrayFileData(FileData):
         self.size_in_byte = 0
 
     def __getitem__(self, key: Tuple[int]):
+        import numpy as numpy_ori
         numpy = get_backend()
-        numpy_ori = get_numpy()
         s = time()
         # ret = numpy.asarray(
         #     loader(
