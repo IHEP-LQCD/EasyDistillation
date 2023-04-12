@@ -26,7 +26,7 @@ def twopoint(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi[0], numpy.roll(phi[1], -t, 1), tau, phi[0],
                 phi[1][:, t].conj()
             )
-        print(f"t{t}: {perambulator.sizeInByte/perambulator.timeInSec/1024**2} MB/s")
+        print(f"t{t}: {perambulator.sizeInByte/perambulator.timeInSec/1024**2:.5f} MB/s")
     ret /= Nt
 
     return -ret
@@ -53,7 +53,7 @@ def twopointMatrix(
                     "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi_snk[0], numpy.roll(phi_snk[1], -t, 1), tau,
                     gamma_src, phi_src[1][:, t].conj()
                 )
-        print(f"t{t}: {perambulator.sizeInByte/perambulator.timeInSec/1024**2} MB/s")
+        print(f"t{t}: {perambulator.sizeInByte/perambulator.timeInSec/1024**2:.5f} MB/s")
     ret /= Nt
     return -ret
 
@@ -84,7 +84,7 @@ def twopointIsoscalar(
             )
             loop_src[idx, t] = contract("ijab,yji,yab", tau[0], gamma_src, phi[1][:, t].conj())
             loop_snk[idx, t] = contract("ijab,xji,xba", tau[0], phi[0], phi[1][:, t])
-        print(f"t{t}: {perambulator.sizeInByte/perambulator.timeInSec/1024**2} MB/s")
+        print(f"t{t}: {perambulator.sizeInByte/perambulator.timeInSec/1024**2:.5f} MB/s")
     connected /= Nt
 
     disconnected = contract("xi, xj -> xij", loop_src, loop_snk)
