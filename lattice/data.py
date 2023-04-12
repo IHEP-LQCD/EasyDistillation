@@ -4,11 +4,11 @@ from .insertion import Operator
 from .filedata.abstract import FileData
 
 
-def getElementalData(operators: List[Operator], elemental: FileData):
-    from .backend import getBackend
+def get_elemental_data(operators: List[Operator], elemental: FileData):
+    from .backend import get_backend
     from .insertion.gamma import gamma
 
-    numpy = getBackend()
+    numpy = get_backend()
     ret = []
     cache: Dict[int, numpy.ndarray] = {}
 

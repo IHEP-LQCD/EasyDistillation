@@ -4,11 +4,12 @@
 *.so
 DATA
 __pycache__
-test.py
 logs
 *.txt
+!requirements.txt
 *.tmp
 *.svg
 *.png
 *.pdf
-*.tmp.py
+venv
+.venv

@@ -6,7 +6,7 @@ from typing import Dict, Tuple
 import xml.etree.ElementTree as ET
 
 from .abstract import FileMetaData, FileData, File
-from ..backend import getBackend, getNumpy
+from ..backend import get_backend, get_numpy
 
 
 def prod(a):
@@ -23,7 +23,7 @@ class IldgFileData(FileData):
         self.dtype = elem.dtype
         self.offset = offset[0]
         tag = re.match(r"\{.*\}", xmlTree.getroot().tag).group(0)
-        self.lattSize = [
+        self.latt_size = [
             int(xmlTree.find(f"{tag}lx").text),
             int(xmlTree.find(f"{tag}ly").text),
             int(xmlTree.find(f"{tag}lz").text),
@@ -36,18 +36,18 @@ class IldgFileData(FileData):
         self.timeInSec = 0.0
         self.sizeInByte = 0
 
-    def getCount(self, key: Tuple[int]):
+    def get_count(self, key: Tuple[int]):
         return self.stride[len(key) - 1]
 
-    def getOffset(self, key: Tuple[int]):
+    def get_offset(self, key: Tuple[int]):
         offset = 0
         for a, b in zip(key, self.stride[0:len(key)]):
             offset += a * b
         return offset * self.bytes
 
     def __getitem__(self, key: Tuple[int]):
-        numpy = getBackend()
-        numpy_ori = getNumpy()
+        numpy = get_backend()
+        numpy_ori = get_numpy()
         if isinstance(key, int):
             key = (key, )
         s = time()
@@ -71,26 +71,26 @@ class IldgFile(File):
         self.file: str = None
         self.data: IldgFileData = None
 
-    def readMetaData(self, f: BufferedReader):
-        objPosSize: Dict[str, Tuple[int]] = {}
+    def read_meta_data(self, f: BufferedReader):
+        obj_pos_size: Dict[str, Tuple[int]] = {}
         buffer = f.read(8)
         while buffer != b"":
             assert buffer.startswith(b"\x45\x67\x89\xAB\x00\x01")
             length = (struct.unpack(">Q", f.read(8))[0] + 7) // 8 * 8
             header = f.read(128).strip(b"\x00").decode("utf-8")
-            objPosSize[header] = (f.tell(), length)
+            obj_pos_size[header] = (f.tell(), length)
             f.seek(length, SEEK_CUR)
             buffer = f.read(8)
 
-        offset = objPosSize["ildg-binary-data"]
-        f.seek(objPosSize["ildg-format"][0])
-        xmlTree = ET.ElementTree(ET.fromstring(f.read(objPosSize["ildg-format"][1]).strip(b"\x00").decode("utf-8")))
-        return offset, xmlTree
+        offset = obj_pos_size["ildg-binary-data"]
+        f.seek(obj_pos_size["ildg-format"][0])
+        xml_tree = ET.ElementTree(ET.fromstring(f.read(obj_pos_size["ildg-format"][1]).strip(b"\x00").decode("utf-8")))
+        return offset, xml_tree
 
-    def getFileData(self, name: str, elem: FileMetaData) -> IldgFileData:
+    def get_file_data(self, name: str, elem: FileMetaData) -> IldgFileData:
         if self.file != name:
             self.file = name
             with open(name, "rb") as f:
-                offset, xmlTree = self.readMetaData(f)
-            self.data = IldgFileData(name, elem, offset, xmlTree)
+                offset, xml_tree = self.read_meta_data(f)
+            self.data = IldgFileData(name, elem, offset, xml_tree)
         return self.data

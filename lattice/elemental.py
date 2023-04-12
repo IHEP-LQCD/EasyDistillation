@@ -1,7 +1,7 @@
 from math import factorial
 from typing import List, Tuple
 
-from .backend import getBackend, getNumpy
+from .backend import get_backend, get_numpy
 from .preset import GaugeField, EigenVector
 from .insertion.phase import MomentumPhase
 
@@ -23,8 +23,8 @@ class ElementalGenerator:
         momentum_list: List[Tuple[int]] = [(0, 0, 0)]
     ) -> None:
         from .insertion.derivative import derivative
-        numpy = getBackend()
-        numpy_ori = getNumpy()
+        numpy = get_backend()
+        numpy_ori = get_numpy()
         Lx, Ly, Lz, Lt = latt_size
 
         self.latt_size = latt_size
@@ -43,7 +43,7 @@ class ElementalGenerator:
 
     def nD(self, V, U, deriv):
         from opt_einsum import contract
-        numpy = getBackend()
+        numpy = get_backend()
         Lx, Ly, Lz, Lt = self.latt_size
 
         Ne = self.Ne
@@ -62,7 +62,7 @@ class ElementalGenerator:
         gauge_field = self.gauge_field.load(key)
         eigen_vector = self.eigen_vector.load(key)
         momentum_phase = self.momentum_phase
-        # assert self.latt_size == gauge_field.lattSize and self.latt_size == eigen_vector.lattSize
+        # assert self.latt_size == gauge_field.latt_size and self.latt_size == eigen_vector.latt_size
         U = self.U
         V = self.V
         VPV = self.VPV

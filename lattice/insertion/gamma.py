@@ -1,25 +1,25 @@
 from functools import lru_cache
 
-from ..backend import getBackend
+from ..backend import get_backend
 
 
 class _Constant:
     @staticmethod
     @lru_cache(1)
     def zero():
-        numpy = getBackend()
+        numpy = get_backend()
         return numpy.zeros((4, 4))
 
     @staticmethod
     @lru_cache(1)
     def one():
-        numpy = getBackend()
+        numpy = get_backend()
         return numpy.identity(4)
 
     @staticmethod
     @lru_cache(1)
     def gamma_0():
-        numpy = getBackend()
+        numpy = get_backend()
         return numpy.array([
             [0, 0, 0, 1j],
             [0, 0, 1j, 0],
@@ -30,7 +30,7 @@ class _Constant:
     @staticmethod
     @lru_cache(1)
     def gamma_1():
-        numpy = getBackend()
+        numpy = get_backend()
         return numpy.array([
             [0, 0, 0, -1],
             [0, 0, 1, 0],
@@ -41,7 +41,7 @@ class _Constant:
     @staticmethod
     @lru_cache(1)
     def gamma_2():
-        numpy = getBackend()
+        numpy = get_backend()
         return numpy.array([
             [0, 0, 1j, 0],
             [0, 0, 0, -1j],
@@ -52,7 +52,7 @@ class _Constant:
     @staticmethod
     @lru_cache(1)
     def gamma_3():
-        numpy = getBackend()
+        numpy = get_backend()
         return numpy.array([
             [0, 0, 1, 0],
             [0, 0, 0, 1],
@@ -61,8 +61,8 @@ class _Constant:
         ])
 
 
-def gamma_str(n: int):
-    assert isinstance(n, int) and n >= 0 and n <= 15
+def output(n: int):
+    assert isinstance(n, int) and 0 <= n <= 15
     if n == 0:
         return ""
     elif n == 15:
@@ -82,8 +82,8 @@ def gamma_str(n: int):
 
 
 def gamma(n: int):
-    assert isinstance(n, int) and n >= 0 and n <= 15
-    numpy = getBackend()
+    assert isinstance(n, int) and 0 <= n <= 15
+    numpy = get_backend()
     return numpy.asarray(
         (_Constant.gamma_0() if n & 0b0001 else _Constant.one())
         @ (_Constant.gamma_1() if n & 0b0010 else _Constant.one())
@@ -184,7 +184,7 @@ def hermiticity(name: str):
     return 1 if _naming_hermiticity[name] == "+" else -1
 
 
-class GAMMA_NAME:
+class GammaName:
     A0 = R"$a_0$"
     B0 = R"$b_0$"
     PI = R"$\pi$"

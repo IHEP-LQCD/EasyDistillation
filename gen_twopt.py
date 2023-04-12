@@ -1,17 +1,17 @@
 import cupy
-from lattice import setBackend, getBackend
-setBackend(cupy)
+from lattice import set_backend, get_backend
+set_backend(cupy)
 cupy.cuda.Device(1).use()
 
 ###############################################################################
 from lattice.insertion.mom_dict import momDict_mom9
-from lattice.insertion import Insertion, Operator, GAMMA_NAME, DERIVATIVE_NAME, PROJECTION_NAME
+from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
 
-pi_A1 = Insertion(GAMMA_NAME.PI, DERIVATIVE_NAME.IDEN, PROJECTION_NAME.A1, momDict_mom9)
+pi_A1 = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
 print(pi_A1[0])
 op_pi = Operator("pi", [pi_A1[0](0, 0, 0)], [1])
 
-b1xnabla_A1 = Insertion(GAMMA_NAME.B1, DERIVATIVE_NAME.NABLA, PROJECTION_NAME.A1, momDict_mom9)
+b1xnabla_A1 = Insertion(GammaName.B1, DerivativeName.NABLA, ProjectionName.A1, momDict_mom9)
 print(b1xnabla_A1[0])
 op_pi2 = Operator("pi2", [pi_A1[0](0, 0, 0), b1xnabla_A1[0](0, 0, 0)], [3, 1])
 ###############################################################################
@@ -34,8 +34,8 @@ p = perambulator.load(cfg)
 ###############################################################################
 
 ###############################################################################
-from lattice.correlator.one_particle import twopoint, twopointMatrix
-np = getBackend()
+from lattice.correlator.one_particle import twopoint, twopoint_matrix
+np = get_backend()
 
 # compute 2pt
 twopt = twopoint([op_pi, op_pi2], e, p, list(range(128)), 128)  # [Nop, Lt]
@@ -43,13 +43,13 @@ twopt = twopt.real
 print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
 
 # compute a 2 by 2 two-point correlation matrix
-twoptMatrix = twopointMatrix([op_pi, op_pi2], e, p, list(range(128)), 128)
-twoptMatrix = twoptMatrix.real
-print(np.arccosh((np.roll(twoptMatrix[0, 0], -1, 0) + np.roll(twoptMatrix[0, 0], 1, 0)) / twoptMatrix[0, 0] / 2))
-print(np.arccosh((np.roll(twoptMatrix[1, 1], -1, 0) + np.roll(twoptMatrix[1, 1], 1, 0)) / twoptMatrix[1, 1] / 2))
+twopt_matrix = twopoint_matrix([op_pi, op_pi2], e, p, list(range(128)), 128)
+twopt_matrix = twopt_matrix.real
+print(np.arccosh((np.roll(twopt_matrix[0, 0], -1, 0) + np.roll(twopt_matrix[0, 0], 1, 0)) / twopt_matrix[0, 0] / 2))
+print(np.arccosh((np.roll(twopt_matrix[1, 1], -1, 0) + np.roll(twopt_matrix[1, 1], 1, 0)) / twopt_matrix[1, 1] / 2))
 ###############################################################################
 
 # compute summation of p2 = 1 2pt
-from lattice.correlator.disperion_relation import twopointMom2
-twoptMom2 = twopointMom2(pi_A1[0], 2, e, p, list(range(128)), 128)
-print(twoptMom2)
+from lattice.correlator.disperion_relation import twopoint_mom2
+twopt_mom2 = twopoint_mom2(pi_A1[0], 2, e, p, list(range(128)), 128)
+print(twopt_mom2)

@@ -28,7 +28,7 @@ def _Amatmat(colvec, colmat, colmat_dag, latt_size):
     ).reshape(Lz * Ly * Lx * Nc, -1)
 
 
-def calcLaplaceEigs(gauge_path: str, evecs_path: str, nstep: int, rho: float, num_evecs: int, tol: float):
+def calc_laplace_eigs(gauge_path: str, evecs_path: str, nstep: int, rho: float, num_evecs: int, tol: float):
     gauge = gauge_utils.readIldg(gauge_path)
     latt_size = gauge.latt_size
     Lx, Ly, Lz, Lt = latt_size

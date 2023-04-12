@@ -1,12 +1,13 @@
 import cupy
 # cupy.cuda.Device(3).use()
-from lattice import setBackend
-setBackend(cupy)
+from lattice import set_backend
+
+set_backend(cupy)
 import lattice
 from lattice.elemental import ElementalGenerator
 from time import perf_counter
 
-lattSize = [16, 16, 16, 128]
+latt_size = [16, 16, 16, 128]
 
 confs = lattice.GaugeFieldIldg(
     R"/dg_hpc/LQCD/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/00.cfgs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
@@ -17,11 +18,11 @@ eigs = lattice.EigenVectorNpy(
     ".lime.npy", [70, 128, 16**3 * 3], 70
 )
 # eigs = lattice.EigenVectorNpy(R"./aaa.", ".evecs.npy", [70, 128, 16**3 * 3], 70)
-momList = lattice.mom_dict.momDictToList(9)
-outPrefix = R"./aaa."
-outSuffix = R".elemental.npy"
+mom_list = lattice.mom_dict.mom_dict_to_list(9)
+out_prefix = R"./aaa."
+out_suffix = R".elemental.npy"
 
-elementals = ElementalGenerator(lattSize, confs, eigs, 1, momList)
+elementals = ElementalGenerator(latt_size, confs, eigs, 1, mom_list)
 
 for cfg in ["2000"]:
     print(cfg, end=" ")
@@ -29,4 +30,4 @@ for cfg in ["2000"]:
     elementals.load(cfg)
 
     print(f"{perf_counter() - s:.2f}Sec", end=" ")
-    cupy.save(f"{outPrefix}{cfg}{outSuffix}", elementals.elemental.transpose(1, 2, 0, 3, 4))
+    cupy.save(f"{out_prefix}{cfg}{out_suffix}", elementals.elemental.transpose(1, 2, 0, 3, 4))

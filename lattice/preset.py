@@ -49,7 +49,7 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
         self.suffix = ".stout.n20.f0.12.mod" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
@@ -60,7 +60,7 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
         self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class EigenVectorNpy(NdarrayFile, EigenVector):
@@ -71,7 +71,7 @@ class EigenVectorNpy(NdarrayFile, EigenVector):
         self.suffix = ".lime.npy" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class PerambulatorBinary(BinaryFile, Perambulator):
@@ -82,7 +82,7 @@ class PerambulatorBinary(BinaryFile, Perambulator):
         self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class PerambulatorNpy(NdarrayFile, Perambulator):
@@ -93,7 +93,7 @@ class PerambulatorNpy(NdarrayFile, Perambulator):
         self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class ElementalBinary(BinaryFile, Elemental):
@@ -104,7 +104,7 @@ class ElementalBinary(BinaryFile, Elemental):
         self.suffix = ".stout.n20.f0.12.nev70.meson" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class Jpsi2gammaBinary(BinaryFile, TwoPoint):
@@ -115,7 +115,7 @@ class Jpsi2gammaBinary(BinaryFile, TwoPoint):
         self.suffix = ".mesonspec.2pt.bin" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class GaugeFieldIldg(IldgFile, GaugeField):
@@ -126,7 +126,7 @@ class GaugeFieldIldg(IldgFile, GaugeField):
         self.suffix = ".lime" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class ElementalNpy(NdarrayFile, Elemental):
@@ -137,7 +137,7 @@ class ElementalNpy(NdarrayFile, Elemental):
         self.suffix = ".stout.n20.f0.12.nev70.meson.npy" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class Jpsi2gammaNpy(NdarrayFile, TwoPoint):
@@ -148,7 +148,7 @@ class Jpsi2gammaNpy(NdarrayFile, TwoPoint):
         self.suffix = ".2pt.npy" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
 class OnePointNpy(NdarrayFile, OnePoint):
@@ -160,4 +160,4 @@ class OnePointNpy(NdarrayFile, OnePoint):
         self.suffix = ".1pt.npy" if suffix is None else suffix
 
     def load(self, key: str):
-        return super().getFileData(f"{self.prefix}{key}{self.suffix}", self.elem)
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
