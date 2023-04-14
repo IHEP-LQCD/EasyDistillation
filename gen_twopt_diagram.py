@@ -13,6 +13,14 @@ from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, Pr
 pi_A1 = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
 print(pi_A1[0])
 op_pi = Operator("pi", [pi_A1[0](0, 0, 0)], [1])
+
+pi2_A1 = Insertion(GammaName.PI_2, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
+print(pi2_A1[0])
+op_pi2 = Operator("pi2", [pi2_A1[0](0, 0, 0)], [1])
+
+rho_T1 = Insertion(GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
+print(rho_T1[0])
+op_rho = Operator("rho", [rho_T1[0](0, 0, 0)], [1])
 ###############################################################################
 
 ###############################################################################
@@ -274,22 +282,27 @@ def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, line_
     return np.asarray(diagram_value)
 
 
-connected = QuarkDiagram([[0, 1], [1, 0]])
-disconnected = QuarkDiagram([[2, 0], [0, 2]])
+rho2pipi = QuarkDiagram([[0, 1, 0], [0, 0, 2], [1, 0, 0]])
+pi2pi = QuarkDiagram([[0, 1], [1, 0]])
+eta2eta = QuarkDiagram([[2, 0], [0, 2]])
 line = Propagator(p, 128)
 line_local = PropagatorLocal(p, 128)
-pi_src = Meson(e, op_pi, True)
+rho_src = Meson(e, op_rho, True)
 pi_snk = Meson(e, op_pi, False)
+eta_src = Meson(e, op_pi2, True)
+eta_snk = Meson(e, op_pi2, False)
 
+import numpy as npo
 np = get_backend()
+t_snk = npo.arange(128)
+
 twopt = np.zeros((2, 128))
-t_snk = list(range(128))
 for t_src in range(128):
     print(t_src)
     tmp = compute_diagrams_multitime(
-        [connected, disconnected],
+        [pi2pi, eta2eta],
         [t_src, t_snk],
-        [pi_src, pi_snk],
+        [eta_src, eta_snk],
         [None, line, line_local],
     ).real
     twopt += np.roll(tmp, -t_src, 1)
@@ -298,6 +311,19 @@ twopt[1] = -twopt[0] + 2 * twopt[1]
 twopt[0] = -twopt[0]
 print(twopt)
 print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
+
+twopt = np.zeros((1, 128))
+for t_src in range(128):
+    print(t_src)
+    tmp = compute_diagrams_multitime(
+        [rho2pipi],
+        [t_src, t_snk, t_snk],
+        [rho_src, pi_snk, pi_snk],
+        [None, line, line_local],
+    ).real
+    twopt += np.roll(tmp, -t_src, 1)
+twopt /= 128
+print(twopt)
 ###############################################################################
 
 twopt = np.asarray(
