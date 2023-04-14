@@ -188,40 +188,47 @@ class QuarkDiagram:
                     if path != 0:
                         self.adjacency_matrix[i][j] = 0
                         if isinstance(path, int):
-                            lines.append([path, i, j])
                             if j not in vertices:
                                 checked[j] = True
                                 queue.append(j)
+                            lines.append([path, i, j])
                         elif isinstance(path, list):
-                            pass
+                            if j not in vertices:
+                                checked[j] = True
+                                queue.append(j)
+                            for _path in path:
+                                lines.append([_path, i, j])
                         else:
                             raise ValueError(F"Invalid value {path} in the adjacency matrix")
             # assert outward == 0 and inward == 0, "Invalid diagram with unconsistent in/outward lines"
-            vertex_oper = []
-            vertex_subs = {}
-            line_oper = []
-            line_subs = []
+            vertex_operands = []
+            vertex_subscripts = {}
+            line_operands = []
+            line_subscripts = []
             node = 0
             for line in lines:
-                line_oper.append(line)
-                line_subs.append(_DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1] + _DIRAC_SUBS[node] + _EIGEN_SUBS[node])
-                if line[1] not in vertex_subs:
-                    vertex_oper.append(line[1])
-                    vertex_subs[line[1]] = _DIRAC_SUBS[node] + _EIGEN_SUBS[node]
+                line_operands.append(line)
+                line_subscripts.append(
+                    _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1] + _DIRAC_SUBS[node] + _EIGEN_SUBS[node]
+                )
+                if line[1] not in vertex_subscripts:
+                    vertex_operands.append(line[1])
+                    vertex_subscripts[line[1]] = _DIRAC_SUBS[node] + _EIGEN_SUBS[node]
                 else:
-                    vertex_subs[line[1]] = _DIRAC_SUBS[node] + _EIGEN_SUBS[node] + vertex_subs[line[1]]
-                if line[2] not in vertex_subs:
-                    vertex_oper.append(line[2])
-                    vertex_subs[line[2]] = _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1]
+                    vertex_subscripts[line[1]] = _DIRAC_SUBS[node] + _EIGEN_SUBS[node] + vertex_subscripts[line[1]]
+                if line[2] not in vertex_subscripts:
+                    vertex_operands.append(line[2])
+                    vertex_subscripts[line[2]] = _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1]
                 else:
-                    vertex_subs[line[2]] = vertex_subs[line[2]] + _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1]
+                    vertex_subscripts[line[2]
+                                     ] = vertex_subscripts[line[2]] + _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1]
                 node += 2
-            for key in range(len(line_subs)):
-                line_subs[key] = line_subs[key][0::2] + line_subs[key][1::2]
-            for key in vertex_subs.keys():
-                vertex_subs[key] = vertex_subs[key][0::2] + vertex_subs[key][1::2]
-            self.operands.append([line_oper, vertex_oper])
-            self.subscripts.append(",".join(line_subs) + "," + ",".join(vertex_subs.values()))
+            for key in range(len(line_subscripts)):
+                line_subscripts[key] = line_subscripts[key][0::2] + line_subscripts[key][1::2]
+            for key in vertex_subscripts.keys():
+                vertex_subscripts[key] = vertex_subscripts[key][0::2] + vertex_subscripts[key][1::2]
+            self.operands.append([line_operands, vertex_operands])
+            self.subscripts.append(",".join(line_subscripts) + "," + ",".join(vertex_subscripts.values()))
 
 
 def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_list, line_list):
@@ -269,14 +276,14 @@ def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, line_
 
 connected = QuarkDiagram([[0, 1], [1, 0]])
 disconnected = QuarkDiagram([[2, 0], [0, 2]])
-np = get_backend()
-twopt = np.zeros((2, 128))
 line = Propagator(p, 128)
+line_local = PropagatorLocal(p, 128)
 pi_src = Meson(e, op_pi, True)
 pi_snk = Meson(e, op_pi, False)
-line_local = PropagatorLocal(p, 128)
-import numpy as npo
-t_snk = npo.arange(128)
+
+np = get_backend()
+twopt = np.zeros((2, 128))
+t_snk = list(range(128))
 for t_src in range(128):
     print(t_src)
     tmp = compute_diagrams_multitime(
