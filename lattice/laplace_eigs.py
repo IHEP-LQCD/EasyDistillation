@@ -6,6 +6,7 @@ if False:
 else:
     import cupy as np
     from cupyx.scipy.sparse import linalg
+from opt_einsum import contract
 
 from pyquda import core
 from pyquda.utils import gauge_utils
@@ -18,12 +19,12 @@ def _Amatmat(colvec, colmat, colmat_dag, latt_size):
     return (
         # - for SA with evals , + for LA with (12 - evals)
         6 * colvec + (
-            np.einsum("zyxab,zyxbc->zyxac", colmat[0], np.roll(colvec, -1, 2)) +
-            np.einsum("zyxab,zyxbc->zyxac", colmat[1], np.roll(colvec, -1, 1)) +
-            np.einsum("zyxab,zyxbc->zyxac", colmat[2], np.roll(colvec, -1, 0)) +
-            np.roll(np.einsum("zyxab,zyxbc->zyxac", colmat_dag[0], colvec), 1, 2) +
-            np.roll(np.einsum("zyxab,zyxbc->zyxac", colmat_dag[1], colvec), 1, 1) +
-            np.roll(np.einsum("zyxab,zyxbc->zyxac", colmat_dag[2], colvec), 1, 0)
+            contract("zyxab,zyxbc->zyxac", colmat[0], np.roll(colvec, -1, 2)) +
+            contract("zyxab,zyxbc->zyxac", colmat[1], np.roll(colvec, -1, 1)) +
+            contract("zyxab,zyxbc->zyxac", colmat[2], np.roll(colvec, -1, 0)) +
+            np.roll(contract("zyxab,zyxbc->zyxac", colmat_dag[0], colvec), 1, 2) +
+            np.roll(contract("zyxab,zyxbc->zyxac", colmat_dag[1], colvec), 1, 1) +
+            np.roll(contract("zyxab,zyxbc->zyxac", colmat_dag[2], colvec), 1, 0)
         )
     ).reshape(Lz * Ly * Lx * Nc, -1)
 
