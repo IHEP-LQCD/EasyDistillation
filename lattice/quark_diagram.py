@@ -1,9 +1,84 @@
 from typing import Dict, List
-import cupy
-from lattice import get_backend
+
 from opt_einsum import contract
 
-class Meson:
+from .backend import get_backend
+
+_SUB_A = "abcdefghijkl"
+_SUB_M = "mnopqrstuvwx"
+
+
+class QuarkDiagram:
+    def __init__(self, adjacency_matrix) -> None:
+        self.adjacency_matrix = adjacency_matrix
+        self.operands = []
+        self.subscripts = []
+        self.operands_data = []
+        self.analyse()
+
+    def analyse(self) -> None:
+        from copy import deepcopy
+        adjacency_matrix = deepcopy(self.adjacency_matrix)
+        num_vertex = len(adjacency_matrix)
+        visited = [False] * num_vertex
+        for idx in range(num_vertex):
+            if visited[idx]:
+                continue
+            propagators = []
+            visited[idx] = True
+            queue = [idx]
+            while queue != []:
+                i = queue.pop(0)
+                for j in range(num_vertex):
+                    path = adjacency_matrix[i][j]
+                    if path != 0:
+                        adjacency_matrix[i][j] = 0
+                        if not visited[j]:
+                            visited[j] = True
+                            queue.append(j)
+                        if isinstance(path, int):
+                            propagators.append([path, i, j])
+                        elif isinstance(path, list):
+                            for _path in path:
+                                propagators.append([_path, i, j])
+                        else:
+                            raise ValueError(F"Invalid value {path} in the adjacency matrix")
+            if propagators == []:
+                continue
+            vertex_operands = []
+            vertex_subscripts = []
+            propagator_operands = []
+            propagator_subscripts = []
+            node = 0
+            for propagator in propagators:
+                propagator_operands.append(propagator)
+                propagator_subscripts.append(_SUB_M[node + 1] + _SUB_A[node + 1] + _SUB_M[node] + _SUB_A[node])
+                if propagator[1] not in vertex_operands:
+                    vertex_operands.append(propagator[1])
+                    vertex_subscripts.append(_SUB_M[node] + _SUB_A[node])
+                else:
+                    i = vertex_operands.index(propagator[1])
+                    vertex_subscripts[i] = _SUB_M[node] + _SUB_A[node] + vertex_subscripts[i]
+                if propagator[2] not in vertex_operands:
+                    vertex_operands.append(propagator[2])
+                    vertex_subscripts.append(_SUB_M[node + 1] + _SUB_A[node + 1])
+                else:
+                    i = vertex_operands.index(propagator[2])
+                    vertex_subscripts[i] = vertex_subscripts[i] + _SUB_M[node + 1] + _SUB_A[node + 1]
+                node += 2
+            for key in range(len(propagator_subscripts)):
+                propagator_subscripts[key] = propagator_subscripts[key][0::2] + propagator_subscripts[key][1::2]
+            for key in range(len(vertex_subscripts)):
+                vertex_subscripts[key] = vertex_subscripts[key][0::2] + vertex_subscripts[key][1::2]
+            self.operands.append([propagator_operands, vertex_operands])
+            self.subscripts.append(",".join(propagator_subscripts) + "," + ",".join(vertex_subscripts))
+
+
+class Particle:
+    pass
+
+
+class Meson(Particle):
     def __init__(self, elemental, operator, source) -> None:
         self.elemental = elemental
         self.operator = operator
@@ -12,9 +87,9 @@ class Meson:
         self.inward = 1
         self.cache = None
         self.cache_dagger = None
-        self.make_cache()
+        self._make_cache()
 
-    def make_cache(self):
+    def _make_cache(self):
         from lattice.insertion.gamma import gamma
         np = get_backend()
 
@@ -30,7 +105,7 @@ class Meson:
                 elemental_coeff, derivative_idx, momentum_idx = elemental_part[j]
                 deriv_mom_tuple = (derivative_idx, momentum_idx)
                 if deriv_mom_tuple not in cache:
-                    cache[deriv_mom_tuple] = self.elemental[:, derivative_idx, momentum_idx]
+                    cache[deriv_mom_tuple] = self.elemental[derivative_idx, momentum_idx]
                 if j == 0:
                     ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
                 else:
@@ -114,9 +189,9 @@ class PropagatorLocal:
         self.perambulator = perambulator
         self.Lt = Lt
         self.cache = None
-        self.make_cache()
+        self._make_cache()
 
-    def make_cache(self):
+    def _make_cache(self):
         self.cache = self.perambulator[0]
         for t_source in range(1, self.Lt):
             self.cache[t_source] = self.perambulator[t_source, 0]
@@ -129,80 +204,7 @@ class PropagatorLocal:
         return self.cache[t_source]
 
 
-_EIGEN_SUBS = "abcdefghijkl"
-_DIRAC_SUBS = "mnopqrstuvwx"
-
-
-class QuarkDiagram:
-    def __init__(self, adjacency_matrix) -> None:
-        self.adjacency_matrix = adjacency_matrix
-        self.operands = []
-        self.subscripts = []
-        self.operands_data = []
-        self.analyse()
-
-    def analyse(self) -> None:
-        num_vertex = len(self.adjacency_matrix)
-        checked = [False] * num_vertex
-        for idx in range(num_vertex):
-            if checked[idx]:
-                continue
-            vertices = []
-            lines = []
-            checked[idx] = True
-            queue = [idx]
-            while queue != []:
-                i = queue.pop(0)
-                vertices.append(i)
-                for j in range(num_vertex):
-                    path = self.adjacency_matrix[i][j]
-                    if path != 0:
-                        self.adjacency_matrix[i][j] = 0
-                        if isinstance(path, int):
-                            if j not in vertices:
-                                checked[j] = True
-                                queue.append(j)
-                            lines.append([path, i, j])
-                        elif isinstance(path, list):
-                            if j not in vertices:
-                                checked[j] = True
-                                queue.append(j)
-                            for _path in path:
-                                lines.append([_path, i, j])
-                        else:
-                            raise ValueError(F"Invalid value {path} in the adjacency matrix")
-            # assert outward == 0 and inward == 0, "Invalid diagram with unconsistent in/outward lines"
-            vertex_operands = []
-            vertex_subscripts = {}
-            line_operands = []
-            line_subscripts = []
-            node = 0
-            for line in lines:
-                line_operands.append(line)
-                line_subscripts.append(
-                    _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1] + _DIRAC_SUBS[node] + _EIGEN_SUBS[node]
-                )
-                if line[1] not in vertex_subscripts:
-                    vertex_operands.append(line[1])
-                    vertex_subscripts[line[1]] = _DIRAC_SUBS[node] + _EIGEN_SUBS[node]
-                else:
-                    vertex_subscripts[line[1]] = _DIRAC_SUBS[node] + _EIGEN_SUBS[node] + vertex_subscripts[line[1]]
-                if line[2] not in vertex_subscripts:
-                    vertex_operands.append(line[2])
-                    vertex_subscripts[line[2]] = _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1]
-                else:
-                    vertex_subscripts[line[2]
-                                     ] = vertex_subscripts[line[2]] + _DIRAC_SUBS[node + 1] + _EIGEN_SUBS[node + 1]
-                node += 2
-            for key in range(len(line_subscripts)):
-                line_subscripts[key] = line_subscripts[key][0::2] + line_subscripts[key][1::2]
-            for key in vertex_subscripts.keys():
-                vertex_subscripts[key] = vertex_subscripts[key][0::2] + vertex_subscripts[key][1::2]
-            self.operands.append([line_operands, vertex_operands])
-            self.subscripts.append(",".join(line_subscripts) + "," + ",".join(vertex_subscripts.values()))
-
-
-def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_list, line_list):
+def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
     np = get_backend()
     diagram_value = []
     for diagram in diagrams:
@@ -213,7 +215,7 @@ def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_l
             idx = 0
             operands_data = []
             for item in operands[0]:
-                operands_data.append(line_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
+                operands_data.append(propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
                 if not isinstance(time_list[item[1]], int) or not isinstance(time_list[item[2]], int):
                     subscripts[idx] = "t" + subscripts[idx]
                     have_multitime = True
@@ -230,7 +232,7 @@ def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_l
     return np.asarray(diagram_value)
 
 
-def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, line_list):
+def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
     np = get_backend()
     diagram_value = []
     for diagram in diagrams:
@@ -238,7 +240,7 @@ def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, line_
         for operands, subscripts in zip(diagram.operands, diagram.subscripts):
             operands_data = []
             for item in operands[0]:
-                operands_data.append(line_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
+                operands_data.append(propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
             for item in operands[1]:
                 operands_data.append(vertex_list[item].get(time_list[item]))
             diagram_value[-1] *= contract(subscripts, *operands_data)
