@@ -4,8 +4,8 @@ from opt_einsum import contract
 
 from .backend import get_backend
 
-_SUB_A = "abcdefghijkl"
-_SUB_M = "mnopqrstuvwx"
+_SUB_A = "abcdefghijklABCDEFGHIJKL"
+_SUB_M = "mnopqruvwxyzMNOPQRUVWXYZ"
 
 
 class QuarkDiagram:
