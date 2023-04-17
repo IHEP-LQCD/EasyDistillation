@@ -1,26 +1,18 @@
-import numpy as np
 import cupy as cp
 
-from opt_einsum import contract
 from lattice.backend import set_backend, get_backend
-
-from lattice import Dispatch
-from lattice.insertion import Operator
-from lattice.insertion.gamma import gamma
 # from lattice.data import get_elemental_data
 
 set_backend(cp)
 numpy = get_backend()
 
+from lattice import Dispatch, preset
 from lattice.insertion.mom_dict import momDict_mom9
 from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
-from lattice import preset
 
-from lattice.quark_diagrams import Meson, Propagator, PropagatorLocal, QuarkDiagram, compute_diagrams_multitime
+from lattice import Meson, Propagator, PropagatorLocal, QuarkDiagram, compute_diagrams_multitime
 
 Nt = 128
-
-
 
 ins_D = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
 
@@ -45,8 +37,7 @@ perambulator_light_pre = preset.PerambulatorBinary(
 )
 
 perambulator_charm_pre = preset.PerambulatorBinary(
-    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/", ".charm.peram", [128, 128, 4, 4, 70, 70],
-    70
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/", ".charm.peram", [128, 128, 4, 4, 70, 70], 70
 )
 
 # cfg = "s1.0_cfg_2000.stout.n20.f0.12.nev70"

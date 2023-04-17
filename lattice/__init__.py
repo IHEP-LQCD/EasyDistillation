@@ -5,6 +5,9 @@ from .preset import (
     GaugeFieldTimeSlice, EigenVectorTimeSlice, PerambulatorBinary, GaugeFieldIldg, ElementalNpy, EigenVectorNpy,
     Jpsi2gammaNpy
 )
+from .quark_diagram import (
+    QuarkDiagram, Meson, Propagator, PropagatorLocal, compute_diagrams, compute_diagrams_multitime
+)
 
 from .timer import mytimer
 # from .multiquarks import *
