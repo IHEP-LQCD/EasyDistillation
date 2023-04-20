@@ -49,5 +49,5 @@ def calc_laplace_eigs(gauge_path: str, evecs_path: str, nstep: int, rho: float, 
         evecs[t] = evecs_t
         print(FR"EASYDISTILLATION: {perf_counter()-s:.3f}sec to solve the lowest {Ne} eigensystem at t={t}.")
 
-    # [Ne, Lt, Lz * Ly * Lx * Nc]
-    np.save(evecs_path, evecs.transpose(2, 0, 1).reshape(Ne, Lt, Lz * Ly * Lx, Nc))
+    # [Lt, Ne, Lz * Ly * Lx, Nc]
+    np.save(evecs_path, evecs.transpose(0, 2, 1).reshape(Lt, Ne, Lz * Ly * Lx, Nc))
