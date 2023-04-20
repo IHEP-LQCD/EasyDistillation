@@ -55,16 +55,16 @@ for cfg in dispatcher:
     # D_D = QuarkDiagram([[0, 1], [2, 0]])
     # Ds_Ds = QuarkDiagram([[0, 2], [1, 0]])
     D_D = QuarkDiagram([
-        [0, 1, 0, 0],
-        [2, 0, 0, 0],
+        [0, 0, 1, 0],
         [0, 0, 0, 0],
+        [2, 0, 0, 0],
         [0, 0, 0, 0],
     ])
     Ds_Ds = QuarkDiagram([
         [0, 0, 0, 0],
-        [0, 0, 0, 0],
         [0, 0, 0, 2],
-        [0, 0, 1, 0],
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
     ])
     DDsbar_DDsbar_direct = QuarkDiagram([
         [0, 0, 1, 0],
@@ -110,12 +110,12 @@ for cfg in dispatcher:
         print(t_src)
         tmp = compute_diagrams_multitime(
             [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross, chic1_DDs, chic1_ccbar_eta],
-            [t_src, t_snk],
-            [D_src, D_snk],
+            [t_src, t_src, t_snk, t_src,],
+            [D_src, Ds_src, D_snk, Ds_snk],
             [None, line_charm, line_light, line_local_light],
         )
         twopt[0:6] += np.roll(tmp, -t_src, 1)[0:6]
 
     twopt /= 128
     print(twopt)
-    # print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
+    print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
