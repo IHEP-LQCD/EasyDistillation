@@ -18,8 +18,8 @@ ins_D = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_
 
 ins_Dstar = Insertion(GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
 
-# ins_chic1 = Insertion(GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
-# op_chic1 = Operator("Chic1", [ins_chic1[0](0, 0, 0)], [1])
+ins_chic1 = Insertion(GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
+op_chic1 = Operator("Chic1", [ins_chic1[0](0, 0, 0)], [1])
 
 # op_A = u_bar gamma5 c
 op_D = Operator("D", [ins_D[0](0, 0, 0)], [1])
@@ -52,6 +52,20 @@ for cfg in dispatcher:
     perambulator_light = perambulator_light_pre.load(cfg)
     perambulator_charm = perambulator_charm_pre.load(cfg)
 
+    # D_D = QuarkDiagram([[0, 1], [2, 0]])
+    # Ds_Ds = QuarkDiagram([[0, 2], [1, 0]])
+    D_D = QuarkDiagram([
+        [0, 1, 0, 0],
+        [2, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+    ])
+    Ds_Ds = QuarkDiagram([
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 2],
+        [0, 0, 1, 0],
+    ])
     DDsbar_DDsbar_direct = QuarkDiagram([
         [0, 0, 1, 0],
         [0, 0, 0, 2],
@@ -64,8 +78,21 @@ for cfg in dispatcher:
         [0, 0, 0, 3],
         [0, 2, 0, 0],
     ])
-    D_D = QuarkDiagram([[0, 1], [1, 0]])
-    Ds_Ds = QuarkDiagram([[0, 1], [1, 0]])
+
+    chic1_DDs = QuarkDiagram([
+        [0, 0, 1, 0],
+        [0, 0, 0, 3],
+        [1, 0, 0, 0],
+        [0, 0, 0, 0],
+    ])
+
+    chic1_ccbar_eta = QuarkDiagram([
+        [0, 0, 1, 0],
+        [1, 0, 0, 0],
+        [0, 0, 0, 3],
+        [0, 0, 0, 0],
+    ])
+
     line_light = Propagator(perambulator_light, 128)
     line_charm = Propagator(perambulator_charm, 128)
     line_local_light = PropagatorLocal(perambulator_light, 128)
@@ -78,40 +105,16 @@ for cfg in dispatcher:
     np = get_backend()
     t_snk = npo.arange(128)
 
-    twopt = np.zeros((4, 128), "<c16")
+    twopt = np.zeros((6, 128), "<c16")
     for t_src in range(128):
         print(t_src)
         tmp = compute_diagrams_multitime(
-            [D_D],
+            [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross, chic1_DDs, chic1_ccbar_eta],
             [t_src, t_snk],
             [D_src, D_snk],
             [None, line_charm, line_light, line_local_light],
         )
-        twopt[0] += np.roll(tmp, -t_src, 1)[0]
-
-        tmp = compute_diagrams_multitime(
-            [Ds_Ds],
-            [t_src, t_snk],
-            [Ds_src, Ds_snk],
-            [None, line_charm, line_light, line_local_light],
-        )
-        twopt[1] += np.roll(tmp, -t_src, 1)[0]
-
-        tmp = compute_diagrams_multitime(
-            [DDsbar_DDsbar_direct],
-            [t_src, t_src, t_snk, t_snk],
-            [D_src, Ds_src, D_snk, Ds_snk],
-            [None, line_charm, line_light, line_local_light],
-        )
-        twopt[2] += np.roll(tmp, -t_src, 1)[0]
-
-        # tmp = compute_diagrams_multitime(
-        #     [DDsbar_DDsbar_cross],
-        #     [t_src, t_src, t_snk, t_snk],
-        #     [D_src, Ds_src, D_snk, Ds_snk],
-        #     [None, line_charm, line_light, line_local_light],
-        # )
-        # twopt[3] += np.roll(tmp, -t_src, 1)[0]
+        twopt[0:6] += np.roll(tmp, -t_src, 1)[0:6]
 
     twopt /= 128
     print(twopt)
