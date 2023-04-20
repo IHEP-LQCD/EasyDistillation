@@ -15,7 +15,7 @@ confs = lattice.GaugeFieldIldg(
 )
 eigs = lattice.EigenVectorNpy(
     R"/dg_hpc/LQCD/shichunjiang/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/02.laplace_eigs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
-    ".lime.npy", [70, 128, 16**3 * 3], 70
+    ".lime.npy", [128, 70, 16**3, 3], 70
 )
 # eigs = lattice.EigenVectorNpy(R"./aaa.", ".evecs.npy", [70, 128, 16**3 * 3], 70)
 mom_list = lattice.mom_dict.mom_dict_to_list(9)
