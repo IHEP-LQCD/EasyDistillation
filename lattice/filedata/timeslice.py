@@ -33,7 +33,9 @@ def prod(a):
 
 
 class QDPLazyDiskMapObjFileData(FileData):
-    def __init__(self, file: str, elem: FileMetaData, offsets: Dict[Tuple[int], int], xml_tree: ET.ElementTree) -> None:
+    def __init__(
+        self, file: str, elem: FileMetaData, offsets: Dict[Tuple[int], int], xml_tree: ET.ElementTree
+    ) -> None:
         self.file = file
         self.shape = elem.shape[elem.extra:]
         self.dtype = elem.dtype

@@ -1,6 +1,8 @@
+import cupy
 from lattice import check_QUDA
+
 if check_QUDA():
-    from lattice.laplace_eigs import calc_laplace_eigs
+    from lattice.laplace_eigs import smear_gauge, calc_laplace_eigs
 else:
     raise ImportError("No QUDA avaliable")
 
@@ -11,4 +13,6 @@ for cfg in ["2000"]:
     suffix = ".lime"
     out_prefix = R"./aaa."
     out_suffix = ".evecs.npy"
-    calc_laplace_eigs(F"{prefix}{cfg}{suffix}", F"{out_prefix}{cfg}{out_suffix}", 2, 0.12, 70, 1e-7)
+    gauge_spatial = smear_gauge(F"{prefix}{cfg}{suffix}", 10, 0.12)
+    evecs = calc_laplace_eigs(gauge_spatial, 70, 1e-7)
+    cupy.save(F"{out_prefix}{cfg}{out_suffix}", evecs)
