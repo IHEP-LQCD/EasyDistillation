@@ -1,10 +1,7 @@
-import cupy as cp
-
+import cupy
 from lattice.backend import set_backend, get_backend
-# from lattice.data import get_elemental_data
 
-set_backend(cp)
-numpy = get_backend()
+set_backend(cupy)
 
 from lattice import Dispatch, preset
 from lattice.insertion.mom_dict import momDict_mom9
@@ -102,15 +99,15 @@ for cfg in dispatcher:
     Ds_snk = Meson(elemental, op_Ds, False)
 
     import numpy as npo
-    np = get_backend()
     t_snk = npo.arange(128)
+    np = get_backend()
 
     twopt = np.zeros((6, 128), "<c16")
     for t_src in range(128):
         print(t_src)
         tmp = compute_diagrams_multitime(
             [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross, chic1_DDs, chic1_ccbar_eta],
-            [t_src, t_src, t_snk, t_src,],
+            [t_src, t_src, t_snk, t_src],
             [D_src, Ds_src, D_snk, Ds_snk],
             [None, line_charm, line_light, line_local_light],
         )

@@ -1,4 +1,5 @@
 import os
+
 os.environ["CUPY_ACCELERATORS"] = "cub,cutensor"
 os.environ["CUTENSOR_PATH"] = "/dg_hpc/LQCD/jiangxiangyu/libcutensor-local-repo-rhel7-1.7.0/usr"
 
@@ -37,56 +38,56 @@ perambulator = preset.PerambulatorNpy(
     ".peram.npy", [128, 128, 4, 4, 70, 70], 70
 )
 
-cfg = "2000"
-e = elemental.load(cfg)
-p = perambulator.load(cfg)
 ###############################################################################
 
 ###############################################################################
 from lattice import QuarkDiagram, compute_diagrams_multitime, Meson, Propagator, PropagatorLocal
 
-connected = QuarkDiagram([[0, 1], [1, 0]])
-disconnected = QuarkDiagram([[2, 0], [0, 2]])
-eta_src = Meson(e, op_pi2, True)
-eta_snk = Meson(e, op_pi2, False)
-propag = Propagator(p, 128)
-propag_local = PropagatorLocal(p, 128)
+for cfg in ["2000"]:
+    e = elemental.load(cfg)
+    p = perambulator.load(cfg)
+    connected = QuarkDiagram([[0, 1], [1, 0]])
+    disconnected = QuarkDiagram([[2, 0], [0, 2]])
+    eta_src = Meson(e, op_pi2, True)
+    eta_snk = Meson(e, op_pi2, False)
+    propag = Propagator(p, 128)
+    propag_local = PropagatorLocal(p, 128)
 
-import numpy as npo
-np = get_backend()
-t_snk = npo.arange(128)
+    import numpy as npo
+    t_snk = npo.arange(128)
+    np = get_backend()
 
-twopt = np.zeros((2, 128))
-for t_src in range(128):
-    print(t_src)
-    tmp = compute_diagrams_multitime(
-        [connected, disconnected],
-        [t_src, t_snk],
-        [eta_src, eta_snk],
-        [None, propag, propag_local],
-    ).real
-    twopt += np.roll(tmp, -t_src, 1)
-twopt /= 128
-twopt[1] = -twopt[0] + 2 * twopt[1]
-twopt[0] = -twopt[0]
-print(twopt)
-print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
+    twopt = np.zeros((2, 128))
+    for t_src in range(128):
+        print(t_src)
+        tmp = compute_diagrams_multitime(
+            [connected, disconnected],
+            [t_src, t_snk],
+            [eta_src, eta_snk],
+            [None, propag, propag_local],
+        ).real
+        twopt += np.roll(tmp, -t_src, 1)
+    twopt /= 128
+    twopt[1] = -twopt[0] + 2 * twopt[1]
+    twopt[0] = -twopt[0]
+    print(twopt)
+    print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
 
-rho2pipi = QuarkDiagram([[0, 1, 0], [0, 0, 2], [1, 0, 0]])
-rho_src = Meson(e, op_rho, True)
-pi_snk = Meson(e, op_pi, False)
-twopt = np.zeros((1, 128))
-propag = Propagator(p, 128)
-propag_local = PropagatorLocal(p, 128)
-for t_src in range(128):
-    print(t_src)
-    tmp = compute_diagrams_multitime(
-        [rho2pipi],
-        [t_src, t_snk, t_snk],
-        [rho_src, pi_snk, pi_snk],
-        [None, propag, propag_local],
-    ).real
-    twopt += np.roll(tmp, -t_src, 1)
-twopt /= 128
-print(twopt)
+    rho2pipi = QuarkDiagram([[0, 1, 0], [0, 0, 2], [1, 0, 0]])
+    rho_src = Meson(e, op_rho, True)
+    pi_snk = Meson(e, op_pi, False)
+    twopt = np.zeros((1, 128))
+    propag = Propagator(p, 128)
+    propag_local = PropagatorLocal(p, 128)
+    for t_src in range(128):
+        print(t_src)
+        tmp = compute_diagrams_multitime(
+            [rho2pipi],
+            [t_src, t_snk, t_snk],
+            [rho_src, pi_snk, pi_snk],
+            [None, propag, propag_local],
+        ).real
+        twopt += np.roll(tmp, -t_src, 1)
+    twopt /= 128
+    print(twopt)
 ###############################################################################

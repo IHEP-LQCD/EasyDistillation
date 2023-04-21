@@ -72,7 +72,7 @@ class ElementalGenerator:
                 for d in range(U.shape[0]):
                     U[d] = gauge_field[t, :, d]
             for e in range(V.shape[0]):
-                V[:] = eigen_vector[t]
+                V[e] = eigen_vector[t, e]
             for derivative_idx, derivative in enumerate(self.derivative_list):
                 VPV[derivative_idx] = 0
                 for num_nabla_right in range(len(derivative) + 1):

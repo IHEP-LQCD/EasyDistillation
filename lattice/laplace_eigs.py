@@ -29,14 +29,18 @@ def _Amatmat(colvec, colmat, colmat_dag, latt_size):
     ).reshape(Lz * Ly * Lx * Nc, -1)
 
 
-def calc_laplace_eigs(gauge_path: str, evecs_path: str, nstep: int, rho: float, num_evecs: int, tol: float):
+def smear_gauge(gauge_path: str, nstep: int, rho: float):
     gauge = gauge_utils.readIldg(gauge_path)
     latt_size = gauge.latt_size
     Lx, Ly, Lz, Lt = latt_size
 
     core.smear(gauge.latt_size, gauge, nstep, rho)
-    colmat_all = gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)[:3]
+    return gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)[:3]
 
+
+def calc_laplace_eigs(colmat_all, num_evecs: int, tol: float):
+    latt_size = list(colmat_all.shape[1:5])
+    Lx, Ly, Lz, Lt = latt_size
     Ne = num_evecs
     evecs = np.zeros((Lt, Lz * Ly * Lx * Nc, Ne), "<c16")
     for t in range(Lt):
@@ -50,4 +54,4 @@ def calc_laplace_eigs(gauge_path: str, evecs_path: str, nstep: int, rho: float, 
         print(FR"EASYDISTILLATION: {perf_counter()-s:.3f}sec to solve the lowest {Ne} eigensystem at t={t}.")
 
     # [Lt, Ne, Lz * Ly * Lx, Nc]
-    np.save(evecs_path, evecs.transpose(0, 2, 1).reshape(Lt, Ne, Lz * Ly * Lx, Nc))
+    return evecs.transpose(0, 2, 1).reshape(Lt, Ne, Lz * Ly * Lx, Nc)
