@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 from lattice.filedata.abstract import FileData
 from lattice.backend import get_backend
-from lattice.preset import GaugeField, EigenVector
+from lattice.preset import GaugeField, Eigenvector
 
 Nd = 4
 Nc = 3
@@ -128,7 +128,7 @@ class ElementalGenerator:
         self,
         lattSize: List[int],
         gaugeField: GaugeField,
-        eigenVecs: EigenVector,
+        eigenVecs: Eigenvector,
         distance: int = 0,
         momenta: List[Tuple[int]] = [(0, 0, 0)],
     ) -> None:
@@ -157,7 +157,7 @@ confs = lattice.GaugeFieldIldg(
     R"/hpcfs/lqcd/qcd/gongming/productions/charm.b28.16_128.wo_stout.corrected/",
     ".lime",
 )
-eigs = lattice.EigenVectorTimeSlice(
+eigs = lattice.EigenvectorTimeSlice(
     R"/hpcfs/lqcd/qcd/rqzhang/new_charm/laplacevector_ihep/test.3d.eigs.mod-",
     ".lime",
 )

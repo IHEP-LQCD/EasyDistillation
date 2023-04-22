@@ -7,7 +7,7 @@ else:
     from cupyx.scipy.sparse import linalg
 from opt_einsum import contract
 
-from . import Nc, Nd
+from ..constant import Nc, Nd
 
 from pyquda import core
 from pyquda.utils import gauge_utils
@@ -29,7 +29,7 @@ def _Laplacian(colvec, U, U_dag, latt_size):
     ).reshape(Lz * Ly * Lx * Nc, -1)
 
 
-class EigenVectorGenerator:
+class EigenvectorGenerator:
     def __init__(self, latt_size, gauge_field, Ne, tol) -> None:
         Lx, Ly, Lz, Lt = latt_size
         self.latt_size = latt_size
