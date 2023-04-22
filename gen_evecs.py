@@ -1,31 +1,46 @@
-from lattice import check_QUDA, set_backend, get_backend
+from time import perf_counter
+from lattice import set_backend, get_backend, check_QUDA
 
-set_backend("cupy")
-cupy = get_backend()
+set_backend("numpy")
+backend = get_backend()
 
 if not check_QUDA():
     raise ImportError("No QUDA avaliable")
 
-from lattice import GaugeFieldIldg, Nc
+from lattice import GaugeFieldIldg, EigenVectorNpy, Nc, Nd
 from lattice.laplace_eigs import EigenVectorGenerator
 
-latt_size = [16, 16, 16, 128]
+latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size
+Ne = 20
 
-gauge_field = GaugeFieldIldg(
-    "/dg_hpc/LQCD/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/00.cfgs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
-    ".lime", [128, 16, 16, 16, 4, 3, 3]
-)
-eigen_vector = EigenVectorGenerator([16, 16, 16, 128], gauge_field, 70, 1e-7)
+gauge_field = GaugeFieldIldg("./tests/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
 
-data = cupy.zeros((Lt, eigen_vector.Ne, Lz * Ly * Lx, Nc), "<c16")
-for cfg in ["2000"]:
-    print(cfg)
+eigen_vector = EigenVectorGenerator(latt_size, gauge_field, Ne, 1e-9)
+out_prefix = R"./tests/"
+out_suffix = R".evecs.npy"
 
-    out_prefix = R"./aaa."
-    out_suffix = ".evecs.npy"
+
+def check(cfg, data):
+    data_ref = EigenVectorNpy(out_prefix, out_suffix, [Lt, Ne, Lz * Ly * Lx, Nc], Ne).load(cfg)[:]
+    res = 0
+    for t in range(Lt):
+        for e in range(Ne):
+            phase = data_ref[t, e].reshape(-1)[0] / data[t, e].reshape(-1)[0]
+            res += backend.linalg.norm(data_ref[t, e] / data[t, e] / phase - 1)
+    print(res)
+
+
+data = backend.zeros((Lt, Ne, Lz * Ly * Lx, Nc), "<c16")
+for cfg in ["weak_field"]:
+    print(cfg, end=" ")
+
     eigen_vector.load(cfg)
     eigen_vector.stout_smear(10, 0.12)
-    for t in range(128):
+    for t in range(Lt):
+        s = perf_counter()
         data[t] = eigen_vector.calc(t)
-    cupy.save(F"{out_prefix}{cfg}{out_suffix}", data)
+        print(FR"EASYDISTILLATION: {perf_counter()-s:.3f} sec to solve the lowest {Ne} eigensystem at t={t}.")
+
+    # backend.save(F"{out_prefix}{cfg}{out_suffix}", data)
+    check(cfg, data)
