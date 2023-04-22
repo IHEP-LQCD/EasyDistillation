@@ -33,8 +33,8 @@ class BinaryFileData(FileData):
         return offset * self.bytes
 
     def __getitem__(self, key: Tuple[int]):
-        import numpy as numpy_ori
-        numpy = get_backend()
+        import numpy
+        backend = get_backend()
         s = time()
         # ret = numpy.asarray(
         #     loader(
@@ -44,8 +44,8 @@ class BinaryFileData(FileData):
         #         offset=0,
         #     )[key]
         # )  # yapf: disable
-        ret = numpy.asarray(
-            numpy_ori.memmap(
+        ret = backend.asarray(
+            numpy.memmap(
                 self.file,
                 dtype=self.dtype,
                 mode="r",

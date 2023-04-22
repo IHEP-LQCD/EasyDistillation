@@ -145,11 +145,11 @@ class ElementalGenerator:
         return ElementalData(Udata, Vdata, self.P)
 
 
-import cupy
 import lattice
 from time import time
 
-lattice.set_backend(cupy)
+lattice.set_backend("cupy")
+cupy = get_backend()
 
 latt_size = [16, 16, 16, 128]
 

@@ -46,13 +46,13 @@ class IldgFileData(FileData):
         return offset * self.bytes
 
     def __getitem__(self, key: Tuple[int]):
-        import numpy as numpy_ori
-        numpy = get_backend()
+        import numpy
+        backend = get_backend()
         if isinstance(key, int):
             key = (key, )
         s = time()
-        ret = numpy.asarray(
-            numpy_ori.memmap(
+        ret = backend.asarray(
+            numpy.memmap(
                 self.file,
                 dtype=self.dtype,
                 mode="r",

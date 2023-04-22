@@ -1,7 +1,6 @@
-import cupy
 from lattice import set_backend, get_backend
-set_backend(cupy)
-cupy.cuda.Device(1).use()
+
+set_backend("cupy")
 
 ###############################################################################
 from lattice.insertion.mom_dict import momDict_mom9
@@ -35,21 +34,31 @@ p = perambulator.load(cfg)
 
 ###############################################################################
 from lattice.correlator.one_particle import twopoint, twopoint_matrix
-np = get_backend()
+
+backend = get_backend()
 
 # compute 2pt
 twopt = twopoint([op_pi, op_pi2], e, p, list(range(128)), 128)  # [Nop, Lt]
 twopt = twopt.real
-print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
+print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
 
 # compute a 2 by 2 two-point correlation matrix
 twopt_matrix = twopoint_matrix([op_pi, op_pi2], e, p, list(range(128)), 128)
 twopt_matrix = twopt_matrix.real
-print(np.arccosh((np.roll(twopt_matrix[0, 0], -1, 0) + np.roll(twopt_matrix[0, 0], 1, 0)) / twopt_matrix[0, 0] / 2))
-print(np.arccosh((np.roll(twopt_matrix[1, 1], -1, 0) + np.roll(twopt_matrix[1, 1], 1, 0)) / twopt_matrix[1, 1] / 2))
+print(
+    backend.arccosh(
+        (backend.roll(twopt_matrix[0, 0], -1, 0) + backend.roll(twopt_matrix[0, 0], 1, 0)) / twopt_matrix[0, 0] / 2
+    )
+)
+print(
+    backend.arccosh(
+        (backend.roll(twopt_matrix[1, 1], -1, 0) + backend.roll(twopt_matrix[1, 1], 1, 0)) / twopt_matrix[1, 1] / 2
+    )
+)
 ###############################################################################
 
 # compute summation of p2 = 1 2pt
 from lattice.correlator.disperion_relation import twopoint_mom2
+
 twopt_mom2 = twopoint_mom2(pi_A1[0], 2, e, p, list(range(128)), 128)
 print(twopt_mom2)

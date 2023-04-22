@@ -8,9 +8,9 @@ def get_elemental_data(operators: List[Operator], elemental: FileData):
     from .backend import get_backend
     from .insertion.gamma import gamma
 
-    numpy = get_backend()
+    backend = get_backend()
     ret = []
-    cache: Dict[int, numpy.ndarray] = {}
+    cache: Dict[int, backend.ndarray] = {}
 
     for operator in operators:
         parts = operator.parts
@@ -28,6 +28,6 @@ def get_elemental_data(operators: List[Operator], elemental: FileData):
                     ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
                 else:
                     ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
-        ret.append((numpy.asarray(ret_gamma), numpy.asarray(ret_elemental)))
+        ret.append((backend.asarray(ret_gamma), backend.asarray(ret_elemental)))
 
     return ret

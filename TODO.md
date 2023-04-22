@@ -1,5 +1,6 @@
 # TODO list
 
+- [ ] An NDArray implemtation of `stout_smear()`.
 - [ ] Make all API consistent.
 - [ ] Use a log system. `logging` should be fine.
 - [ ] Use group theory to do the product.

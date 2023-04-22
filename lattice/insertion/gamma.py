@@ -7,20 +7,20 @@ class _Constant:
     @staticmethod
     @lru_cache(1)
     def zero():
-        numpy = get_backend()
-        return numpy.zeros((4, 4))
+        backend = get_backend()
+        return backend.zeros((4, 4))
 
     @staticmethod
     @lru_cache(1)
     def one():
-        numpy = get_backend()
-        return numpy.identity(4)
+        backend = get_backend()
+        return backend.identity(4)
 
     @staticmethod
     @lru_cache(1)
     def gamma_0():
-        numpy = get_backend()
-        return numpy.array([
+        backend = get_backend()
+        return backend.array([
             [0, 0, 0, 1j],
             [0, 0, 1j, 0],
             [0, -1j, 0, 0],
@@ -30,8 +30,8 @@ class _Constant:
     @staticmethod
     @lru_cache(1)
     def gamma_1():
-        numpy = get_backend()
-        return numpy.array([
+        backend = get_backend()
+        return backend.array([
             [0, 0, 0, -1],
             [0, 0, 1, 0],
             [0, 1, 0, 0],
@@ -41,8 +41,8 @@ class _Constant:
     @staticmethod
     @lru_cache(1)
     def gamma_2():
-        numpy = get_backend()
-        return numpy.array([
+        backend = get_backend()
+        return backend.array([
             [0, 0, 1j, 0],
             [0, 0, 0, -1j],
             [-1j, 0, 0, 0],
@@ -52,8 +52,8 @@ class _Constant:
     @staticmethod
     @lru_cache(1)
     def gamma_3():
-        numpy = get_backend()
-        return numpy.array([
+        backend = get_backend()
+        return backend.array([
             [0, 0, 1, 0],
             [0, 0, 0, 1],
             [1, 0, 0, 0],
@@ -83,8 +83,8 @@ def output(n: int):
 
 def gamma(n: int):
     assert isinstance(n, int) and 0 <= n <= 15
-    numpy = get_backend()
-    return numpy.asarray(
+    backend = get_backend()
+    return backend.asarray(
         (_Constant.gamma_0() if n & 0b0001 else _Constant.one())
         @ (_Constant.gamma_1() if n & 0b0010 else _Constant.one())
         @ (_Constant.gamma_2() if n & 0b0100 else _Constant.one())

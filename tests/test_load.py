@@ -1,36 +1,34 @@
-import numpy as np
 import os
 import sys
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(test_dir, ".."))
+from lattice import set_backend, get_backend, Nd, Nc
 from lattice import GaugeFieldIldg
-from lattice import set_backend
-# import cupy as cp
 
-set_backend(np)
+set_backend("numpy")
+backend = get_backend()
 
 latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size
 Vol = Lx * Ly * Lz * Lt
-Nd = 4
 
 # numpy load Ndarray file
-gaugeDataNpy = np.load(os.path.join(test_dir, "weak_field.npy")).reshape(Nd, 8, 4, 4, 4, 3, 3)
+gaugeDataNpy = backend.load(os.path.join(test_dir, "weak_field.npy")).reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)
 
 # numpy load binary file
-gaugeDataBinary = np.fromfile(
-    os.path.join(test_dir, "weak_field.bin"), "<c16", count=np.prod([Nd, 8, 4, 4, 4, 3, 3])
-).reshape(Nd, 8, 4, 4, 4, 3, 3)
+gaugeDataBinary = backend.fromfile(
+    os.path.join(test_dir, "weak_field.bin"), "<c16", count=backend.prod([Nd, Lt, Lz, Ly, Lx, Nc, Nc])
+).reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)
 
-# Note: !!! gauge ILDG file shape [Lt, Lz, Ly, Lx, Nd, Nc, Nc] <- chroma convention
-gaugeIldg = GaugeFieldIldg(os.path.join(test_dir, "weak_field"), ".lime", shape=[8, 4, 4, 4, Nd, 3, 3])
+# !!! Note: gauge ILDG file shape [Lt, Lz, Ly, Lx, Nd, Nc, Nc] <- chroma convention
+gaugeIldg = GaugeFieldIldg(os.path.join(test_dir, "weak_field"), ".lime", shape=[Lt, Lz, Ly, Lx, Nd, Nc, Nc])
 
 gaugeDataIldg = gaugeIldg.load("")[1:3, :, 5:8, :, :, :, :].transpose(4, 0, 1, 2, 3, 5, 6)
 
 # check load results.
-print("gauge reading res 1 = ", np.linalg.norm(gaugeDataIldg - gaugeDataNpy[:, 1:3, :, 5:8, :, :, :]))
+print("gauge reading res 1 = ", backend.linalg.norm(gaugeDataIldg - gaugeDataNpy[:, 1:3, :, 5:8, :, :, :]))
 
 gaugeDataIldg = gaugeIldg.load("")[:].transpose(4, 0, 1, 2, 3, 5, 6)
-print("gauge reading res 2 = ", np.linalg.norm(gaugeDataIldg - gaugeDataNpy))
-print("gauge reading res 3 = ", np.linalg.norm(gaugeDataIldg - gaugeDataBinary))
+print("gauge reading res 2 = ", backend.linalg.norm(gaugeDataIldg - gaugeDataNpy))
+print("gauge reading res 3 = ", backend.linalg.norm(gaugeDataIldg - gaugeDataBinary))
