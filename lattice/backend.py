@@ -11,21 +11,22 @@ def get_backend():
     return _BACKEND
 
 
-def set_backend(backend: Literal["numpy", "cupy", "torch"]):
+def set_backend(backend: Literal["numpy", "cupy"]):
     global _BACKEND
     if not isinstance(backend, str):
         backend = backend.__name__
     backend = backend.lower()
-    assert backend in ["numpy", "cupy", "torch"]
+    assert backend in ["numpy", "cupy"]
     if backend == "numpy":
         import numpy
         _BACKEND = numpy
     elif backend == "cupy":
         import cupy
         _BACKEND = cupy
-    elif backend == "torch":
-        import torch
-        _BACKEND = torch
+    # elif backend == "torch":
+    #     import torch
+    #     torch.set_default_device("cuda")
+    #     _BACKEND = torch
     else:
         raise ValueError(R'backend must be "numpy", "cupy" or "torch"')
 
