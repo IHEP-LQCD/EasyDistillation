@@ -4,8 +4,7 @@ from lattice import set_backend, get_backend
 set_backend("cupy")
 backend = get_backend()
 
-from lattice import GaugeFieldIldg, EigenVectorNpy, ElementalNpy, Nd, Nc
-from lattice.elemental import ElementalGenerator
+from lattice import GaugeFieldIldg, EigenvectorNpy, ElementalNpy, ElementalGenerator, Nd, Nc
 
 latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size
@@ -13,12 +12,12 @@ Ne = 20
 ND = 2
 
 gauge_field = GaugeFieldIldg(R"./tests/", R".lime", [Lt, Lz * Ly * Lx, Nd, Nc, Nc])
-eigen_vector = EigenVectorNpy(R"./tests/", R".evecs.npy", [Lt, Ne, Lz * Ly * Lx, Nc], Ne)
+eigenvector = EigenvectorNpy(R"./tests/", R".evecs.npy", [Lt, Ne, Lz * Ly * Lx, Nc], Ne)
 
 num_deriv = (3**(ND + 1) - 1) // 2
 mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 1, 2), (1, 1, 2)]
 num_mom = len(mom_list)
-elemental = ElementalGenerator(latt_size, gauge_field, eigen_vector, ND, mom_list)
+elemental = ElementalGenerator(latt_size, gauge_field, eigenvector, ND, mom_list)
 out_prefix = R"./tests/"
 out_suffix = R".elemental.npy"
 
@@ -31,7 +30,7 @@ def check(cfg, data):
 
 data = backend.zeros((Lt, num_deriv, num_mom, Ne, Ne), "<c16")
 for cfg in ["weak_field"]:
-    print(cfg, end=" ")
+    print(cfg)
 
     elemental.load(cfg)
     for t in range(Lt):

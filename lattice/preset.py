@@ -13,7 +13,7 @@ class GaugeField:
         self.elem = deepcopy(elem)
 
 
-class EigenVector:
+class Eigenvector:
     def __init__(self, elem: FileMetaData, eigenNum: int) -> None:
         self.elem = deepcopy(elem)
         self.Ne = eigenNum
@@ -52,10 +52,10 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
         return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
-class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
+class EigenvectorTimeSlice(QDPLazyDiskMapObjFile, Eigenvector):
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 70, 16**3, 3], totNe: int = 70) -> None:
         super().__init__()
-        EigenVector.__init__(self, FileMetaData(shape, ">c8", 2), totNe)
+        Eigenvector.__init__(self, FileMetaData(shape, ">c8", 2), totNe)
         self.prefix = prefix
         self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
@@ -63,10 +63,10 @@ class EigenVectorTimeSlice(QDPLazyDiskMapObjFile, EigenVector):
         return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
-class EigenVectorNpy(NdarrayFile, EigenVector):
+class EigenvectorNpy(NdarrayFile, Eigenvector):
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [70, 128, 16**3, 3], totNe: int = 70) -> None:
         super().__init__()
-        EigenVector.__init__(self, FileMetaData(shape, "<c16", 2), totNe)
+        Eigenvector.__init__(self, FileMetaData(shape, "<c16", 2), totNe)
         self.prefix = prefix
         self.suffix = ".lime.npy" if suffix is None else suffix
 
