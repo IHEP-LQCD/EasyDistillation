@@ -1,4 +1,5 @@
 from typing import Iterable, List
+
 from opt_einsum import contract
 
 from ..insertion import Operator

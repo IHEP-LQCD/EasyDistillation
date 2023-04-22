@@ -1,6 +1,8 @@
 from math import factorial
 from typing import List, Tuple
 
+from opt_einsum import contract
+
 from ..constant import Nc, Nd
 from ..backend import get_backend
 from ..preset import GaugeField, Eigenvector
@@ -40,8 +42,7 @@ class ElementalGenerator:
         self._eigenvector_data = None
         self._momentum_phase = MomentumPhase(Lx, Ly, Lz)
 
-    def nD(self, V, U, deriv):
-        from opt_einsum import contract
+    def _nD(self, V, U, deriv):
         backend = get_backend()
         Lx, Ly, Lz, Lt = self.latt_size
 
@@ -59,8 +60,6 @@ class ElementalGenerator:
         self._eigenvector_data = self.eigenvector.load(key)
 
     def calc(self, t: int):
-        from opt_einsum import contract
-
         gauge_field = self._gauge_field_data
         eigenvector = self._eigenvector_data
         momentum_phase = self._momentum_phase
@@ -77,8 +76,8 @@ class ElementalGenerator:
             VPV[derivative_idx] = 0
             for num_nabla_right in range(len(derivative) + 1):
                 coeff = (-1)**num_nabla_right * comb(len(derivative), num_nabla_right)
-                right = self.nD(V, U, derivative[:num_nabla_right])
-                left = self.nD(V, U, derivative[num_nabla_right:][::-1])
+                right = self._nD(V, U, derivative[:num_nabla_right])
+                left = self._nD(V, U, derivative[num_nabla_right:][::-1])
                 for momentum_idx, momentum in enumerate(self.momentum_list):
                     VPV[derivative_idx, momentum_idx] += contract(
                         "x,exc,fxc->ef",
