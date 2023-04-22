@@ -1,38 +1,43 @@
+from time import perf_counter
 from lattice import set_backend, get_backend
 
 set_backend("cupy")
 backend = get_backend()
-import lattice
+
+from lattice import GaugeFieldIldg, EigenVectorNpy, ElementalNpy, Nd, Nc
 from lattice.elemental import ElementalGenerator
-from time import perf_counter
 
-latt_size = [16, 16, 16, 128]
+latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size
+Ne = 20
+ND = 2
 
-confs = lattice.GaugeFieldIldg(
-    R"/dg_hpc/LQCD/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/00.cfgs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
-    ".lime", [128, 16**3, 4, 3, 3]
-)
-eigs = lattice.EigenVectorNpy(
-    R"/dg_hpc/LQCD/shichunjiang/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/02.laplace_eigs/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
-    ".lime.npy", [128, 70, 16**3, 3], 70
-)
-# eigs = lattice.EigenVectorNpy(R"./aaa.", ".evecs.npy", [70, 128, 16**3 * 3], 70)
-mom_list = lattice.mom_dict.mom_dict_to_list(9)
-out_prefix = R"./aaa."
+gauge_field = GaugeFieldIldg(R"./tests/", R".lime", [Lt, Lz * Ly * Lx, Nd, Nc, Nc])
+eigen_vector = EigenVectorNpy(R"./tests/", R".evecs.npy", [Lt, Ne, Lz * Ly * Lx, Nc], Ne)
+
+num_deriv = (3**(ND + 1) - 1) // 2
+mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 1, 2), (1, 1, 2)]
+num_mom = len(mom_list)
+elemental = ElementalGenerator(latt_size, gauge_field, eigen_vector, ND, mom_list)
+out_prefix = R"./tests/"
 out_suffix = R".elemental.npy"
 
-elementals = ElementalGenerator(latt_size, confs, eigs, 1, mom_list)
 
-import numpy
+def check(cfg, data):
+    data_ref = ElementalNpy(out_prefix, out_suffix, [num_deriv, num_mom, Lt, Ne, Ne], Ne).load(cfg)[:]
+    res = backend.linalg.norm(data_ref - data)
+    print(res)
 
-data = numpy.zeros((Lt, elementals.num_derivative, elementals.num_momentum, elementals.Ne, elementals.Ne), "<c16")
-for cfg in ["2000"]:
+
+data = backend.zeros((Lt, num_deriv, num_mom, Ne, Ne), "<c16")
+for cfg in ["weak_field"]:
     print(cfg, end=" ")
-    s = perf_counter()
-    elementals.load(cfg)
-    for t in range(Lt):
-        data[t] = elementals.calc(t).get()
 
-    print(f"{perf_counter() - s:.2f}Sec", end=" ")
-    numpy.save(f"{out_prefix}{cfg}{out_suffix}", data.transpose(1, 2, 0, 3, 4))
+    elemental.load(cfg)
+    for t in range(Lt):
+        s = perf_counter()
+        data[t] = elemental.calc(t)
+        print(f"EASYDISTILLATION: {perf_counter() - s:.2f}sec to calculate elemental at t={t}")
+
+    # backend.save(F"{out_prefix}{cfg}{out_suffix}", data.transpose(1, 2, 0, 3, 4))
+    check(cfg, data.transpose(1, 2, 0, 3, 4))

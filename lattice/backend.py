@@ -13,6 +13,8 @@ def get_backend():
 
 def set_backend(backend: Literal["numpy", "cupy", "torch"]):
     global _BACKEND
+    if not isinstance(backend, str):
+        backend = backend.__name__
     backend = backend.lower()
     assert backend in ["numpy", "cupy", "torch"]
     if backend == "numpy":
