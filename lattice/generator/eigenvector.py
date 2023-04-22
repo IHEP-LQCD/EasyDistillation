@@ -9,9 +9,6 @@ from opt_einsum import contract
 
 from ..constant import Nc, Nd
 
-from pyquda import core
-from pyquda.utils import gauge_utils
-
 
 def _Laplacian(colvec, U, U_dag, latt_size):
     Lx, Ly, Lz, Lt = latt_size
@@ -44,6 +41,9 @@ class EigenvectorGenerator:
         self._gauge_field_path = self.gauge_field.load(key).file
 
     def stout_smear(self, nstep, rho):
+        from pyquda import core
+        from pyquda.utils import gauge_utils
+
         gauge = gauge_utils.readIldg(self._gauge_field_path)
         latt_size = gauge.latt_size
         Lx, Ly, Lz, Lt = latt_size

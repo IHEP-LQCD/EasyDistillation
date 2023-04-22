@@ -1,7 +1,7 @@
 from time import perf_counter
 from lattice import set_backend, get_backend
 
-set_backend("cupy")
+set_backend("numpy")
 backend = get_backend()
 
 from lattice import GaugeFieldIldg, EigenvectorNpy, ElementalNpy, ElementalGenerator, Nd, Nc
