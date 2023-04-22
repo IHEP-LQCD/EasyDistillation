@@ -1,7 +1,6 @@
-import cupy
 from lattice.backend import set_backend, get_backend
 
-set_backend(cupy)
+set_backend("cupy")
 
 from lattice import Dispatch, preset
 from lattice.insertion.mom_dict import momDict_mom9
@@ -49,8 +48,6 @@ for cfg in dispatcher:
     perambulator_light = perambulator_light_pre.load(cfg)
     perambulator_charm = perambulator_charm_pre.load(cfg)
 
-    # D_D = QuarkDiagram([[0, 1], [2, 0]])
-    # Ds_Ds = QuarkDiagram([[0, 2], [1, 0]])
     D_D = QuarkDiagram([
         [0, 0, 1, 0],
         [0, 0, 0, 0],
@@ -98,11 +95,11 @@ for cfg in dispatcher:
     Ds_src = Meson(elemental, op_Ds, True)
     Ds_snk = Meson(elemental, op_Ds, False)
 
-    import numpy as npo
-    t_snk = npo.arange(128)
-    np = get_backend()
+    import numpy
+    t_snk = numpy.arange(128)
+    backend = get_backend()
 
-    twopt = np.zeros((6, 128), "<c16")
+    twopt = backend.zeros((6, 128), "<c16")
     for t_src in range(128):
         print(t_src)
         tmp = compute_diagrams_multitime(
@@ -111,8 +108,8 @@ for cfg in dispatcher:
             [D_src, Ds_src, D_snk, Ds_snk],
             [None, line_charm, line_light, line_local_light],
         )
-        twopt[0:6] += np.roll(tmp, -t_src, 1)[0:6]
+        twopt[0:6] += backend.roll(tmp, -t_src, 1)[0:6]
 
     twopt /= 128
     print(twopt)
-    print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
+    print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))

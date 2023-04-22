@@ -1,8 +1,6 @@
-import cupy
-
 from lattice.backend import set_backend, get_backend
-set_backend(cupy)
-# cupy.cuda.Device(1).use()
+
+set_backend("cupy")
 from lattice import preset, Dispatch
 from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
 from lattice.insertion.mom_dict import momDict_mom9
@@ -21,8 +19,8 @@ insertionField = Insertion(GammaName.PI_2, DerivativeName.IDEN, ProjectionName.A
 print(insertionField[0])
 operator_pi = Operator("pi2", [insertionField[0](0, 0, 0)], [1])
 
-np = get_backend()
-twopt = np.zeros((1, 128), "<c16")
+backend = get_backend()
+twopt = backend.zeros((1, 128), "<c16")
 dispatcher = Dispatch("cfglist.txt", "aaa")
 for cfg in dispatcher:
     e = elemental.load(cfg)
@@ -31,4 +29,4 @@ for cfg in dispatcher:
     twopt += twopoint_isoscalar([operator_pi], e, p, list(range(128)), 128)
 print(twopt)
 twopt = twopt.real
-print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
+print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))

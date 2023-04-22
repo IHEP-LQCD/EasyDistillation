@@ -3,11 +3,9 @@ import os
 os.environ["CUPY_ACCELERATORS"] = "cub,cutensor"
 os.environ["CUTENSOR_PATH"] = "/dg_hpc/LQCD/jiangxiangyu/libcutensor-local-repo-rhel7-1.7.0/usr"
 
-import cupy
 from lattice import set_backend, get_backend
 
-set_backend(cupy)
-# cupy.cuda.Device(1).use()
+set_backend("cupy")
 
 ###############################################################################
 from lattice.insertion.mom_dict import momDict_mom9
@@ -53,11 +51,11 @@ for cfg in ["2000"]:
     propag = Propagator(p, 128)
     propag_local = PropagatorLocal(p, 128)
 
-    import numpy as npo
-    t_snk = npo.arange(128)
-    np = get_backend()
+    import numpy
+    t_snk = numpy.arange(128)
+    backend = get_backend()
 
-    twopt = np.zeros((2, 128))
+    twopt = backend.zeros((2, 128))
     for t_src in range(128):
         print(t_src)
         tmp = compute_diagrams_multitime(
@@ -66,17 +64,17 @@ for cfg in ["2000"]:
             [eta_src, eta_snk],
             [None, propag, propag_local],
         ).real
-        twopt += np.roll(tmp, -t_src, 1)
+        twopt += backend.roll(tmp, -t_src, 1)
     twopt /= 128
     twopt[1] = -twopt[0] + 2 * twopt[1]
     twopt[0] = -twopt[0]
     print(twopt)
-    print(np.arccosh((np.roll(twopt, -1, 1) + np.roll(twopt, 1, 1)) / twopt / 2))
+    print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
 
     rho2pipi = QuarkDiagram([[0, 1, 0], [0, 0, 2], [1, 0, 0]])
     rho_src = Meson(e, op_rho, True)
     pi_snk = Meson(e, op_pi, False)
-    twopt = np.zeros((1, 128))
+    twopt = backend.zeros((1, 128))
     propag = Propagator(p, 128)
     propag_local = PropagatorLocal(p, 128)
     for t_src in range(128):
@@ -87,7 +85,7 @@ for cfg in ["2000"]:
             [rho_src, pi_snk, pi_snk],
             [None, propag, propag_local],
         ).real
-        twopt += np.roll(tmp, -t_src, 1)
+        twopt += backend.roll(tmp, -t_src, 1)
     twopt /= 128
     print(twopt)
 ###############################################################################

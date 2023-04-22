@@ -91,9 +91,9 @@ class Meson(Particle):
 
     def _make_cache(self):
         from lattice.insertion.gamma import gamma
-        np = get_backend()
+        backend = get_backend()
 
-        cache: Dict[int, np.ndarray] = {}
+        cache: Dict[int, backend.ndarray] = {}
 
         parts = self.operator.parts
         ret_gamma = []
@@ -111,8 +111,8 @@ class Meson(Particle):
                 else:
                     ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
         self.cache = (
-            np.asarray(ret_gamma),
-            np.asarray(ret_elemental),
+            backend.asarray(ret_gamma),
+            backend.asarray(ret_elemental),
         )
         self.cache_dagger = (
             contract("ik,xlk,lj->xij", gamma(8), self.cache[0].conj(), gamma(8)),
@@ -205,7 +205,7 @@ class PropagatorLocal:
 
 
 def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
-    np = get_backend()
+    backend = get_backend()
     diagram_value = []
     for diagram in diagrams:
         diagram_value.append(1.)
@@ -229,11 +229,11 @@ def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_l
             if have_multitime:
                 subscripts[-1] = subscripts[-1] + "->t"
             diagram_value[-1] = diagram_value[-1] * contract(",".join(subscripts), *operands_data)
-    return np.asarray(diagram_value)
+    return backend.asarray(diagram_value)
 
 
 def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
-    np = get_backend()
+    backend = get_backend()
     diagram_value = []
     for diagram in diagrams:
         diagram_value.append(1.)
@@ -244,4 +244,4 @@ def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propa
             for item in operands[1]:
                 operands_data.append(vertex_list[item].get(time_list[item]))
             diagram_value[-1] *= contract(subscripts, *operands_data)
-    return np.asarray(diagram_value)
+    return backend.asarray(diagram_value)

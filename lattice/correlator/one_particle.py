@@ -11,11 +11,11 @@ from ..backend import get_backend
 def twopoint(
     operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
 ):
-    numpy = get_backend()
+    backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
 
-    ret = numpy.zeros((Nop, Lt), "<c16")
+    ret = backend.zeros((Nop, Lt), "<c16")
     phis = get_elemental_data(operators, elemental)
     for t in timeslices:
         tau = perambulator[t]
@@ -23,7 +23,7 @@ def twopoint(
         for idx in range(Nop):
             phi = phis[idx]
             ret[idx] += contract(
-                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi[0], numpy.roll(phi[1], -t, 1), tau, phi[0],
+                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi[0], backend.roll(phi[1], -t, 1), tau, phi[0],
                 phi[1][:, t].conj()
             )
         print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
@@ -35,11 +35,11 @@ def twopoint(
 def twopoint_matrix(
     operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
 ):
-    numpy = get_backend()
+    backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
 
-    ret = numpy.zeros((Nop, Nop, Lt), "<c16")
+    ret = backend.zeros((Nop, Nop, Lt), "<c16")
     phis = get_elemental_data(operators, elemental)
     for t in timeslices:
         tau = perambulator[t]
@@ -50,7 +50,7 @@ def twopoint_matrix(
                 gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
                 phi_snk = phis[isnk]
                 ret[isrc, isnk] += contract(
-                    "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi_snk[0], numpy.roll(phi_snk[1], -t, 1), tau,
+                    "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi_snk[0], backend.roll(phi_snk[1], -t, 1), tau,
                     gamma_src, phi_src[1][:, t].conj()
                 )
         print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
@@ -61,15 +61,15 @@ def twopoint_matrix(
 def twopoint_isoscalar(
     operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
 ):
-    numpy = get_backend()
+    backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
     if Lt != Nt:
         raise ValueError("Disconnect must compute full timeslices!")
 
-    connected = numpy.zeros((Nop, Lt), "<c16")
-    loop_src = numpy.zeros((Nop, Lt), "<c16")
-    loop_snk = numpy.zeros((Nop, Lt), "<c16")
+    connected = backend.zeros((Nop, Lt), "<c16")
+    loop_src = backend.zeros((Nop, Lt), "<c16")
+    loop_snk = backend.zeros((Nop, Lt), "<c16")
     phis = get_elemental_data(operators, elemental)
 
     for t in timeslices:
@@ -79,7 +79,7 @@ def twopoint_isoscalar(
             phi = phis[idx]
             gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi[0].conj(), gamma(8))
             connected[idx] += contract(
-                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi[0], numpy.roll(phi[1], -t, 1), tau, gamma_src,
+                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi[0], backend.roll(phi[1], -t, 1), tau, gamma_src,
                 phi[1][:, t].conj()
             )
             loop_src[idx, t] = contract("ijab,yji,yab", tau[0], gamma_src, phi[1][:, t].conj())
@@ -89,6 +89,6 @@ def twopoint_isoscalar(
 
     disconnected = contract("xi, xj -> xij", loop_src, loop_snk)
     for t in timeslices:
-        disconnected[:, t, :] = numpy.roll(disconnected[:, t, :], -t, axis=1)
+        disconnected[:, t, :] = backend.roll(disconnected[:, t, :], -t, axis=1)
     disconnected = disconnected.mean(1)
     return -connected + 2 * disconnected

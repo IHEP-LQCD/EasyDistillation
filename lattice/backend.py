@@ -1,28 +1,31 @@
-BACKEND = None
+from typing import Literal
+
+_BACKEND = None
 PYQUDA = None
 
 
-def get_scipy():
-    global BACKEND
-    if BACKEND.__name__ == "numpy":
-        import scipy
-        return scipy
-    elif BACKEND.__name__ == "cupy":
-        from cupyx import scipy
-        return scipy
-
-
 def get_backend():
-    global BACKEND
-    if BACKEND is None:
+    global _BACKEND
+    if _BACKEND is None:
+        set_backend("numpy")
+    return _BACKEND
+
+
+def set_backend(backend: Literal["numpy", "cupy", "torch"]):
+    global _BACKEND
+    backend = backend.lower()
+    assert backend in ["numpy", "cupy", "torch"]
+    if backend == "numpy":
         import numpy
-        BACKEND = numpy
-    return BACKEND
-
-
-def set_backend(backend):
-    global BACKEND
-    BACKEND = backend
+        _BACKEND = numpy
+    elif backend == "cupy":
+        import cupy
+        _BACKEND = cupy
+    elif backend == "torch":
+        import torch
+        _BACKEND = torch
+    else:
+        raise ValueError(R'backend must be "numpy", "cupy" or "torch"')
 
 
 def check_QUDA():

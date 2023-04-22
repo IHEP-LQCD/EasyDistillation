@@ -9,5 +9,6 @@ from .quark_diagram import (
     QuarkDiagram, Meson, Propagator, PropagatorLocal, compute_diagrams, compute_diagrams_multitime
 )
 
-from .timer import mytimer
-# from .multiquarks import *
+Nc = 3
+Ns = 4
+Nd = 4

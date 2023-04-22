@@ -14,16 +14,16 @@ class NdarrayFileData(FileData):
         self.size_in_byte = 0
 
     def __getitem__(self, key: Tuple[int]):
-        import numpy as numpy_ori
-        numpy = get_backend()
+        import numpy
+        backend = get_backend()
         s = time()
         # ret = numpy.asarray(
         #     loader(
         #         self.file,
         #     )[key]
         # )  # yapf: disable
-        ret = numpy.asarray(
-            numpy_ori.load(
+        ret = backend.asarray(
+            numpy.load(
                 self.file,
                 mmap_mode="r",
             )[key].copy()
