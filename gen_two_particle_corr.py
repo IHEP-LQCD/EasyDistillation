@@ -56,18 +56,21 @@ DDsbar_DDsbar_cross = QuarkDiagram([
     [0, 0, 0, 3],
     [0, 2, 0, 0],
 ])
-chic1_DDs = QuarkDiagram([
-    [0, 0, 1, 0],
-    [0, 0, 0, 3],
-    [1, 0, 0, 0],
-    [0, 0, 0, 0],
-])
-chic1_ccbar_eta = QuarkDiagram([
-    [0, 0, 1, 0],
-    [1, 0, 0, 0],
-    [0, 0, 0, 3],
-    [0, 0, 0, 0],
-])
+# Some extra examples for {\chi_{c1}}\to{D}{D^*} and {\chi_{c1}\to}
+# chic1_DDs = QuarkDiagram([
+#     [0, 1, 0, 0, 0],
+#     [0, 0, 2, 0, 0],
+#     [1, 0, 0, 0, 0],
+#     [0, 0, 0, 0, 0],
+#     [0, 0, 0, 0, 0],
+# ])
+# chic1_ccbar_eta = QuarkDiagram([
+#     [0, 0, 0, 1, 0],
+#     [0, 0, 0, 0, 0],
+#     [0, 0, 0, 0, 0],
+#     [1, 0, 0, 0, 0],
+#     [0, 0, 0, 0, 2],
+# ])
 
 line_light = Propagator(perambulator_light, Lt)
 line_charm = Propagator(perambulator_charm, Lt)
@@ -79,7 +82,7 @@ Ds_snk = Meson(elemental, op_Ds, False)
 
 # cfg = "s1.0_cfg_2000.stout.n20.f0.12.nev70"
 dispatcher = Dispatch("cfglist.700.txt", "balabala")
-for cfg in dispatcher:
+for cfg in ["s1.0_cfg_2000.stout.n20.f0.12.nev70"]:
     line_light.load(cfg)
     line_charm.load(cfg)
     line_local_light.load(cfg)
@@ -92,16 +95,16 @@ for cfg in dispatcher:
     t_snk = numpy.arange(128)
     backend = get_backend()
 
-    twopt = backend.zeros((6, 128), "<c16")
+    twopt = backend.zeros((4, 128), "<c16")
     for t_src in range(128):
         print(t_src)
         tmp = compute_diagrams_multitime(
-            [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross, chic1_DDs, chic1_ccbar_eta],
-            [t_src, t_src, t_snk, t_src],
+            [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross],
+            [t_src, t_src, t_snk, t_snk],
             [D_src, Ds_src, D_snk, Ds_snk],
             [None, line_charm, line_light, line_local_light],
         )
-        twopt[0:6] += backend.roll(tmp, -t_src, 1)[0:6]
+        twopt += backend.roll(tmp, -t_src, 1)
 
     twopt /= 128
     print(twopt)
