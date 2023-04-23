@@ -88,7 +88,6 @@ class Meson(Particle):
         self.outward = 1
         self.inward = 1
         self.cache = None
-        self.cache_dagger = None
 
     def load(self, key):
         if self.key != key:
@@ -117,22 +116,24 @@ class Meson(Particle):
                     ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
                 else:
                     ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
-        self.cache = (
-            backend.asarray(ret_gamma),
-            backend.asarray(ret_elemental),
-        )
-        self.cache_dagger = (
-            contract("ik,xlk,lj->xij", gamma(8), self.cache[0].conj(), gamma(8)),
-            contract("xtba->xtab", self.cache[1].conj()),
-        )
+        if self.dagger:
+            self.cache = (
+                contract("ik,xlk,lj->xij", gamma(8), self.cache[0].conj(), gamma(8)),
+                contract("xtba->xtab", self.cache[1].conj()),
+            )
+        else:
+            self.cache = (
+                backend.asarray(ret_gamma),
+                backend.asarray(ret_elemental),
+            )
 
     def get(self, t):
         if isinstance(t, int):
             if self.dagger:
                 return contract(
                     "xij,xab->ijab",
-                    self.cache_dagger[0],
-                    self.cache_dagger[1][:, t],
+                    self.cache[0],
+                    self.cache[1][:, t],
                 )
             else:
                 return contract(
@@ -144,8 +145,8 @@ class Meson(Particle):
             if self.dagger:
                 return contract(
                     "xij,xtab->tijab",
-                    self.cache_dagger[0],
-                    self.cache_dagger[1][:, t],
+                    self.cache[0],
+                    self.cache[1][:, t],
                 )
             else:
                 return contract(
