@@ -1,3 +1,8 @@
+import os
+import sys
+
+test_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(test_dir, ".."))
 from time import perf_counter
 from lattice import set_backend, get_backend, check_QUDA
 
@@ -13,11 +18,11 @@ latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size
 Ne = 20
 
-gauge_field = GaugeFieldIldg("./tests/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
+gauge_field = GaugeFieldIldg(F"{test_dir}/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
 
 eigenvector = EigenvectorGenerator(latt_size, gauge_field, Ne, 1e-9)
-out_prefix = R"./tests/"
-out_suffix = R".evecs.npy"
+out_prefix = F"{test_dir}/"
+out_suffix = ".evecs.npy"
 
 
 def check(cfg, data):
