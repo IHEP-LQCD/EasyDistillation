@@ -7,6 +7,8 @@ from lattice import set_backend, get_backend
 
 set_backend("cupy")
 
+Lt = 128
+
 ###############################################################################
 from lattice.insertion.mom_dict import momDict_mom9
 from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
@@ -41,19 +43,37 @@ perambulator = preset.PerambulatorNpy(
 ###############################################################################
 from lattice import QuarkDiagram, compute_diagrams_multitime, Meson, Propagator, PropagatorLocal
 
-for cfg in ["2000"]:
-    e = elemental.load(cfg)
-    p = perambulator.load(cfg)
-    connected = QuarkDiagram([[0, 1], [1, 0]])
-    disconnected = QuarkDiagram([[2, 0], [0, 2]])
-    eta_src = Meson(e, op_pi2, True)
-    eta_snk = Meson(e, op_pi2, False)
-    propag = Propagator(p, 128)
-    propag_local = PropagatorLocal(p, 128)
+connected = QuarkDiagram([
+    [0, 1],
+    [1, 0],
+])
+disconnected = QuarkDiagram([
+    [2, 0],
+    [0, 2],
+])
+rho2pipi = QuarkDiagram([
+    [0, 1, 0],
+    [0, 0, 2],
+    [1, 0, 0],
+])
+eta_src = Meson(elemental, op_pi2, True)
+eta_snk = Meson(elemental, op_pi2, False)
+rho_src = Meson(elemental, op_rho, True)
+pi_snk = Meson(elemental, op_pi, False)
+propag = Propagator(perambulator, Lt)
+propag_local = PropagatorLocal(perambulator, Lt)
+###############################################################################
 
+###############################################################################
+for cfg in ["2000"]:
+    backend = get_backend()
     import numpy
     t_snk = numpy.arange(128)
-    backend = get_backend()
+
+    eta_src.load(cfg)
+    eta_snk.load(cfg)
+    propag.load(cfg)
+    propag_local.load(cfg)
 
     twopt = backend.zeros((2, 128))
     for t_src in range(128):
@@ -71,12 +91,12 @@ for cfg in ["2000"]:
     print(twopt)
     print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
 
-    rho2pipi = QuarkDiagram([[0, 1, 0], [0, 0, 2], [1, 0, 0]])
-    rho_src = Meson(e, op_rho, True)
-    pi_snk = Meson(e, op_pi, False)
+    rho_src.load(cfg)
+    pi_snk.load(cfg)
+    propag.load(cfg)
+    propag_local.load(cfg)
+
     twopt = backend.zeros((1, 128))
-    propag = Propagator(p, 128)
-    propag_local = PropagatorLocal(p, 128)
     for t_src in range(128):
         print(t_src)
         tmp = compute_diagrams_multitime(

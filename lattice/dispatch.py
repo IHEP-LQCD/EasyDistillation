@@ -2,9 +2,7 @@ from io import FileIO
 import os
 import random
 from time import sleep
-from typing import Iterator, Iterable, TypeVar
-
-T = TypeVar("T")
+from typing import Iterator
 
 if os.name == "nt":
     import msvcrt
@@ -53,18 +51,6 @@ class AtomicOpen:
             return True
 
 
-def processbar(input: Iterable[T], length: int = 100, filled: str = "#", empty: str = "-") -> Iterator[T]:
-    total = len(input)
-    i = 0
-    for j in input:
-        percentage = i / total
-        num = int(percentage * length)
-        print(f"\r[{filled * num + empty * (length - num)}] {percentage * 100 : 6.2f}%", end=" ")
-        yield j
-        i += 1
-    print(f"\r[{filled * length}] {100.0 : 6.2f}%")
-
-
 def rand(suffix: str = None) -> str:
     ret = str(suffix)
     if suffix is None:
@@ -100,13 +86,6 @@ class Dispatch:
                 continue
             else:
                 yield line
-
-    @staticmethod
-    def process(filename: str):
-        with open(filename, "r") as f:
-            lines = f.readlines()
-        lines = [line.strip() for line in lines if line != ""]
-        return processbar(lines)
 
 
 def combine(output: str, line: str):

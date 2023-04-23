@@ -1,3 +1,9 @@
+import os
+import sys
+
+test_dir = os.path.dirname(os.path.abspath(__file__))
+print(test_dir)
+sys.path.insert(0, os.path.join(test_dir, ".."))
 from time import perf_counter
 from lattice import set_backend, get_backend
 
@@ -11,15 +17,15 @@ Lx, Ly, Lz, Lt = latt_size
 Ne = 20
 ND = 2
 
-gauge_field = GaugeFieldIldg(R"./tests/", R".lime", [Lt, Lz * Ly * Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(R"./tests/", R".evecs.npy", [Lt, Ne, Lz * Ly * Lx, Nc], Ne)
+gauge_field = GaugeFieldIldg(F"{test_dir}/", R".lime", [Lt, Lz * Ly * Lx, Nd, Nc, Nc])
+eigenvector = EigenvectorNpy(F"{test_dir}/", R".evecs.npy", [Lt, Ne, Lz * Ly * Lx, Nc], Ne)
 
 num_deriv = (3**(ND + 1) - 1) // 2
 mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 1, 2), (1, 1, 2)]
 num_mom = len(mom_list)
 elemental = ElementalGenerator(latt_size, gauge_field, eigenvector, ND, mom_list)
-out_prefix = R"./tests/"
-out_suffix = R".elemental.npy"
+out_prefix = F"{test_dir}/"
+out_suffix = ".elemental.npy"
 
 
 def check(cfg, data):
