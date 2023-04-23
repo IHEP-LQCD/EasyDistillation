@@ -118,8 +118,10 @@ class Meson(Particle):
                     ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
         if self.dagger:
             self.cache = (
-                contract("ik,xlk,lj->xij", gamma(8), self.cache[0].conj(), gamma(8)),
-                contract("xtba->xtab", self.cache[1].conj()),
+                contract("ik,xlk,lj->xij", gamma(8),
+                         backend.asarray(ret_gamma).conj(), gamma(8)),
+                contract("xtba->xtab",
+                         backend.asarray(ret_elemental).conj()),
             )
         else:
             self.cache = (
