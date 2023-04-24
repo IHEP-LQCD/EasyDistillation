@@ -38,7 +38,7 @@ for cfg in ["weak_field"]:
 
     eigenvector.load(cfg)
     eigenvector.stout_smear(10, 0.12)
-    eigenvector.porject_SU3()
+    # eigenvector.porject_SU3()
     for t in range(Lt):
         s = perf_counter()
         data[t] = eigenvector.calc(t)
