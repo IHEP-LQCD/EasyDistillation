@@ -1,24 +1,18 @@
 import functools
-from ..backend import set_backend, get_backend
-if True:
-    set_backend("numpy")
-    backend = get_backend()
-    from scipy.sparse import linalg
-else:
-    set_backend("cupy")
-    backend = get_backend()
-    from cupyx.scipy.sparse import linalg
+
 from opt_einsum import contract
 
 from ..constant import Nc, Nd
+from ..backend import get_backend
 
 
 def _Laplacian(colvec, U, U_dag, latt_size):
+    backend = get_backend()
     Lx, Ly, Lz, Lt = latt_size
     colvec = colvec.reshape(Lz, Ly, Lx, Nc, -1)
     return (
         # - for SA with evals , + for LA with (12 - evals)
-        6 * colvec - (
+        6 * colvec + (
             contract("zyxab,zyxbc->zyxac", U[0], backend.roll(colvec, -1, 2)) +
             contract("zyxab,zyxbc->zyxac", U[1], backend.roll(colvec, -1, 1)) +
             contract("zyxab,zyxbc->zyxac", U[2], backend.roll(colvec, -1, 0)) +
@@ -31,24 +25,23 @@ def _Laplacian(colvec, U, U_dag, latt_size):
 
 class EigenvectorGenerator:
     def __init__(self, latt_size, gauge_field, Ne, tol) -> None:
-        Lx, Ly, Lz, Lt = latt_size
         self.latt_size = latt_size
         self.gauge_field = gauge_field
         self.Ne = Ne
         self.tol = tol
         self._U = None
-        self._gauge_field_path = None
+        # self._gauge_field_path = None
 
     def load(self, key: str):
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[:Nd - 1]
-        self._gauge_field_path = self.gauge_field.load(key).file
+        # self._gauge_field_path = self.gauge_field.load(key).file
 
     def porject_SU3(self):
+        backend = get_backend()
         U = self._U
         Uinv = backend.linalg.inv(U)
-        while (backend.max(
-            backend.abs(U - contract("...ab->...ba", Uinv.conj()))
-        ) > 1e-15) or (backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15):
+        while (backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15
+              ) or (backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15):
             U = 0.5 * (U + contract("...ab->...ba", Uinv.conj()))
             Uinv = backend.linalg.inv(U)
         self._U = U
@@ -64,6 +57,7 @@ class EigenvectorGenerator:
         # core.smear(gauge.latt_size, gauge, nstep, rho)
         # self._U = gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)
 
+        backend = get_backend()
         Lx, Ly, Lz, Lt = self.latt_size
 
         U = self._U
@@ -127,13 +121,18 @@ class EigenvectorGenerator:
         self._U = U
 
     def calc(self, t: int):
+        backend = get_backend()
+        if backend.__name__ == "numpy":
+            from scipy.sparse import linalg
+        elif backend.__name__ == "cupy":
+            from cupyx.scipy.sparse import linalg
         Lx, Ly, Lz, Lt = self.latt_size
 
         U = backend.asarray(self._U[:Nd - 1, t].copy())
         U_dag = U.transpose(0, 1, 2, 3, 5, 4).conj()
         Laplacian = functools.partial(_Laplacian, U=U, U_dag=U_dag, latt_size=self.latt_size)
         A = linalg.LinearOperator((Lz * Ly * Lx * Nc, Lz * Ly * Lx * Nc), matvec=Laplacian, matmat=Laplacian)
-        evals, evecs = linalg.eigsh(A, self.Ne, which="SA", tol=self.tol)
+        evals, evecs = linalg.eigsh(A, self.Ne, which="LA", tol=self.tol)
 
         # [Ne, Lz * Ly * Lx, Nc]
         return evecs.transpose(1, 0).reshape(self.Ne, Lz * Ly * Lx, Nc)
