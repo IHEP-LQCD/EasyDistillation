@@ -9,8 +9,8 @@ from lattice import set_backend, get_backend, check_QUDA
 set_backend("numpy")
 backend = get_backend()
 
-if not check_QUDA():
-    raise ImportError("No QUDA avaliable")
+# if not check_QUDA():
+#     raise ImportError("No QUDA avaliable")
 
 from lattice import GaugeFieldIldg, EigenvectorNpy, EigenvectorGenerator, Nc, Nd
 
@@ -32,7 +32,7 @@ def check(cfg, data):
         for e in range(Ne):
             phase = data_ref[t, e].reshape(-1)[0] / data[t, e].reshape(-1)[0]
             res += backend.linalg.norm(data_ref[t, e] / data[t, e] / phase - 1)
-    print(res)
+        print(res)
 
 
 data = backend.zeros((Lt, Ne, Lz * Ly * Lx, Nc), "<c16")
@@ -41,6 +41,8 @@ for cfg in ["weak_field"]:
 
     eigenvector.load(cfg)
     eigenvector.stout_smear(10, 0.12)
+    eigenvector.porject_SU3()
+    print(backend.linalg.norm(eigenvector._U - backend.load("tests/weak_field.stout.npy")[:Nd - 1]))
     for t in range(Lt):
         s = perf_counter()
         data[t] = eigenvector.calc(t)
