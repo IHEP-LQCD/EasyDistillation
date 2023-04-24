@@ -7,7 +7,7 @@ from itertools import product
 from .one_particle import twopoint
 
 
-def get_mom2_oprator(insertion_row: InsertionRow, mom2: int) -> List[Operator]:
+def get_mom2_oprator(insertion_row: InsertionRow, mom2: int) -> Operator:
     ret = []
     for i in product(range(-3, 4), repeat=3):
         px, py, pz = i
