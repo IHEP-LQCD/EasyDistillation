@@ -84,33 +84,28 @@ class EigenvectorGenerator:
                 U.conj(),
             )
             Q = 0.5j * (contract("...ab->...ba", Q.conj()) - Q)
-            contract("...aa->...a",
-                     Q)[:] -= 1 / Nc * contract("...aa->...", Q).reshape(Nd - 1, Lt, Lz, Ly, Lx, 1).repeat(Nc, 5)
-            c0 = 1 / 3 * contract("...aa->...", contract("...ab,...bc,...cd->...ad", Q, Q, Q)).real
-            c1 = 1 / 2 * contract("...aa->...", contract("...ab,...bc->...ac", Q, Q)).real
-            c0_max = 2 * (c1 / 3)**(2 / 3)
+            Q -= 1 / Nc * contract("...aa,bc->...bc", Q, backend.identity(Nc))
+            c0 = contract("...ab,...bc,...ca->...", Q, Q, Q).real / 3
+            c1 = contract("...ab,...ba->...", Q, Q).real / 2
+            c0_max = 2 * (c1 / 3)**(3 / 2)
             parity = backend.where(c0 < 0)
             c0[parity] *= -1
             theta = backend.arccos(c0 / c0_max)
-            u = (1 / 3 * c1)**0.5 * backend.cos(1 / 3 * theta)
-            w = c1**0.5 * backend.sin(1 / 3 * theta)
-            xi0 = backend.zeros_like(w)
-            small = backend.where(backend.abs(w) <= 0.05)
+            u = (c1 / 3)**0.5 * backend.cos(theta / 3)
+            w = c1**0.5 * backend.sin(theta / 3)
+            u_sq = u**2
+            w_sq = w**2
+            e_iu = backend.exp(-1j * u)
+            e_2iu = backend.exp(2j * u)
+            cos_w = backend.cos(w)
+            sinc_w = 1 - w_sq / 6 * (1 - w_sq / 20 * (1 - w_sq / 42 * (1 - w_sq / 72)))
             large = backend.where(backend.abs(w) > 0.05)
-            w_small_square = w[small]**2
             w_large = w[large]
-            xi0[small] = 1 - 1 / 6 * w_small_square * (1 - 1 / 20 * w_small_square * (1 - 1 / 42 * w_small_square**2))
-            xi0[large] = backend.sin(w_large) / w_large
-            f_denominator = 9 * u**2 - w**2
-            f0 = (
-                (u**2 - w**2) * backend.exp(2j * u) + backend.exp(-1j * u) *
-                (8 * u**2 * backend.cos(w) + 2j * u * (3 * u**2 + w**2) * xi0)
-            ) / f_denominator
-            f1 = (
-                2 * u * backend.exp(2j * u) - backend.exp(-1j * u) *
-                (2 * u * backend.cos(w) - 1j * (3 * u**2 - w**2) * xi0)
-            ) / f_denominator
-            f2 = (backend.exp(2j * u) - backend.exp(-1j * u) * (backend.cos(w) + 3j * u * xi0)) / f_denominator
+            sinc_w[large] = backend.sin(w_large) / w_large
+            f_denom = 1 / (9 * u_sq - w_sq)
+            f0 = ((u_sq - w_sq) * e_2iu + e_iu * (8 * u_sq * cos_w + 2j * u * (3 * u_sq + w_sq) * sinc_w)) * f_denom
+            f1 = (2 * u * e_2iu - e_iu * (2 * u * cos_w - 1j * (3 * u_sq - w_sq) * sinc_w)) * f_denom
+            f2 = (e_2iu - e_iu * (cos_w + 3j * u * sinc_w)) * f_denom
             f0[parity] = f0[parity].conj()
             f1[parity] = -f1[parity].conj()
             f2[parity] = f2[parity].conj()
