@@ -100,34 +100,35 @@ for cfg in dispatcher:
     import numpy
     t_snk = numpy.arange(Nt)
 
-    for i_mom2 in range(mom_max):
+    for i_mom2 in range(mom_max)[1:]:
         mom_list = get_mom2_list(i_mom2)
         op_D_list, op_Ds_list = get_AB_opratorList_back2back(ins_D[0], ins_Dstar[2], mom_list)
 
-        for i_mom_pair in range(len(mom_list)):
-            D_src = Meson(elemental, op_D_list[i_mom_pair], True)
-            D_snk = Meson(elemental, op_D_list[i_mom_pair], False)
-            Ds_src = Meson(elemental, op_Ds_list[i_mom_pair], True)
-            Ds_snk = Meson(elemental, op_Ds_list[i_mom_pair], False)
+        for i_mom_pair_src in range(len(mom_list)):
+            for i_mom_pair_snk in range(len(mom_list)):
+                D_src = Meson(elemental, op_D_list[i_mom_pair_src], True)
+                D_snk = Meson(elemental, op_D_list[i_mom_pair_snk], False)
+                Ds_src = Meson(elemental, op_Ds_list[i_mom_pair_src], True)
+                Ds_snk = Meson(elemental, op_Ds_list[i_mom_pair_snk], False)
 
-            line_light.load(cfg) 
-            line_charm.load(cfg) 
-            line_local_light.load(cfg) 
-            D_src.load(cfg)
-            D_snk.load(cfg)
-            Ds_src.load(cfg)
-            Ds_snk.load(cfg)
+                line_light.load(cfg) 
+                line_charm.load(cfg) 
+                line_local_light.load(cfg) 
+                D_src.load(cfg)
+                D_snk.load(cfg)
+                Ds_src.load(cfg)
+                Ds_snk.load(cfg)
 
-            for t_src in range(128):
-                print(t_src)
-                tmp = compute_diagrams_multitime(
-                    [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross, chic1_DDs, chic1_Jpsi_eta],
-                    [t_src, t_src, t_snk, t_snk],
-                    [D_src, Ds_src, D_snk, Ds_snk],
-                    [None, line_charm, line_light, line_local_light],
-                )
-                twopt_save[i_mom2, 0:6] += backend.roll(tmp, -t_src, 1)[0:6] 
+                for t_src in range(128):
+                    print(t_src)
+                    tmp = compute_diagrams_multitime(
+                        [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross, chic1_DDs, chic1_Jpsi_eta],
+                        [t_src, t_src, t_snk, t_snk],
+                        [D_src, Ds_src, D_snk, Ds_snk],
+                        [None, line_charm, line_light, line_local_light],
+                    )
+                    twopt_save[i_mom2, 0:6] += backend.roll(tmp, -t_src, 1)[0:6] 
 
-        twopt_save[i_mom2] /= len(mom_list)
+        twopt_save[i_mom2] /= len(mom_list)**2
     print(twopt_save)
     # print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
