@@ -4,13 +4,10 @@ import sys
 test_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(test_dir, ".."))
 from time import perf_counter
-from lattice import set_backend, get_backend, check_QUDA
+from lattice import set_backend, get_backend
 
-set_backend("numpy")
+set_backend("cupy")
 backend = get_backend()
-
-# if not check_QUDA():
-#     raise ImportError("No QUDA avaliable")
 
 from lattice import GaugeFieldIldg, EigenvectorNpy, EigenvectorGenerator, Nc, Nd
 
@@ -42,7 +39,6 @@ for cfg in ["weak_field"]:
     eigenvector.load(cfg)
     eigenvector.stout_smear(10, 0.12)
     eigenvector.porject_SU3()
-    print(backend.linalg.norm(eigenvector._U - backend.load("tests/weak_field.stout.npy")[:Nd - 1]))
     for t in range(Lt):
         s = perf_counter()
         data[t] = eigenvector.calc(t)
