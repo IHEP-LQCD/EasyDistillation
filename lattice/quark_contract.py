@@ -1,22 +1,26 @@
-from sympy import Symbol, sqrt, S, Add, Mul, simplify
+from typing import Literal, NamedTuple
+
+from sympy import Add, Mul, Symbol, S, simplify, sqrt
+
+Flavor = Literal["u", "d", "s", "c", "t", "b"]
+
+
+class Tag(NamedTuple):
+    tag: int
+    time: int
 
 
 class Insertion(Symbol):
-    def __new__(cls, name, dagger, **assumptions) -> None:
-        obj = super().__new__(
-            cls,
-            Rf"{name}^\dagger" if dagger else Rf"{name}",
-            commutative=False,
-            **assumptions
-        )
+    def __new__(cls, name: str, dagger: bool, **assumptions) -> None:
+        obj = super().__new__(cls, Rf"{name}^\dagger" if dagger else Rf"{name}", commutative=False, **assumptions)
         return obj
 
 
 class Qurak(Symbol):
-    def __new__(cls, flavor, tag, anti, **assumptions) -> None:
+    def __new__(cls, flavor: Flavor, tag: Tag, anti: bool, **assumptions) -> None:
         obj = super().__new__(
             cls,
-            Rf"\bar{{{flavor}}}({tag})" if anti else Rf"{flavor}({tag})",
+            Rf"\bar{{{flavor}}}({tag.tag})" if anti else Rf"{flavor}({tag.tag})",
             commutative=False,
             **assumptions
         )
@@ -27,21 +31,15 @@ class Qurak(Symbol):
 
 
 class Meson:
-    def __init__(
-        self, qbar: str, insertion: str, q: str, tag: str, dagger: bool
-    ) -> None:
+    def __init__(self, qbar: Flavor, insertion: str, q: Flavor, tag: Tag, dagger: bool = False) -> None:
         if dagger:
-            self.qbar, self.q = q, qbar
-        else:
-            self.qbar, self.q = qbar, q
+            qbar, q = q, qbar
+        self.qbar = qbar
+        self.q = q
         self.insertion = insertion
         self.tag = tag
         self.dagger = dagger
-        self.expression = (
-            Qurak(self.qbar, tag, True)
-            * Insertion(insertion, dagger)
-            * Qurak(self.q, tag, False)
-        )
+        self.expression = (Qurak(qbar, tag, True) * Insertion(insertion, dagger) * Qurak(q, tag, False))
 
     def __add__(self, obj):
         return self.expression + obj
@@ -66,51 +64,50 @@ class Meson:
 
 
 class Propagator(Symbol):
-    def __new__(cls, flavor, source_tag, sink_tag, **assumptions) -> None:
-        obj = super().__new__(
-            cls, Rf"S^{flavor}({sink_tag}, {source_tag})", **assumptions
-        )
+    def __new__(cls, flavor: Flavor, source_tag: Tag, sink_tag: Tag, **assumptions) -> None:
+        obj = super().__new__(cls, Rf"S^{flavor}({sink_tag.tag}, {source_tag.tag})", **assumptions)
         obj.flavor = flavor
         obj.source_tag = source_tag
         obj.sink_tag = sink_tag
+        obj.tag = Rf"S^{flavor}_\mathrm{{local}}" if source_tag.time == sink_tag.time else Rf"S^{flavor}"
         return obj
 
 
-def _quark_contract(symbol_list, result_list, temp, degenerate):
+def _quark_contract(symbol_list, result_list, result, degenerate):
     if symbol_list == []:
-        result_list.append(Mul(*temp))
-        temp.clear()
+        result_list.append(Mul(*result))
         return
-    for i, snk in enumerate(symbol_list):
-        if snk.anti:
+    for i, src in enumerate(symbol_list):
+        if src.anti:
             break
-    for j, src in enumerate(symbol_list):
-        if not src.anti and src.flavor == snk.flavor:
+    for j, snk in enumerate(symbol_list):
+        if not snk.anti and snk.flavor == src.flavor:
             if i > j:
                 symbol_list.pop(i)
                 symbol_list.pop(j)
-                factor = S(-1) ** (i - j - 1)
+                factor = S(-1)**(i - j - 1)
             else:
                 symbol_list.pop(j)
                 symbol_list.pop(i)
-                factor = S(-1) ** (j - i)
-            if degenerate and (src.flavor == "u" or src.flavor == "d"):
+                factor = S(-1)**(j - i)
+            if degenerate and (snk.flavor == "u" or snk.flavor == "d"):
                 prop = Propagator("q", src.tag, snk.tag)
             else:
                 prop = Propagator(src.flavor, src.tag, snk.tag)
-            temp.append(factor * prop)
-            _quark_contract(symbol_list, result_list, temp, degenerate)
+            result.append(factor * prop)
+            _quark_contract(symbol_list, result_list, result, degenerate)
+            result.pop()
             if i > j:
-                symbol_list.insert(j, src)
-                symbol_list.insert(i, snk)
+                symbol_list.insert(j, snk)
+                symbol_list.insert(i, src)
             else:
-                symbol_list.insert(i, snk)
-                symbol_list.insert(j, src)
+                symbol_list.insert(i, src)
+                symbol_list.insert(j, snk)
 
 
 def quark_contract(expr, degenerate=True):
     terms = Add.make_args(expr.expand())
-    result_term = []
+    result_terms = []
     for term in terms:
         factors = Mul.make_args(term)
         coeff = S(1)
@@ -121,30 +118,46 @@ def quark_contract(expr, degenerate=True):
             elif isinstance(factor, Qurak):
                 symbol_list.append(factor)
         result_list = []
-        temp = []
-        _quark_contract(symbol_list, result_list, temp, degenerate)
-        result_term.append(coeff * Add(*result_list))
-    return simplify(Add(*result_term))
+        result = []
+        _quark_contract(symbol_list, result_list, result, degenerate)
+        result_terms.append(coeff * Add(*result_list))
+    return simplify(Add(*result_terms)).expand()
 
 
-a = (
-    S(1)
-    / sqrt(2)
-    * (
-        Meson("u", R"\gamma_5", "u", "0", False)
-        + Meson("d", R"\gamma_5", "d", "0", False)
-    )
-)
-b = (
-    S(1)
-    / sqrt(2)
-    * (
-        Meson("u", R"\gamma_5", "u", "1", True)
-        + Meson("d", R"\gamma_5", "d", "1", True)
-    )
-)
-c = Meson("u", R"\gamma_5", "d", "0", False)
-d = Meson("u", R"\gamma_5", "d", "1", True)
+def quark_diagram(expr, num_particles):
+    terms = Add.make_args(expr.expand())
+    diagrams = []
+    coeffs = []
+    propagators = [None]
+    for term in terms:
+        diagram = [[0 for _ in range(num_particles)] for _ in range(num_particles)]
+        factors = Mul.make_args(term)
+        coeff = S(1)
+        for factor in factors:
+            if not isinstance(factor, Propagator):
+                coeff *= factor
+            else:
+                if factor.tag not in propagators:
+                    propagators.append(factor.tag)
+                diagram[factor.source_tag.tag][factor.sink_tag.tag] = propagators.index(factor.tag)
+        diagrams.append(diagram)
+        coeffs.append(coeff)
+    return diagrams, coeffs, propagators
 
-print(quark_contract(a * b))
-print(quark_contract(c * d))
+
+a = S(1) / sqrt(2) * (Meson("u", R"\gamma_5", "u", Tag(0, 0), True) + Meson("d", R"\gamma_5", "d", Tag(0, 0), True))
+b = S(1) / sqrt(2) * (Meson("u", R"\gamma_5", "u", Tag(1, 1), False) + Meson("d", R"\gamma_5", "d", Tag(1, 1), False))
+
+c = Meson("u", R"\gamma_5", "d", Tag(0, 0), True)
+d = Meson("u", R"\gamma_5", "d", Tag(1, 1), False)
+
+e = Meson("u", R"\gamma_i", "u", Tag(0, 0), True)
+f = Meson("d", R"\gamma_5", "u", Tag(1, 1), False)
+g = Meson("u", R"\gamma_5", "d", Tag(2, 1), False)
+
+# print(quark_diagram(quark_contract(b * a), 2))
+# print(quark_diagram(quark_contract(d * c), 2))
+# print(quark_diagram(quark_contract(g * f * e), 3))
+print(quark_contract(b * a))
+print(quark_contract(d * c))
+print(quark_contract(g * f * e))
