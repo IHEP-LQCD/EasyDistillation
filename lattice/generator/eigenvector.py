@@ -12,7 +12,7 @@ def _Laplacian(colvec, U, U_dag, latt_size):
     colvec = colvec.reshape(Lz, Ly, Lx, Nc, -1)
     return (
         # - for SA with evals , + for LA with (12 - evals)
-        6 * colvec + (
+        6 * colvec - (
             contract("zyxab,zyxbc->zyxac", U[0], backend.roll(colvec, -1, 2)) +
             contract("zyxab,zyxbc->zyxac", U[1], backend.roll(colvec, -1, 1)) +
             contract("zyxab,zyxbc->zyxac", U[2], backend.roll(colvec, -1, 0)) +
@@ -36,12 +36,14 @@ class EigenvectorGenerator:
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[:Nd - 1]
         # self._gauge_field_path = self.gauge_field.load(key).file
 
-    def porject_SU3(self):
+    def project_SU3(self):
         backend = get_backend()
         U = self._U
         Uinv = backend.linalg.inv(U)
-        while (backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15
-              ) or (backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15):
+        while (
+            backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15 or
+            backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15
+        ):
             U = 0.5 * (U + contract("...ab->...ba", Uinv.conj()))
             Uinv = backend.linalg.inv(U)
         self._U = U
@@ -127,7 +129,7 @@ class EigenvectorGenerator:
         U_dag = U.transpose(0, 1, 2, 3, 5, 4).conj()
         Laplacian = functools.partial(_Laplacian, U=U, U_dag=U_dag, latt_size=self.latt_size)
         A = linalg.LinearOperator((Lz * Ly * Lx * Nc, Lz * Ly * Lx * Nc), matvec=Laplacian, matmat=Laplacian)
-        evals, evecs = linalg.eigsh(A, self.Ne, which="LA", tol=self.tol)
+        evals, evecs = linalg.eigsh(A, self.Ne, which="SA", tol=self.tol)
 
         # [Ne, Lz * Ly * Lx, Nc]
         return evecs.transpose(1, 0).reshape(self.Ne, Lz * Ly * Lx, Nc)
