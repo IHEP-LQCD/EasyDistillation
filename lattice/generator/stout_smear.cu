@@ -1,8 +1,5 @@
 #include <cupy/complex.cuh>
 
-// #define X(_dir, _x, _y, _z, _t) \
-//   ((((_dir * Lt + (_t)) * Lz + (_z)) * Ly + (_y)) * Lx + (_x))
-
 #define get_x(_coord, _X) \
   (((_coord[3] * _X[2] + _coord[2]) * _X[1] + _coord[1]) * _X[0] + _coord[0])
 
