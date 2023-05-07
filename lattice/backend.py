@@ -45,7 +45,7 @@ def check_QUDA():
             print(F"RuntimeError: {e}")
         else:
             PYQUDA = True
-    else:
+    if PYQUDA is None:
         PYQUDA = False
 
     return PYQUDA
