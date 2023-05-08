@@ -1,4 +1,3 @@
-from time import perf_counter
 from lattice import set_backend, get_backend, check_QUDA
 
 if not check_QUDA():
@@ -10,7 +9,7 @@ from pyquda import enum_quda
 set_backend("cupy")
 backend = get_backend()
 
-from lattice import GaugeFieldIldg, EigenvectorTimeSlice, EigenvectorNpy, Nc, Nd
+from lattice import GaugeFieldIldg, EigenvectorTimeSlice, Nc, Nd
 
 latt_size = [16, 16, 16, 128]
 Lx, Ly, Lz, Lt = latt_size
