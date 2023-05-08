@@ -40,7 +40,7 @@ class ElementalGenerator:
         self._VPV = backend.zeros((self.num_derivative, self.num_momentum, Ne, Ne), "<c16")
         self._gauge_field_data = None
         self._eigenvector_data = None
-        self._momentum_phase = MomentumPhase(Lx, Ly, Lz)
+        self._momentum_phase = MomentumPhase(latt_size)
 
     def _nD(self, V, U, deriv):
         backend = get_backend()

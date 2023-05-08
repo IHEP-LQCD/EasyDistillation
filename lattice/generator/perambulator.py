@@ -48,8 +48,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         set_backend("numpy")
         Lx, Ly, Lz, Lt = self.latt_size
         Ne = self.eigenvector.Ne
-        self._gauge_field_data = gauge_utils.readIldg(self.gauge_field.load(key).file)
-        self.dslash.loadGauge(self._gauge_field_data)
+        self.dslash.loadGauge(gauge_utils.readIldg(self.gauge_field.load(key).file))
         eigenvector_data = self.eigenvector.load(key)
         eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz * Ly * Lx, Nc), "<c16")
         for e in range(Ne):
@@ -62,7 +61,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         set_backend(backend)
 
     def calc(self, t: int):
-        from pyquda.utils import source
+        from pyquda import LatticeFermion
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size
         Vol = Lx * Ly * Lz * Lt
@@ -75,7 +74,9 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
 
         for eigen in range(Ne):
             for spin in range(Ns):
-                V = source.source(latt_size, "colorvec", t, spin, None, eigenvector[eigen])
+                V = LatticeFermion(latt_size)
+                data = V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                data[:, t, :, :, :, spin, :] = eigenvector[eigen, :, t, :, :, :, :]
                 SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dslash.invert(V).data.reshape(Vol, Ns, Nc)
             VSV[:, :, :, :, eigen] = contract("ketzyxa,etzyxija->tijk", eigenvector.conj(), SV)
         return VSV
