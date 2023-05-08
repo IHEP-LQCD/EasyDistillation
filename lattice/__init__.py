@@ -5,7 +5,10 @@ from .preset import (
     GaugeFieldTimeSlice, EigenvectorTimeSlice, PerambulatorBinary, GaugeFieldIldg, ElementalNpy, EigenvectorNpy,
     Jpsi2gammaNpy
 )
-from .generator import ElementalGenerator, EigenvectorGenerator, PerambulatorGenerator, DensityPerambulatorGenerator
+from .generator import (
+    ElementalGenerator, EigenvectorGenerator, PerambulatorGenerator, GeneralizedPerambulatorGenerator,
+    DensityPerambulatorGenerator
+)
 from .quark_diagram import (
     QuarkDiagram, Meson, Propagator, PropagatorLocal, compute_diagrams, compute_diagrams_multitime
 )

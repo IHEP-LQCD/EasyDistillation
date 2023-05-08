@@ -45,10 +45,8 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         self.gamma_list = gamma_list
         self.momentum_list = momentum_list
         self._momentum_phase = MomentumPhase(latt_size)
-        self._SV_i = backend.zeros((2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
-        self._SV_f = backend.zeros((2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
-        self._h_SV_i = zeros_pinned((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
-        self._h_SV_f = zeros_pinned((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
+        self._SV_i = backend.zeros((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
+        self._SV_f = backend.zeros((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._VSSV = zeros_pinned((Ne, Ne, len(gamma_list), len(momentum_list), 2, Lz, Ly, Lx // 2, Ns, Ns), "<c16")
         self._stream = backend.cuda.Stream()
         self._t = None
@@ -108,8 +106,6 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         V = _V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
         SV_i = self._SV_i
         SV_f = self._SV_f
-        h_SV_i = self._h_SV_i
-        h_SV_f = self._h_SV_f
         VSSV = self._VSSV
         stream = self._stream
 
@@ -117,19 +113,19 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
             if ti != self._t:
                 for spin in range(Ns):
                     V[:, ti, :, :, :, spin, :] = data_cb2[0, eigen, :, :, :, :, :]
-                    SV_i[:, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns,
-                                                                                  Nc)[:, tau, :, :, :, :, :]
-                SV_i.get(stream, out=h_SV_i[eigen])
+                    SV_i[eigen, :, :, :, :, :,
+                         spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)[:,
+                                                                                                   tau, :, :, :, :, :]
+                    V[:] = 0
 
             if tf != self._tf:
                 for spin in range(Ns):
                     V[:, tf, :, :, :, spin, :] = data_cb2[1, eigen, :, :, :, :, :]
-                    SV_f[:, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns,
-                                                                                  Nc)[:, tau, :, :, :, :, :]
-                SV_f[:] = contract("ii,ezyxjic,jj->ezyxijc", gamma(15), SV_f.conj(), gamma(15))
-                SV_f.get(stream, out=h_SV_f[eigen])
-
-            stream.synchronize()
+                    SV_f[eigen, :, :, :, :, :,
+                         spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)[:,
+                                                                                                   tau, :, :, :, :, :]
+                    V[:] = 0
+            SV_f[:] = contract("ii,kezyxjic,jj->kezyxijc", gamma(15), SV_f.conj(), gamma(15))
 
         if ti != self._t:
             self._t = ti
@@ -137,17 +133,15 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
             self._tf = tf
 
         for eigen_f in range(Ne):
-            SV_f.set(h_SV_f[eigen_f])
             for eigen_i in range(Ne):
-                SV_i.set(h_SV_i[eigen_i])
                 for gamma_idx, gamma_i in enumerate(gamma_list):
                     for momentum_idx, momentum in enumerate(momentum_list):
                         contract(
                             "ezyx,ezyxijc,jk,ezyxklc->ezyxil",
                             momentum_phase.get_cb2(momentum)[:, tau],
-                            SV_f,
+                            SV_f[eigen_f],
                             gamma(gamma_i),
-                            SV_i,
+                            SV_i[eigen_i],
                         ).get(stream, out=VSSV[eigen_f, eigen_i, gamma_idx, momentum_idx])
         stream.synchronize()
 

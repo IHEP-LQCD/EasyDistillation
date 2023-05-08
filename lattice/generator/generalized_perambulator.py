@@ -49,9 +49,11 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self._SV_f = backend.zeros((2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._h_SV_i = zeros_pinned((Ne, 2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._h_SV_f = zeros_pinned((Ne, 2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
+        self._VSSV_fi = backend.zeros((len(gamma_list), len(momentum_list), Lt, Ns, Ns), "<c16")
         self._VSSV = zeros_pinned((Ne, Ne, len(gamma_list), len(momentum_list), Lt, Ns, Ns), "<c16")
-        self._stream = backend.cuda.Stream()
-        self._t = None
+        self._stream_i = backend.cuda.Stream()
+        self._stream_f = backend.cuda.Stream()
+        self._ti = None
         self._tf = None
 
     def load(self, key: str):
@@ -59,7 +61,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self.dslash.loadGauge(gauge_utils.readIldg(self.gauge_field.load(key).file))
         self._eigenvector_data = self.eigenvector.load(key)
 
-    def calc(self, t: int, tf: int):
+    def calc(self, ti: int, tf: int):
         import numpy as np
         from pyquda import LatticeFermion
         backend = get_backend()
@@ -76,8 +78,8 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         data_cb2 = np.zeros((2, Ne, 2, Lz, Ly, Lx // 2, Nc), "<c16")
         set_backend("numpy")
         for e in range(Ne):
-            if t != self._t:
-                data_lexico[0, e] = eigenvector[t, e]
+            if ti != self._ti:
+                data_lexico[0, e] = eigenvector[ti, e]
             if tf != self._tf:
                 data_lexico[1, e] = eigenvector[tf, e]
         set_backend(backend)
@@ -85,8 +87,8 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
 
         for z in range(Lz):
             for y in range(Ly):
-                if t != self._t:
-                    eo = (t + z + y) % 2
+                if ti != self._ti:
+                    eo = (ti + z + y) % 2
                     if eo == 0:
                         data_cb2[0, :, 0, z, y, :] = data_lexico[0, :, z, y, 0::2]
                         data_cb2[0, :, 1, z, y, :] = data_lexico[0, :, z, y, 1::2]
@@ -110,43 +112,50 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         SV_f = self._SV_f
         h_SV_i = self._h_SV_i
         h_SV_f = self._h_SV_f
+        VSSV_fi = self._VSSV_fi
         VSSV = self._VSSV
-        stream = self._stream
+        stream_i = self._stream_i
+        stream_f = self._stream_f
 
         for eigen in range(Ne):
-            if t != self._t:
+            if ti != self._ti:
+                stream_i.synchronize()
                 for spin in range(Ns):
-                    V[:, t, :, :, :, spin, :] = data_cb2[0, eigen, :, :, :, :, :]
+                    V[:, ti, :, :, :, spin, :] = data_cb2[0, eigen, :, :, :, :, :]
                     SV_i[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
-                SV_i.get(stream, out=h_SV_i[eigen])
+                    V[:] = 0
+                SV_i.get(stream_i, out=h_SV_i[eigen])
 
             if tf != self._tf:
+                stream_f.synchronize()
                 for spin in range(Ns):
                     V[:, tf, :, :, :, spin, :] = data_cb2[1, eigen, :, :, :, :, :]
                     SV_f[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                    V[:] = 0
                 SV_f[:] = contract("ii,etzyxjic,jj->etzyxijc", gamma(15), SV_f.conj(), gamma(15))
-                SV_f.get(stream, out=h_SV_f[eigen])
+                SV_f.get(stream_f, out=h_SV_f[eigen])
 
-            stream.synchronize()
-
-        if t != self._t:
-            self._t = t
+        if ti != self._ti:
+            self._ti = ti
         if tf != self._tf:
             self._tf = tf
+        stream_i.synchronize()
+        stream_f.synchronize()
 
-        for eigen_f in range(Ne):
-            SV_f.set(h_SV_f[eigen_f])
-            for eigen_i in range(Ne):
-                SV_i.set(h_SV_i[eigen_i])
+        for eigen_i in range(Ne):
+            SV_i.set(h_SV_i[eigen_i])
+            for eigen_f in range(Ne):
+                SV_f.set(h_SV_f[eigen_f])
+                stream_i.synchronize()
                 for gamma_idx, gamma_i in enumerate(gamma_list):
                     for momentum_idx, momentum in enumerate(momentum_list):
-                        contract(
+                        VSSV_fi[gamma_idx, momentum_idx] = contract(
                             "etzyx,etzyxijc,jk,etzyxklc->til",
                             momentum_phase.get_cb2(momentum),
                             SV_f,
                             gamma(gamma_i),
                             SV_i,
-                        ).get(stream, out=VSSV[eigen_f, eigen_i, gamma_idx, momentum_idx])
-        stream.synchronize()
+                        )
+                VSSV_fi.get(stream_i, out=VSSV[eigen_f, eigen_i])
 
         return VSSV
