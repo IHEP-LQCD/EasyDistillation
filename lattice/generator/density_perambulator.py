@@ -32,6 +32,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         from pyquda import core
         backend = get_backend()
         assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
+        import numpy as np
         from cupyx import zeros_pinned
         Lx, Ly, Lz, Lt = latt_size
         Ne = eigenvector.Ne
@@ -47,7 +48,8 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         self._momentum_phase = MomentumPhase(latt_size)
         self._SV_i = backend.zeros((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._SV_f = backend.zeros((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
-        self._VSSV = zeros_pinned((Ne, Ne, len(gamma_list), len(momentum_list), 2, Lz, Ly, Lx // 2, Ns, Ns), "<c16")
+        self._VSSV_cb2 = zeros_pinned((Ne, len(gamma_list), len(momentum_list), 2, Lz, Ly, Lx // 2, Ns, Ns), "<c16")
+        self._VSSV = np.zeros((Ne, Ne, len(gamma_list), len(momentum_list), Lz, Ly, Lx, Ns, Ns), "<c16")
         self._stream = backend.cuda.Stream()
         self._t = None
         self._tf = None
@@ -106,6 +108,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         V = _V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
         SV_i = self._SV_i
         SV_f = self._SV_f
+        VSSV_cb2 = self._VSSV_cb2
         VSSV = self._VSSV
         stream = self._stream
 
@@ -142,7 +145,16 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
                             SV_f[eigen_f],
                             gamma(gamma_i),
                             SV_i[eigen_i],
-                        ).get(stream, out=VSSV[eigen_f, eigen_i, gamma_idx, momentum_idx])
-        stream.synchronize()
+                        ).get(stream, out=VSSV_cb2[eigen_i, gamma_idx, momentum_idx])
+            stream.synchronize()
+            for z in range(Lz):
+                for y in range(Ly):
+                    eo = (tau + z + y) % 2
+                    if eo == 0:
+                        VSSV[eigen_f, :, :, :, z, y, 1::2] = VSSV_cb2[:, :, :, 1, z, y, :]
+                        VSSV[eigen_f, :, :, :, z, y, 0::2] = VSSV_cb2[:, :, :, 0, z, y, :]
+                    else:
+                        VSSV[eigen_f, :, :, :, z, y, 1::2] = VSSV_cb2[:, :, :, 0, z, y, :]
+                        VSSV[eigen_f, :, :, :, z, y, 0::2] = VSSV_cb2[:, :, :, 1, z, y, :]
 
-        return VSSV
+        return VSSV.transpose(2, 3, 4, 5, 6, 7, 8, 0, 1)
