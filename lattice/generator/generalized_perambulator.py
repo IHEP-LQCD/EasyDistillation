@@ -158,4 +158,4 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
                         )
                 VSSV_fi.get(stream_i, out=VSSV[eigen_f, eigen_i])
 
-        return VSSV
+        return VSSV.transpose(2, 3, 4, 5, 6, 0, 1)

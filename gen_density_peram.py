@@ -1,4 +1,3 @@
-from time import perf_counter
 from lattice import set_backend, get_backend, check_QUDA
 
 if not check_QUDA():
@@ -10,7 +9,7 @@ from pyquda import enum_quda
 set_backend("cupy")
 backend = get_backend()
 
-from lattice import GaugeFieldIldg, EigenvectorTimeSlice, EigenvectorNpy, Nc, Nd
+from lattice import GaugeFieldIldg, EigenvectorTimeSlice, Nc, Nd
 
 latt_size = [16, 16, 16, 128]
 Lx, Ly, Lz, Lt = latt_size
@@ -26,7 +25,7 @@ eigenvector = EigenvectorTimeSlice(
 )
 perambulator = DensityPerambulatorGenerator(
     latt_size, gauge_field, eigenvector, 0.09253, 1e-9, 1000, 4.8965, 0.86679, 0.8549165664, 2.32582045, True,
-    [[4, 4, 4, 4], [4, 4, 4, 4]], [8], [(0, 0, 0)]
+    [[4, 4, 4, 4], [4, 4, 4, 4]], [1, 2, 4, 8], [(0, 0, 0)]
 )
 perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
 
