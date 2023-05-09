@@ -8,7 +8,7 @@ def get_mom2_list(mom2: int) -> List[Tuple]:
     for i in product(range(-3, 4), repeat=3):
         px, py, pz = i
         if px**2 + py**2 + pz**2 == mom2:
-            print(F"mom: {i}")
+            # print(F"mom: {i}")
             ret.append((px, py, pz))
     return ret
 

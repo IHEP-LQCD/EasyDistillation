@@ -2,7 +2,7 @@ from typing import Iterable, List
 
 from opt_einsum import contract
 
-from ..insertion import Operator
+from ..insertion import Operator, InsertionRow
 from ..insertion.gamma import gamma
 from ..data import get_elemental_data
 from ..filedata.abstract import FileData
@@ -93,3 +93,41 @@ def twopoint_isoscalar(
         disconnected[:, t, :] = backend.roll(disconnected[:, t, :], -t, axis=1)
     disconnected = disconnected.mean(1)
     return -connected + 2 * disconnected
+
+
+def twopoint_matrix_multi_mom(
+    insertions: List[InsertionRow], momList: List, elemental: FileData, perambulator: FileData,
+    timeslices: Iterable[int], Lt: int
+):
+    backend = get_backend()
+    Nmom = len(momList)
+    Nt = len(timeslices)
+    Nop = len(insertions)
+    op_src_list = []
+    op_snk_list = []
+    for imom in range(Nmom):
+        px, py, pz = momList[imom]
+        for isrc in range(Nop):
+            for isnk in range(Nop):
+                op_src_list.append(Operator("", [insertions[isrc](px, py, pz)], [1]))
+                op_snk_list.append(Operator("", [insertions[isnk](px, py, pz)], [1]))
+    Nterm = Nmom * Nop * Nop
+
+    ret = backend.zeros((Nterm, Lt), "<c16")
+    phis_src = get_elemental_data(op_src_list, elemental)
+    phis_snk = get_elemental_data(op_snk_list, elemental)
+    for t in timeslices:
+        tau = perambulator[t]
+        tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
+        for item in range(Nterm):
+            phi_src = phis_src[item]
+            gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
+            phi_snk = phis_snk[item]
+            ret[item] += contract(
+                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi_snk[0], backend.roll(phi_snk[1], -t, 1), tau, gamma_src,
+                phi_src[1][:, t].conj()
+            )
+        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+    ret /= Nt
+    ret = ret.reshape((Nmom, Nop, Nop, Lt))
+    return -ret
