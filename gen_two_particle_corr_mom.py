@@ -9,7 +9,7 @@ from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, Pr
 from lattice import Meson, Propagator, PropagatorLocal, QuarkDiagram, compute_diagrams_multitime
 
 from time import perf_counter
-from lattice.correlator.two_particles import get_AB_opratorList_back2back, get_mom2_list
+from lattice.correlator.two_particles import get_AB_opratorlist_row, get_mom2_list
 mom_max = 4   # compute mom2 = 0, 1, 2, 3
 
 Nt = 128
@@ -105,7 +105,7 @@ for cfg in dispatcher:
         s = perf_counter()
         for i_mom2 in range(mom_max)[1:]:
             mom_list = get_mom2_list(i_mom2)
-            op_D_list, op_Ds_list = get_AB_opratorList_back2back(ins_D[0], ins_Dstar[2], mom_list)
+            op_D_list, op_Ds_list = get_AB_opratorlist_row(ins_D[0], ins_Dstar[2], mom_list)
 
             for i_mom_pair_src in range(len(mom_list)):
                 for i_mom_pair_snk in range(len(mom_list)):
