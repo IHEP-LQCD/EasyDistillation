@@ -6,19 +6,19 @@ from ..constant import Nc, Nd
 from ..backend import get_backend
 
 
-def _Laplacian(colvec, U, U_dag, latt_size):
+def _Laplacian(F, U, U_dag, latt_size):
     backend = get_backend()
     Lx, Ly, Lz, Lt = latt_size
-    colvec = colvec.reshape(Lz, Ly, Lx, Nc, -1)
+    F = F.reshape(Lz, Ly, Lx, Nc, -1)
     return (
         # - for SA with evals , + for LA with (12 - evals)
-        6 * colvec - (
-            contract("zyxab,zyxbc->zyxac", U[0], backend.roll(colvec, -1, 2)) +
-            contract("zyxab,zyxbc->zyxac", U[1], backend.roll(colvec, -1, 1)) +
-            contract("zyxab,zyxbc->zyxac", U[2], backend.roll(colvec, -1, 0)) +
-            backend.roll(contract("zyxab,zyxbc->zyxac", U_dag[0], colvec), 1, 2) +
-            backend.roll(contract("zyxab,zyxbc->zyxac", U_dag[1], colvec), 1, 1) +
-            backend.roll(contract("zyxab,zyxbc->zyxac", U_dag[2], colvec), 1, 0)
+        6 * F - (
+            contract("zyxab,zyxbc->zyxac", U[0], backend.roll(F, -1, 2)) +
+            contract("zyxab,zyxbc->zyxac", U[1], backend.roll(F, -1, 1)) +
+            contract("zyxab,zyxbc->zyxac", U[2], backend.roll(F, -1, 0)) +
+            backend.roll(contract("zyxab,zyxbc->zyxac", U_dag[0], F), 1, 2) +
+            backend.roll(contract("zyxab,zyxbc->zyxac", U_dag[1], F), 1, 1) +
+            backend.roll(contract("zyxab,zyxbc->zyxac", U_dag[2], F), 1, 0)
         )
     ).reshape(Lz * Ly * Lx * Nc, -1)
 
@@ -209,13 +209,17 @@ class EigenvectorGenerator:
 
     def stout_smear(self, nstep, rho):
         from ..backend import check_QUDA
-        if self.kernel is not None:
-            self._stout_smear_cuda_kernel(nstep, rho)
-        elif check_QUDA():
-            self._stout_smear_quda(nstep, rho)
-        else:
+        backend = get_backend()
+        if backend.__name__ == "numpy":
             self._stout_smear_ndarray(nstep, rho)
-            # self._stout_smear_ndarray_naive(nstep, rho)
+        elif backend.__name__ == "cupy":
+            if self.kernel is not None:
+                self._stout_smear_cuda_kernel(nstep, rho)
+            elif check_QUDA():
+                self._stout_smear_quda(nstep, rho)
+            else:
+                self._stout_smear_ndarray(nstep, rho)
+                # self._stout_smear_ndarray_naive(nstep, rho)
 
     def calc(self, t: int):
         backend = get_backend()
@@ -232,4 +236,4 @@ class EigenvectorGenerator:
         evals, evecs = linalg.eigsh(A, self.Ne, which="SA", tol=self.tol)
 
         # [Ne, Lz * Ly * Lx, Nc]
-        return evecs.transpose(1, 0).reshape(self.Ne, Lz * Ly * Lx, Nc)
+        return evecs.transpose(1, 0).reshape(self.Ne, Lz, Ly, Lx, Nc)

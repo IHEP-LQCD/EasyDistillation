@@ -19,11 +19,11 @@ gauge_field = GaugeFieldIldg(F"{test_dir}/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, N
 
 eigenvector = EigenvectorGenerator(latt_size, gauge_field, Ne, 1e-9)
 out_prefix = F"{test_dir}/"
-out_suffix = ".evecs.npy"
+out_suffix = ".eigenvector.npy"
 
 
 def check(cfg, data):
-    data_ref = EigenvectorNpy(out_prefix, out_suffix, [Lt, Ne, Lz * Ly * Lx, Nc], Ne).load(cfg)[:]
+    data_ref = EigenvectorNpy(out_prefix, out_suffix, [Lt, Ne, Lz, Ly, Lx, Nc], Ne).load(cfg)[:]
     res = 0
     for t in range(Lt):
         for e in range(Ne):
@@ -32,7 +32,7 @@ def check(cfg, data):
         print(res)
 
 
-data = backend.zeros((Lt, Ne, Lz * Ly * Lx, Nc), "<c16")
+data = backend.zeros((Lt, Ne, Lz, Ly, Lx, Nc), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
 
