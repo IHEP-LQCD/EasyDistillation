@@ -6,8 +6,8 @@ from .preset import (
     Jpsi2gammaNpy
 )
 from .generator import (
-    ElementalGenerator, EigenvectorGenerator, PerambulatorGenerator, GeneralizedPerambulatorGenerator,
-    DensityPerambulatorGenerator
+    ElementalGenerator, DisplacementElementalGenerator, EigenvectorGenerator, PerambulatorGenerator,
+    GeneralizedPerambulatorGenerator, DensityPerambulatorGenerator
 )
 from .quark_diagram import (
     QuarkDiagram, Meson, Propagator, PropagatorLocal, compute_diagrams, compute_diagrams_multitime
