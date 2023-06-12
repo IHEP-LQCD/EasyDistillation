@@ -24,7 +24,7 @@ eigenvector = EigenvectorTimeSlice(
     [Lt, Ne, Lz * Ly * Lx, Nc], Ne
 )
 perambulator = DensityPerambulatorGenerator(
-    latt_size, gauge_field, eigenvector, 0.09253, 1e-9, 1000, 4.8965, 0.86679, 0.8549165664, 2.32582045, True,
+    latt_size, gauge_field, eigenvector, 0.09253, 1e-15, 1000, 4.8965, 0.86679, 0.8549165664, 2.32582045, True,
     [[4, 4, 4, 4], [4, 4, 4, 4]], [1, 2, 4, 8], [(0, 0, 0)]
 )
 perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE

@@ -63,7 +63,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
 
     def calc(self, ti: int, tf: int):
         import numpy as np
-        from pyquda import LatticeFermion
+        from pyquda.field import LatticeFermion
         backend = get_backend()
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size

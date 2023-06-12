@@ -61,7 +61,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
 
     def calc(self, ti: int, tf: int, tau: int):
         import numpy as np
-        from pyquda import LatticeFermion
+        from pyquda.field import LatticeFermion
         backend = get_backend()
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size

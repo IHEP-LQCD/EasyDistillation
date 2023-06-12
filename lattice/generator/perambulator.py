@@ -61,7 +61,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         set_backend(backend)
 
     def calc(self, t: int):
-        from pyquda import LatticeFermion
+        from pyquda.field import LatticeFermion
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size
         Vol = Lx * Ly * Lz * Lt
