@@ -15,15 +15,15 @@ from lattice import GaugeFieldIldg, EigenvectorNpy, ElementalNpy, ElementalGener
 latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size
 Ne = 20
-ND = 2
+Nnabla = 2
 
 gauge_field = GaugeFieldIldg(F"{test_dir}/", R".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
 eigenvector = EigenvectorNpy(F"{test_dir}/", R".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
 
-num_deriv = (3**(ND + 1) - 1) // 2
-mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 1, 2), (1, 1, 2)]
+num_deriv = (3**(Nnabla + 1) - 1) // 2
+mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 0, 2), (0, 1, 2), (1, 1, 2)]
 num_mom = len(mom_list)
-elemental = ElementalGenerator(latt_size, gauge_field, eigenvector, ND, mom_list)
+elemental = ElementalGenerator(latt_size, gauge_field, eigenvector, Nnabla, mom_list)
 out_prefix = F"{test_dir}/"
 out_suffix = ".elemental.npy"
 
