@@ -50,7 +50,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         Ne = self.eigenvector.Ne
         self.dslash.loadGauge(gauge_utils.readIldg(self.gauge_field.load(key).file))
         eigenvector_data = self.eigenvector.load(key)
-        eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz * Ly * Lx, Nc), "<c16")
+        eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), "<c16")
         for e in range(Ne):
             for t in range(Lt):
                 eigenvector_data_cb2[e, t] = eigenvector_data[t, e]

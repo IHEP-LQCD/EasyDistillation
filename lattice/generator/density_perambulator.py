@@ -72,7 +72,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         momentum_list = self.momentum_list
         momentum_phase = self._momentum_phase
 
-        data_lexico = np.zeros((2, Ne, Lz * Ly * Lx, Nc), "<c16")
+        data_lexico = np.zeros((2, Ne, Lz, Ly, Lx, Nc), "<c16")
         data_cb2 = np.zeros((2, Ne, 2, Lz, Ly, Lx // 2, Nc), "<c16")
         set_backend("numpy")
         for e in range(Ne):
@@ -81,7 +81,6 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
             if tf != self._tf:
                 data_lexico[1, e] = eigenvector[tf, e]
         set_backend(backend)
-        data_lexico = data_lexico.reshape(2, Ne, Lz, Ly, Lx, Nc)
 
         for z in range(Lz):
             for y in range(Ly):
