@@ -31,7 +31,7 @@ out_suffix = ".elemental.npy"
 def check(cfg, data):
     data_ref = ElementalNpy(out_prefix, out_suffix, [num_deriv, num_mom, Lt, Ne, Ne], Ne).load(cfg)[:]
     res = backend.linalg.norm(data_ref - data)
-    print(res)
+    print(F"Test cfg {cfg}, res = {res}.")
 
 
 data = backend.zeros((Lt, num_deriv, num_mom, Ne, Ne), "<c16")

@@ -5,10 +5,7 @@ test_dir = os.path.dirname(os.path.abspath(__file__))
 print(test_dir)
 sys.path.insert(0, os.path.join(test_dir, ".."))
 
-from lattice import set_backend, get_backend, check_QUDA
-
-if not check_QUDA():
-    raise ImportError("Please install PyQuda")
+from lattice import set_backend, get_backend
 
 set_backend("cupy")
 backend = get_backend()
@@ -72,3 +69,5 @@ print(
 
 # twopt_mom2 = twopoint_mom2(pi_A1[0], 2, e, p, list(range(Lt)), Lt)
 # print(twopt_mom2)
+
+print("Test ends!")

@@ -30,7 +30,7 @@ out_suffix = ".displacement_elemental.npy"
 def check(cfg, data):
     data_ref = ElementalNpy(out_prefix, out_suffix, [distance + 1, num_mom, Lt, Ne, Ne], Ne).load(cfg)[:]
     res = backend.linalg.norm(data_ref - data)
-    print(res)
+    print(F"Test cfg {cfg}, res = {res}")
 
 
 data = backend.zeros((Lt, distance + 1, num_mom, Ne, Ne), "<c16")
