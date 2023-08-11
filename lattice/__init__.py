@@ -2,8 +2,8 @@ from .backend import get_backend, set_backend, check_QUDA
 from .dispatch import Dispatch
 from .insertion import gamma, derivative, mom_dict
 from .preset import (
-    GaugeFieldTimeSlice, EigenvectorTimeSlice, PerambulatorBinary, GaugeFieldIldg, ElementalNpy, EigenvectorNpy,
-    Jpsi2gammaNpy
+    GaugeFieldTimeSlice, EigenvectorTimeSlice, PerambulatorBinary, PerambulatorNpy, GaugeFieldIldg, ElementalNpy,
+    EigenvectorNpy, Jpsi2gammaNpy
 )
 from .generator import (
     ElementalGenerator, DisplacementElementalGenerator, EigenvectorGenerator, PerambulatorGenerator,

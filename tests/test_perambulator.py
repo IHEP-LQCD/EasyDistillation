@@ -10,7 +10,7 @@ from lattice import set_backend, get_backend, check_QUDA
 if not check_QUDA():
     raise ImportError("Please install PyQuda")
 
-from lattice import PerambulatorGenerator
+from lattice import PerambulatorGenerator, PerambulatorNpy
 from pyquda import enum_quda
 
 set_backend("cupy")
@@ -34,13 +34,20 @@ perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMAR
 out_prefix = "tests/"
 out_suffix = ".perambulators.npy"
 
+
+def check(cfg, data):
+    data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt, Lt, Ns, Ns, Ne, Ne], Ne).load(cfg)[:]
+    res = backend.linalg.norm(data_ref - data)
+    print(F"Test cfg {cfg}, res = {res}")
+
+
 peramb = backend.zeros((Lt, Lt, Ns, Ns, Ne, Ne), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
-
     perambulator.load(cfg)
     for t in range(Lt):
         peramb[t] = perambulator.calc(t)
-    backend.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
+    # backend.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
+    check(cfg, peramb)
 
 perambulator.dslash.destroy()

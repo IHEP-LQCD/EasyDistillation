@@ -27,8 +27,17 @@ gaugeIldg = GaugeFieldIldg(os.path.join(test_dir, "weak_field"), ".lime", shape=
 gaugeDataIldg = gaugeIldg.load("")[1:3, :, 5:8, :, :, :, :].transpose(4, 0, 1, 2, 3, 5, 6)
 
 # check load results.
-print("gauge reading res 1 = ", backend.linalg.norm(gaugeDataIldg - gaugeDataNpy[:, 1:3, :, 5:8, :, :, :]))
+check1 = backend.linalg.norm(gaugeDataIldg - gaugeDataNpy[:, 1:3, :, 5:8, :, :, :])
+print("gauge reading res 1 = ", check1)
 
 gaugeDataIldg = gaugeIldg.load("")[:].transpose(4, 0, 1, 2, 3, 5, 6)
-print("gauge reading res 2 = ", backend.linalg.norm(gaugeDataIldg - gaugeDataNpy))
-print("gauge reading res 3 = ", backend.linalg.norm(gaugeDataIldg - gaugeDataBinary))
+check2 = backend.linalg.norm(gaugeDataIldg - gaugeDataNpy)
+print("gauge reading res 2 = ", check2)
+
+check3 = backend.linalg.norm(gaugeDataIldg - gaugeDataBinary)
+print("gauge reading res 3 = ", check3)
+
+if check1 == check2 == check3 == 0:
+    print("Test ends, pass!")
+else:
+    print("Error: Test not pass!")

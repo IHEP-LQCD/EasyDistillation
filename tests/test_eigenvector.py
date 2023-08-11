@@ -29,7 +29,7 @@ def check(cfg, data):
         for e in range(Ne):
             phase = data_ref[t, e].reshape(-1)[0] / data[t, e].reshape(-1)[0]
             res += backend.linalg.norm(data_ref[t, e] / data[t, e] / phase - 1)
-        print(res)
+        print(F"Test cfg {cfg}, t = {t}, res = {res}")
 
 
 data = backend.zeros((Lt, Ne, Lz, Ly, Lx, Nc), "<c16")
@@ -46,3 +46,5 @@ for cfg in ["weak_field"]:
 
     # backend.save(F"{out_prefix}{cfg}{out_suffix}", data)
     check(cfg, data)
+
+print("Test ends!")
