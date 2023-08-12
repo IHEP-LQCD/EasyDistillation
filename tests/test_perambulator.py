@@ -32,7 +32,7 @@ perambulator = PerambulatorGenerator(
 perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
 
 out_prefix = "tests/"
-out_suffix = ".perambulators.npy"
+out_suffix = ".perambulator.npy"
 
 
 def check(cfg, data):
