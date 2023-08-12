@@ -10,11 +10,7 @@ from ..backend import get_backend
 
 
 def twopoint(
-    operators: List[Operator],
-    elemental: FileData,
-    perambulator: FileData,
-    timeslices: Iterable[int],
-    Lt: int,
+    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -43,11 +39,7 @@ def twopoint(
 
 
 def twopoint_matrix(
-    operators: List[Operator],
-    elemental: FileData,
-    perambulator: FileData,
-    timeslices: Iterable[int],
-    Lt: int,
+    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -78,11 +70,7 @@ def twopoint_matrix(
 
 
 def twopoint_isoscalar(
-    operators: List[Operator],
-    elemental: FileData,
-    perambulator: FileData,
-    timeslices: Iterable[int],
-    Lt: int,
+    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
 ):
     backend = get_backend()
     Nop = len(operators)

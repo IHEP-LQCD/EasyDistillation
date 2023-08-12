@@ -198,12 +198,7 @@ op2 = meson_source(D1, (0.2, 0.3), 0.1, R"$\pi_2$")
 op3 = meson_sink(D1, (0.8, 0.7), 0.1, R"$\pi_3$")
 op4 = meson_sink(D1, (0.8, 0.3), 0.1, R"$\pi_4$")
 # draw_diagram(D1, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]], [op1, op2, op3, op4]) # direct diagram
-draw_diagram(
-    D1,
-    [[0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 3], [1, 0, 0, 0]],
-    [op1, op2, op3, op4],
-    [None, "r", "b", "b"],
-)
+draw_diagram(D1, [[0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 3], [1, 0, 0, 0]], [op1, op2, op3, op4], [None, "r", "b", "b"])
 
 # op1 = baryon_source(D1, (.2, .5), 0.1, R"$N$")
 # op2 = baryon_sink(D1, (.8, .5), 0.1, R"$N$")

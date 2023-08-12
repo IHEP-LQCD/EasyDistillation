@@ -43,26 +43,14 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
         self.dslash = core.getDslash(
-            latt_size,
-            mass,
-            tol,
-            maxiter,
-            xi_0,
-            nu,
-            clover_coeff_t,
-            clover_coeff_r,
-            anti_periodic_t,
-            multigrid,
+            latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
         )
         self.gamma_list = gamma_list
         self.momentum_list = momentum_list
         self._momentum_phase = MomentumPhase(latt_size)
         self._SV_i = backend.zeros((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._SV_f = backend.zeros((Ne, 2, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
-        self._VSSV_cb2 = zeros_pinned(
-            (Ne, len(gamma_list), len(momentum_list), 2, Lz, Ly, Lx // 2, Ns, Ns),
-            "<c16",
-        )
+        self._VSSV_cb2 = zeros_pinned((Ne, len(gamma_list), len(momentum_list), 2, Lz, Ly, Lx // 2, Ns, Ns), "<c16")
         self._VSSV = np.zeros((Ne, Ne, len(gamma_list), len(momentum_list), Lz, Ly, Lx, Ns, Ns), "<c16")
         self._stream = backend.cuda.Stream()
         self._t = None

@@ -27,18 +27,7 @@ Ns = 4
 gauge_field = GaugeFieldIldg(f"{test_dir}/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
 eigenvector = EigenvectorNpy(f"{test_dir}/", ".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
 perambulator = PerambulatorGenerator(
-    latt_size,
-    gauge_field,
-    eigenvector,
-    0.09253,
-    1e-9,
-    1000,
-    4.8965,
-    0.86679,
-    0.8549165664,
-    2.32582045,
-    True,
-    False,
+    latt_size, gauge_field, eigenvector, 0.09253, 1e-9, 1000, 4.8965, 0.86679, 0.8549165664, 2.32582045, True, False
 )  # arbitrary dslash parameters
 perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
 

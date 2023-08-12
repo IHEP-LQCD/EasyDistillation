@@ -33,9 +33,7 @@ class ElementalGenerator:
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu")) as f:
                 code = f.read()
             self.kernel = backend.RawModule(
-                code=code,
-                options=("--std=c++11",),
-                name_expressions=("stout_smear<double>",),
+                code=code, options=("--std=c++11",), name_expressions=("stout_smear<double>",)
             ).get_function(
                 "stout_smear<double>"
             )  # TODO: More template instance.
@@ -94,11 +92,7 @@ class ElementalGenerator:
                             backend.roll(U[mu], +1, 3 - nu),
                             backend.roll(backend.roll(U[nu], +1, 3 - nu), -1, 3 - mu),
                         )
-            Q = contract(
-                "...ab,...cb->...ac",
-                rho * Q,
-                U.conj(),
-            )
+            Q = contract("...ab,...cb->...ac", rho * Q, U.conj())
             Q = 0.5j * (contract("...ab->...ba", Q.conj()) - Q)
             Q -= 1 / Nc * contract("...aa,bc->...bc", Q, backend.identity(Nc))
             c0 = contract("...ab,...bc,...ca->...", Q, Q, Q).real / 3
@@ -286,9 +280,6 @@ class ElementalGenerator:
                 left = self._nD(V, U[:, t], pick_left[::-1])
                 for momentum_idx, momentum in enumerate(self.momentum_list):
                     VPV[derivative_idx, momentum_idx] += contract(
-                        "zyx,ezyxc,fzyxc->ef",
-                        coeff * momentum_phase.get(momentum),
-                        left.conj(),
-                        right,
+                        "zyx,ezyxc,fzyxc->ef", coeff * momentum_phase.get(momentum), left.conj(), right
                     )
         return VPV

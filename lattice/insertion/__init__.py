@@ -33,22 +33,13 @@ class InsertionRowMom:
 
 
 class Operator:
-    def __init__(
-        self,
-        name: str,
-        insertion_rows: List[InsertionRowMom],
-        coefficients: List[float],
-    ) -> None:
+    def __init__(self, name: str, insertion_rows: List[InsertionRowMom], coefficients: List[float]) -> None:
         assert len(insertion_rows) == len(
             coefficients
         ), f"Unmatched numbers of insertion rows {len(insertion_rows)} and coefficients {len(coefficients)}"
         parts = []
         for idx in range(len(insertion_rows)):
-            row, momentum, coefficient = (
-                insertion_rows[idx].row,
-                insertion_rows[idx].momentum,
-                coefficients[idx],
-            )
+            row, momentum, coefficient = insertion_rows[idx].row, insertion_rows[idx].momentum, coefficients[idx]
             for i in range(len(row) // 2):
                 parts.append(row[i * 2])
                 elemental_part = []
@@ -89,11 +80,7 @@ class InsertionRow:
 
 class Insertion:
     def __init__(
-        self,
-        gamma: GammaName,
-        derivative: DerivativeName,
-        projection: ProjectionName,
-        momentum_dict: Dict[int, str],
+        self, gamma: GammaName, derivative: DerivativeName, projection: ProjectionName, momentum_dict: Dict[int, str]
     ) -> None:
         self.gamma = gamma_scheme(gamma)
         self.derivative = derivative_scheme(derivative)
@@ -143,26 +130,10 @@ class Insertion:
                 elif right == "E":
                     raise NotImplementedError(f"{left} x {right} not implemented yet")
                 elif projection in ["A_1", "A_2"]:
-                    self.rows.append(
-                        [
-                            gamma[0],
-                            derivative[0],
-                            gamma[1],
-                            derivative[1],
-                            gamma[2],
-                            derivative[2],
-                        ]
-                    )
+                    self.rows.append([gamma[0], derivative[0], gamma[1], derivative[1], gamma[2], derivative[2]])
                 elif projection in ["E"]:
                     if i == 0:
-                        self.rows.append(
-                            [
-                                gamma[0],
-                                derivative[0],
-                                gamma[1],
-                                self.multiply(-1, derivative[1]),
-                            ]
-                        )
+                        self.rows.append([gamma[0], derivative[0], gamma[1], self.multiply(-1, derivative[1])])
                     else:
                         self.rows.append(
                             [
@@ -178,13 +149,6 @@ class Insertion:
                     j = (i + 1) % 3
                     k = (i + 2) % 3
                     if right == projection:
-                        self.rows.append(
-                            [
-                                gamma[j],
-                                derivative[k],
-                                gamma[k],
-                                self.multiply(-1, derivative[j]),
-                            ]
-                        )
+                        self.rows.append([gamma[j], derivative[k], gamma[k], self.multiply(-1, derivative[j])])
                     else:
                         self.rows.append([gamma[j], derivative[k], gamma[k], derivative[j]])

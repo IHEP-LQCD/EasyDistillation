@@ -33,13 +33,7 @@ def prod(a):
 
 
 class QDPLazyDiskMapObjFileData(FileData):
-    def __init__(
-        self,
-        file: str,
-        elem: FileMetaData,
-        offsets: Dict[Tuple[int], int],
-        xml_tree: ET.ElementTree,
-    ) -> None:
+    def __init__(self, file: str, elem: FileMetaData, offsets: Dict[Tuple[int], int], xml_tree: ET.ElementTree) -> None:
         self.file = file
         self.shape = elem.shape[elem.extra :]
         self.dtype = elem.dtype
@@ -77,7 +71,6 @@ class QDPLazyDiskMapObjFileData(FileData):
             raise IndexError(f"index {key} is out of bounds for axes")
         else:
             s = time()
-            # fmt: off
             ret = backend.asarray(
                 numpy.memmap(
                     self.file,
@@ -85,9 +78,10 @@ class QDPLazyDiskMapObjFileData(FileData):
                     mode="r",
                     offset=self.offsets[key[: self.extra]],
                     shape=tuple(self.shape),
-                )[key[self.extra :]].copy().astype("<c8")
+                )[key[self.extra :]]
+                .copy()
+                .astype("<c8")
             )
-            # fmt: on
             self.time_in_sec += time() - s
             self.size_in_byte += ret.nbytes
             return ret

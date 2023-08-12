@@ -52,17 +52,11 @@ class IldgFileData(FileData):
         if isinstance(key, int):
             key = (key,)
         s = time()
-        # fmt: off
         ret = backend.asarray(
-            numpy.memmap(
-                self.file,
-                dtype=self.dtype,
-                mode="r",
-                offset=self.offset,
-                shape=tuple(self.shape),
-            )[key].copy().astype("<c16")
+            numpy.memmap(self.file, dtype=self.dtype, mode="r", offset=self.offset, shape=tuple(self.shape))[key]
+            .copy()
+            .astype("<c16")
         )
-        # fmt: on
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret

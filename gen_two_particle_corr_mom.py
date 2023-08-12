@@ -4,21 +4,9 @@ set_backend("cupy")
 
 from lattice import Dispatch, preset
 from lattice.insertion.mom_dict import momDict_mom9
-from lattice.insertion import (
-    Insertion,
-    Operator,
-    GammaName,
-    DerivativeName,
-    ProjectionName,
-)
+from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
 
-from lattice import (
-    Meson,
-    Propagator,
-    PropagatorLocal,
-    QuarkDiagram,
-    compute_diagrams_multitime,
-)
+from lattice import Meson, Propagator, PropagatorLocal, QuarkDiagram, compute_diagrams_multitime
 
 from time import perf_counter
 from lattice.correlator.two_particles import get_AB_opratorlist_row, get_mom2_list
@@ -52,17 +40,11 @@ elemental = preset.ElementalNpy(
     70,
 )
 perambulator_light = preset.PerambulatorBinary(
-    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator/",
-    ".peram",
-    [128, 128, 4, 4, 70, 70],
-    70,
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator/", ".peram", [128, 128, 4, 4, 70, 70], 70
 )
 
 perambulator_charm = preset.PerambulatorBinary(
-    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/",
-    ".charm.peram",
-    [128, 128, 4, 4, 70, 70],
-    70,
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/", ".charm.peram", [128, 128, 4, 4, 70, 70], 70
 )
 
 D_D = QuarkDiagram(
@@ -157,14 +139,7 @@ for cfg in dispatcher:
                     Ds_snk.load(cfg)
 
                     tmp = compute_diagrams_multitime(
-                        [
-                            D_D,
-                            Ds_Ds,
-                            DDsbar_DDsbar_direct,
-                            DDsbar_DDsbar_cross,
-                            chic1_DDs,
-                            chic1_Jpsi_eta,
-                        ],
+                        [D_D, Ds_Ds, DDsbar_DDsbar_direct, DDsbar_DDsbar_cross, chic1_DDs, chic1_Jpsi_eta],
                         [t_src, t_src, t_snk, t_snk],
                         [D_src, Ds_src, D_snk, Ds_snk],
                         [None, line_charm, line_light, line_local_light],

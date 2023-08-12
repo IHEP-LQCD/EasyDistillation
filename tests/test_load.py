@@ -18,9 +18,7 @@ gaugeDataNpy = backend.load(os.path.join(test_dir, "weak_field.npy")).reshape(Nd
 
 # numpy load binary file
 gaugeDataBinary = backend.fromfile(
-    os.path.join(test_dir, "weak_field.bin"),
-    "<c16",
-    count=backend.prod([Nd, Lt, Lz, Ly, Lx, Nc, Nc]),
+    os.path.join(test_dir, "weak_field.bin"), "<c16", count=backend.prod([Nd, Lt, Lz, Ly, Lx, Nc, Nc])
 ).reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)
 
 # !!! Note: gauge ILDG file shape [Lt, Lz, Ly, Lx, Nd, Nc, Nc] <- chroma convention

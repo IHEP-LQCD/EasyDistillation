@@ -120,12 +120,7 @@ class Meson(Particle):
                     ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
         if self.dagger:
             self.cache = (
-                contract(
-                    "ik,xlk,lj->xij",
-                    gamma(8),
-                    backend.asarray(ret_gamma).conj(),
-                    gamma(8),
-                ),
+                contract("ik,xlk,lj->xij", gamma(8), backend.asarray(ret_gamma).conj(), gamma(8)),
                 contract("xtba->xtab", backend.asarray(ret_elemental).conj()),
             )
         else:
@@ -137,30 +132,14 @@ class Meson(Particle):
     def get(self, t):
         if isinstance(t, int):
             if self.dagger:
-                return contract(
-                    "xij,xab->ijab",
-                    self.cache[0],
-                    self.cache[1][:, t],
-                )
+                return contract("xij,xab->ijab", self.cache[0], self.cache[1][:, t])
             else:
-                return contract(
-                    "xij,xab->ijab",
-                    self.cache[0],
-                    self.cache[1][:, t],
-                )
+                return contract("xij,xab->ijab", self.cache[0], self.cache[1][:, t])
         else:
             if self.dagger:
-                return contract(
-                    "xij,xtab->tijab",
-                    self.cache[0],
-                    self.cache[1][:, t],
-                )
+                return contract("xij,xtab->tijab", self.cache[0], self.cache[1][:, t])
             else:
-                return contract(
-                    "xij,xtab->tijab",
-                    self.cache[0],
-                    self.cache[1][:, t],
-                )
+                return contract("xij,xtab->tijab", self.cache[0], self.cache[1][:, t])
 
 
 class Propagator:

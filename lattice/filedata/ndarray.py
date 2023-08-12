@@ -18,19 +18,12 @@ class NdarrayFileData(FileData):
 
         backend = get_backend()
         s = time()
-        # fmt: off
         # ret = numpy.asarray(
         #     loader(
         #         self.file,
         #     )[key]
         # )
-        # fmt: on
-        ret = backend.asarray(
-            numpy.load(
-                self.file,
-                mmap_mode="r",
-            )[key].copy()
-        )
+        ret = backend.asarray(numpy.load(self.file, mmap_mode="r")[key].copy())
         self.time_in_sec += time() - s
         self.size_in_byte += ret.nbytes
         return ret
