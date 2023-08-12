@@ -17,7 +17,9 @@ def prod(a):
 
 
 class IldgFileData(FileData):
-    def __init__(self, file: str, elem: FileMetaData, offset: Tuple[int], xmlTree: ET.ElementTree) -> None:
+    def __init__(
+        self, file: str, elem: FileMetaData, offset: Tuple[int], xmlTree: ET.ElementTree
+    ) -> None:
         self.file = file
         self.shape = elem.shape
         self.dtype = elem.dtype
@@ -30,7 +32,9 @@ class IldgFileData(FileData):
             int(xmlTree.find(f"{tag}lt").text),
         ]
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
-        self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
+        self.bytes = int(
+            re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes")
+        )
         assert self.bytes == int(xmlTree.find(f"{tag}precision").text) // 8 * 2
         assert prod(elem.shape) * self.bytes == offset[1]
         self.timeInSec = 0.0
@@ -41,16 +45,18 @@ class IldgFileData(FileData):
 
     def get_offset(self, key: Tuple[int]):
         offset = 0
-        for a, b in zip(key, self.stride[0:len(key)]):
+        for a, b in zip(key, self.stride[0 : len(key)]):
             offset += a * b
         return offset * self.bytes
 
     def __getitem__(self, key: Tuple[int]):
         import numpy
+
         backend = get_backend()
         if isinstance(key, int):
-            key = (key, )
+            key = (key,)
         s = time()
+        # fmt: off
         ret = backend.asarray(
             numpy.memmap(
                 self.file,
@@ -59,7 +65,8 @@ class IldgFileData(FileData):
                 offset=self.offset,
                 shape=tuple(self.shape),
             )[key].copy().astype("<c16")
-        )  # yapf: disable
+        )
+        # fmt: on
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret
@@ -84,7 +91,11 @@ class IldgFile(File):
 
         offset = obj_pos_size["ildg-binary-data"]
         f.seek(obj_pos_size["ildg-format"][0])
-        xml_tree = ET.ElementTree(ET.fromstring(f.read(obj_pos_size["ildg-format"][1]).strip(b"\x00").decode("utf-8")))
+        xml_tree = ET.ElementTree(
+            ET.fromstring(
+                f.read(obj_pos_size["ildg-format"][1]).strip(b"\x00").decode("utf-8")
+            )
+        )
         return offset, xml_tree
 
     def get_file_data(self, name: str, elem: FileMetaData) -> IldgFileData:

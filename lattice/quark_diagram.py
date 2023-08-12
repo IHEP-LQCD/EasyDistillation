@@ -18,6 +18,7 @@ class QuarkDiagram:
 
     def analyse(self) -> None:
         from copy import deepcopy
+
         adjacency_matrix = deepcopy(self.adjacency_matrix)
         num_vertex = len(adjacency_matrix)
         visited = [False] * num_vertex
@@ -42,7 +43,9 @@ class QuarkDiagram:
                             for _path in path:
                                 propagators.append([_path, i, j])
                         else:
-                            raise ValueError(F"Invalid value {path} in the adjacency matrix")
+                            raise ValueError(
+                                f"Invalid value {path} in the adjacency matrix"
+                            )
             if propagators == []:
                 continue
             vertex_operands = []
@@ -52,26 +55,38 @@ class QuarkDiagram:
             node = 0
             for propagator in propagators:
                 propagator_operands.append(propagator)
-                propagator_subscripts.append(_SUB_M[node + 1] + _SUB_A[node + 1] + _SUB_M[node] + _SUB_A[node])
+                propagator_subscripts.append(
+                    _SUB_M[node + 1] + _SUB_A[node + 1] + _SUB_M[node] + _SUB_A[node]
+                )
                 if propagator[1] not in vertex_operands:
                     vertex_operands.append(propagator[1])
                     vertex_subscripts.append(_SUB_M[node] + _SUB_A[node])
                 else:
                     i = vertex_operands.index(propagator[1])
-                    vertex_subscripts[i] = _SUB_M[node] + _SUB_A[node] + vertex_subscripts[i]
+                    vertex_subscripts[i] = (
+                        _SUB_M[node] + _SUB_A[node] + vertex_subscripts[i]
+                    )
                 if propagator[2] not in vertex_operands:
                     vertex_operands.append(propagator[2])
                     vertex_subscripts.append(_SUB_M[node + 1] + _SUB_A[node + 1])
                 else:
                     i = vertex_operands.index(propagator[2])
-                    vertex_subscripts[i] = vertex_subscripts[i] + _SUB_M[node + 1] + _SUB_A[node + 1]
+                    vertex_subscripts[i] = (
+                        vertex_subscripts[i] + _SUB_M[node + 1] + _SUB_A[node + 1]
+                    )
                 node += 2
             for key in range(len(propagator_subscripts)):
-                propagator_subscripts[key] = propagator_subscripts[key][0::2] + propagator_subscripts[key][1::2]
+                propagator_subscripts[key] = (
+                    propagator_subscripts[key][0::2] + propagator_subscripts[key][1::2]
+                )
             for key in range(len(vertex_subscripts)):
-                vertex_subscripts[key] = vertex_subscripts[key][0::2] + vertex_subscripts[key][1::2]
+                vertex_subscripts[key] = (
+                    vertex_subscripts[key][0::2] + vertex_subscripts[key][1::2]
+                )
             self.operands.append([propagator_operands, vertex_operands])
-            self.subscripts.append(",".join(propagator_subscripts) + "," + ",".join(vertex_subscripts))
+            self.subscripts.append(
+                ",".join(propagator_subscripts) + "," + ",".join(vertex_subscripts)
+            )
 
 
 class Particle:
@@ -97,6 +112,7 @@ class Meson(Particle):
 
     def _make_cache(self):
         from lattice.insertion.gamma import gamma
+
         backend = get_backend()
 
         cache: Dict[int, backend.ndarray] = {}
@@ -111,17 +127,22 @@ class Meson(Particle):
                 elemental_coeff, derivative_idx, momentum_idx = elemental_part[j]
                 deriv_mom_tuple = (derivative_idx, momentum_idx)
                 if deriv_mom_tuple not in cache:
-                    cache[deriv_mom_tuple] = self.elemental_data[derivative_idx, momentum_idx]
+                    cache[deriv_mom_tuple] = self.elemental_data[
+                        derivative_idx, momentum_idx
+                    ]
                 if j == 0:
                     ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
                 else:
                     ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
         if self.dagger:
             self.cache = (
-                contract("ik,xlk,lj->xij", gamma(8),
-                         backend.asarray(ret_gamma).conj(), gamma(8)),
-                contract("xtba->xtab",
-                         backend.asarray(ret_elemental).conj()),
+                contract(
+                    "ik,xlk,lj->xij",
+                    gamma(8),
+                    backend.asarray(ret_gamma).conj(),
+                    gamma(8),
+                ),
+                contract("xtba->xtab", backend.asarray(ret_elemental).conj()),
             )
         else:
             self.cache = (
@@ -179,7 +200,9 @@ class Propagator:
         if isinstance(t_source, int) and isinstance(t_sink, int):
             if self.cached_time != t_source and self.cached_time != t_sink:
                 self.cache = self.perambulator_data[t_source]
-                self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
+                self.cache_dagger = contract(
+                    "ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15)
+                )
                 self.cached_time = t_source
             if self.cached_time == t_source:
                 return self.cache[(t_sink - t_source) % self.Lt]
@@ -188,13 +211,17 @@ class Propagator:
         elif isinstance(t_source, int):
             if self.cached_time != t_source:
                 self.cache = self.perambulator_data[t_source]
-                self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
+                self.cache_dagger = contract(
+                    "ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15)
+                )
                 self.cached_time = t_source
             return self.cache[(t_sink - t_source) % self.Lt]
         elif isinstance(t_sink, int):
             if self.cached_time != t_sink:
                 self.cache = self.perambulator_data[t_sink]
-                self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
+                self.cache_dagger = contract(
+                    "ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15)
+                )
                 self.cached_time = t_sink
             return self.cache_dagger[(t_source - t_sink) % self.Lt]
         else:
@@ -227,19 +254,25 @@ class PropagatorLocal:
         return self.cache[t_source]
 
 
-def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
+def compute_diagrams_multitime(
+    diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list
+):
     backend = get_backend()
     diagram_value = []
     for diagram in diagrams:
-        diagram_value.append(1.)
+        diagram_value.append(1.0)
         for operands, subscripts in zip(diagram.operands, diagram.subscripts):
             have_multitime = False
             subscripts = subscripts.split(",")
             idx = 0
             operands_data = []
             for item in operands[0]:
-                operands_data.append(propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
-                if not isinstance(time_list[item[1]], int) or not isinstance(time_list[item[2]], int):
+                operands_data.append(
+                    propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]])
+                )
+                if not isinstance(time_list[item[1]], int) or not isinstance(
+                    time_list[item[2]], int
+                ):
                     subscripts[idx] = "t" + subscripts[idx]
                     have_multitime = True
                 idx += 1
@@ -251,19 +284,25 @@ def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_l
                 idx += 1
             if have_multitime:
                 subscripts[-1] = subscripts[-1] + "->t"
-            diagram_value[-1] = diagram_value[-1] * contract(",".join(subscripts), *operands_data)
+            diagram_value[-1] = diagram_value[-1] * contract(
+                ",".join(subscripts), *operands_data
+            )
     return backend.asarray(diagram_value)
 
 
-def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
+def compute_diagrams(
+    diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list
+):
     backend = get_backend()
     diagram_value = []
     for diagram in diagrams:
-        diagram_value.append(1.)
+        diagram_value.append(1.0)
         for operands, subscripts in zip(diagram.operands, diagram.subscripts):
             operands_data = []
             for item in operands[0]:
-                operands_data.append(propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
+                operands_data.append(
+                    propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]])
+                )
             for item in operands[1]:
                 operands_data.append(vertex_list[item].get(time_list[item]))
             diagram_value[-1] *= contract(subscripts, *operands_data)

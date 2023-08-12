@@ -22,11 +22,20 @@ class DisplacementElementalGenerator:
         self.kernel = None
         if backend.__name__ == "cupy":
             import os
-            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu")) as f:
+
+            with open(
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu"
+                )
+            ) as f:
                 code = f.read()
             self.kernel = backend.RawModule(
-                code=code, options=("--std=c++11", ), name_expressions=("stout_smear<double>", )
-            ).get_function("stout_smear<double>")  # TODO: More template instance.
+                code=code,
+                options=("--std=c++11",),
+                name_expressions=("stout_smear<double>",),
+            ).get_function(
+                "stout_smear<double>"
+            )  # TODO: More template instance.
 
         self.latt_size = latt_size
         self.gauge_field = gauge_field
@@ -68,7 +77,7 @@ class DisplacementElementalGenerator:
             return Vd.mean(0)
 
     def load(self, key: str):
-        self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[:Nd - 1]
+        self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[: Nd - 1]
         self._gauge_field_data = self.gauge_field.load(key).file
         self._eigenvector_data = self.eigenvector.load(key)
         # print(self._gauge_field_data.shape, self._eigenvector_data.shape)
@@ -103,8 +112,11 @@ class DisplacementElementalGenerator:
         U = self._U
         Uinv = backend.linalg.inv(U)
         while (
-            backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15 or
-            backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15
+            backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15
+            or backend.max(
+                backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))
+            )
+            > 1e-15
         ):
             U = 0.5 * (U + contract("...ab->...ba", Uinv.conj()))
             Uinv = backend.linalg.inv(U)
@@ -119,24 +131,31 @@ class DisplacementElementalGenerator:
             U_dag = U.transpose(0, 1, 2, 3, 4, 6, 5).conj()
             for mu in range(Nd - 1):
                 for nu in range(Nd - 1):
-                    if (mu != nu):
-                        Q[mu] += (U[nu] @ backend.roll(U[mu], -1, 3 - nu) @ backend.roll(U_dag[nu], -1, 3 - mu))
+                    if mu != nu:
                         Q[mu] += (
-                            backend.roll(U_dag[nu], +1, 3 - nu) @ backend.roll(U[mu], +1, 3 - nu)
+                            U[nu]
+                            @ backend.roll(U[mu], -1, 3 - nu)
+                            @ backend.roll(U_dag[nu], -1, 3 - mu)
+                        )
+                        Q[mu] += (
+                            backend.roll(U_dag[nu], +1, 3 - nu)
+                            @ backend.roll(U[mu], +1, 3 - nu)
                             @ backend.roll(backend.roll(U[nu], +1, 3 - nu), -1, 3 - mu)
                         )
 
             Q = rho * Q @ U_dag
             Q = 0.5j * (Q.transpose(0, 1, 2, 3, 4, 6, 5).conj() - Q)
-            contract("...aa->...a", Q)[:] -= 1 / Nc * contract("...aa->...", Q)[..., None]
+            contract("...aa->...a", Q)[:] -= (
+                1 / Nc * contract("...aa->...", Q)[..., None]
+            )
             Q_sq = Q @ Q
             c0 = contract("...aa->...", Q @ Q_sq).real / 3
             c1 = contract("...aa->...", Q_sq).real / 2
-            c0_max = 2 * (c1 / 3)**(3 / 2)
+            c0_max = 2 * (c1 / 3) ** (3 / 2)
             parity = c0 < 0
             c0 = backend.abs(c0)
             theta = backend.arccos(c0 / c0_max)
-            u = (c1 / 3)**0.5 * backend.cos(theta / 3)
+            u = (c1 / 3) ** 0.5 * backend.cos(theta / 3)
             w = c1**0.5 * backend.sin(theta / 3)
             u_sq = u**2
             w_sq = w**2
@@ -151,21 +170,31 @@ class DisplacementElementalGenerator:
             sinc_w[large] = backend.sin(w_large) / w_large
             f_denom = 1 / (9 * u_sq - w_sq)
             f0_real = (
-                (u_sq - w_sq) * e_2iu_real + e_iu_real * 8 * u_sq * cos_w + e_iu_imag * 2 * u *
-                (3 * u_sq + w_sq) * sinc_w
+                (u_sq - w_sq) * e_2iu_real
+                + e_iu_real * 8 * u_sq * cos_w
+                + e_iu_imag * 2 * u * (3 * u_sq + w_sq) * sinc_w
             ) * f_denom
             f0_imag = (
-                (u_sq - w_sq) * e_2iu_imag - e_iu_imag * 8 * u_sq * cos_w + e_iu_real * 2 * u *
-                (3 * u_sq + w_sq) * sinc_w
+                (u_sq - w_sq) * e_2iu_imag
+                - e_iu_imag * 8 * u_sq * cos_w
+                + e_iu_real * 2 * u * (3 * u_sq + w_sq) * sinc_w
             ) * f_denom
             f1_real = (
-                2 * u * e_2iu_real - e_iu_real * 2 * u * cos_w + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_real
+                - e_iu_real * 2 * u * cos_w
+                + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
             f1_imag = (
-                2 * u * e_2iu_imag + e_iu_imag * 2 * u * cos_w + e_iu_real * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_imag
+                + e_iu_imag * 2 * u * cos_w
+                + e_iu_real * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
-            f2_real = (e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w) * f_denom
-            f2_imag = (e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w) * f_denom
+            f2_real = (
+                e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w
+            ) * f_denom
+            f2_imag = (
+                e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w
+            ) * f_denom
             f0_imag[parity] *= -1
             f1_real[parity] *= -1
             f2_imag[parity] *= -1
@@ -183,7 +212,9 @@ class DisplacementElementalGenerator:
 
         for _ in range(nstep):
             U_in = U.copy()
-            self.kernel((Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt))
+            self.kernel(
+                (Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt)
+            )
 
         self._U = U
 
@@ -198,10 +229,11 @@ class DisplacementElementalGenerator:
 
         core.smear(gauge.latt_size, gauge, nstep, rho)
 
-        self._U = backend.asarray(gauge.lexico()[:Nd - 1])
+        self._U = backend.asarray(gauge.lexico()[: Nd - 1])
 
     def stout_smear(self, nstep, rho):
         from ..backend import check_QUDA
+
         backend = get_backend()
         if backend.__name__ == "numpy":
             self._stout_smear_ndarray(nstep, rho)

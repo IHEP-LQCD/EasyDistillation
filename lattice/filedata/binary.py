@@ -19,7 +19,9 @@ class BinaryFileData(FileData):
         self.shape = elem.shape
         self.dtype = elem.dtype
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
-        self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
+        self.bytes = int(
+            re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes")
+        )
         self.time_in_sec = 0.0
         self.size_in_byte = 0
 
@@ -28,14 +30,16 @@ class BinaryFileData(FileData):
 
     def get_offset(self, key: Tuple[int]):
         offset = 0
-        for a, b in zip(key, self.stride[0:len(key)]):
+        for a, b in zip(key, self.stride[0 : len(key)]):
             offset += a * b
         return offset * self.bytes
 
     def __getitem__(self, key: Tuple[int]):
         import numpy
+
         backend = get_backend()
         s = time()
+        # fmt: off
         # ret = numpy.asarray(
         #     loader(
         #         self.file,
@@ -43,7 +47,8 @@ class BinaryFileData(FileData):
         #         shape=tuple(self.shape),
         #         offset=0,
         #     )[key]
-        # )  # yapf: disable
+        # )
+        # fmt: on
         ret = backend.asarray(
             numpy.memmap(
                 self.file,

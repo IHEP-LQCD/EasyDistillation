@@ -31,8 +31,12 @@ def make_operator(form, mom="p"):
     elif form[0] == "V":
         return [
             sp.I * Operator(f"{form}_z({mom})"),  # m = 0
-            -sp.I * (Operator(f"{form}_x({mom})") + sp.I * Operator(f"{form}_y({mom})")) / sp.sqrt(2),  # m = 1
-            sp.I * (Operator(f"{form}_x({mom})") - sp.I * Operator(f"{form}_y({mom})")) / sp.sqrt(2),  # m = -1
+            -sp.I
+            * (Operator(f"{form}_x({mom})") + sp.I * Operator(f"{form}_y({mom})"))
+            / sp.sqrt(2),  # m = 1
+            sp.I
+            * (Operator(f"{form}_x({mom})") - sp.I * Operator(f"{form}_y({mom})"))
+            / sp.sqrt(2),  # m = -1
         ]
 
 
@@ -61,18 +65,20 @@ def two_particle_circle_basis_JM(op1, op2, mom2, J, M, L, Spin):
                 for ip in momentum_list:
                     theta, phi = rotation(ip)
                     basis += (
-                        CG(S(L), S(mL), S(Spin), S(mS), J, M) * CG(S1, s1, S2, s2, S(Spin), mS) *
-                        sp.simplify(Ynm(S(L), S(mL), theta, phi)).expand(func=True) * make_operator(op1, f"{ip}")[s1] *
-                        make_operator(op2, f"{[-ii for ii in ip]}")[s2]
+                        CG(S(L), S(mL), S(Spin), S(mS), J, M)
+                        * CG(S1, s1, S2, s2, S(Spin), mS)
+                        * sp.simplify(Ynm(S(L), S(mL), theta, phi)).expand(func=True)
+                        * make_operator(op1, f"{ip}")[s1]
+                        * make_operator(op2, f"{[-ii for ii in ip]}")[s2]
                     )
     print(sp.expand(sp.simplify(basis)))
     return sp.simplify(basis)
 
 
 def two_particle_circle_basis(op1, op2, mom2, J, L, Spin):
-    '''
+    """
     return opetator[-J, -J+1, ..., +J]
-    '''
+    """
     S1 = 0 if op1[0] == "P" else 1
     S2 = 0 if op2[0] == "P" else 1
     momentum_list = list_from_mom2_max(mom2)
@@ -92,9 +98,13 @@ def two_particle_circle_basis(op1, op2, mom2, J, L, Spin):
                         # )
                         # print(sp.simplify(Ynm(S(L), S(mL), theta, phi)).expand(func=True))
                         ans += (
-                            CG(S(L), S(mL), S(Spin), S(mS), J, M) * CG(S1, s1, S2, s2, S(Spin), mS) *
-                            sp.simplify(Ynm(S(L), S(mL), theta, phi)).expand(func=True) *
-                            make_operator(op1, f"{ip}")[s1] * make_operator(op2, f"{[-ii for ii in ip]}")[s2]
+                            CG(S(L), S(mL), S(Spin), S(mS), J, M)
+                            * CG(S1, s1, S2, s2, S(Spin), mS)
+                            * sp.simplify(Ynm(S(L), S(mL), theta, phi)).expand(
+                                func=True
+                            )
+                            * make_operator(op1, f"{ip}")[s1]
+                            * make_operator(op2, f"{[-ii for ii in ip]}")[s2]
                         )
         # print(sp.expand(sp.simplify(ans)))
         basis[M + J] = sp.expand(sp.simplify(ans))
@@ -102,15 +112,17 @@ def two_particle_circle_basis(op1, op2, mom2, J, L, Spin):
 
 
 def two_particle_Cartesian_basis(op1, op2, mom2, J, L, Spin):
-    '''
+    """
     return opetator[row1, row2, row3] in O irrep.
-    '''
+    """
     circle_basis = two_particle_circle_basis(op1, op2, mom2, J, L, Spin)
     if J == 0:
         return circle_basis
     elif J == 1:
         return [
-            sp.expand(sp.simplify((circle_basis[0] - circle_basis[2]) * (-sp.I) / sp.sqrt(2))),
+            sp.expand(
+                sp.simplify((circle_basis[0] - circle_basis[2]) * (-sp.I) / sp.sqrt(2))
+            ),
             sp.expand(sp.simplify((circle_basis[0] + circle_basis[2]) / sp.sqrt(2))),
             sp.expand(sp.simplify(circle_basis[1] * (-sp.I))),
         ]

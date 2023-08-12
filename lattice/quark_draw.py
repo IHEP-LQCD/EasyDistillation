@@ -7,52 +7,52 @@ fig = plt.figure(figsize=(6, 6))
 ax = fig.add_subplot(111)
 
 r2l_u = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=4.0,
     ellipse_spread=-0.1,
     arrow=True,
 )
 r2l_d = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=4.0,
     ellipse_spread=0.1,
     arrow=True,
     # arrow_param={'width': 0.05},
 )
 l2r_u = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=4.0,
     ellipse_spread=0.1,
     arrow=True,
 )
 l2r_d = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=4.0,
     ellipse_spread=-0.1,
     arrow=True,
     # arrow_param={'width': 0.05},
 )
 d2u_l = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=0.25,
     ellipse_spread=0.3,
     arrow=True,
 )
 d2u_r = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=0.25,
     ellipse_spread=-0.3,
     arrow=True,
 )
 
 u2d_l = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=0.25,
     ellipse_spread=-0.3,
     arrow=True,
 )
 u2d_r = dict(
-    style='elliptic',
+    style="elliptic",
     ellipse_excentricity=0.25,
     ellipse_spread=0.3,
     arrow=True,
@@ -85,7 +85,9 @@ def draw_diagram(diagram, adjacency_matrix, operator_list, line_color_list):
                         for _path in path:
                             propagators.append([_path, i, j])
                     else:
-                        raise ValueError(F"Invalid value {path} in the adjacency matrix")
+                        raise ValueError(
+                            f"Invalid value {path} in the adjacency matrix"
+                        )
         if propagators == []:
             continue
         print(propagators)
@@ -183,7 +185,7 @@ def make_operator(hadron, pos, **kwargs):
         elif hadron == "baryon":
             return baryon_sink(**kwargs)
     else:
-        raise ValueError(F"Invalid position: {pos}.")
+        raise ValueError(f"Invalid position: {pos}.")
 
 
 ax.set_xlim(0, 1)
@@ -193,12 +195,17 @@ ax.set_yticks([])
 
 D1 = Diagram(ax)
 
-op1 = meson_source(D1, (.2, .7), 0.1, R"$\pi_1$")
-op2 = meson_source(D1, (.2, .3), 0.1, R"$\pi_2$")
-op3 = meson_sink(D1, (.8, .7), 0.1, R"$\pi_3$")
-op4 = meson_sink(D1, (.8, .3), 0.1, R"$\pi_4$")
+op1 = meson_source(D1, (0.2, 0.7), 0.1, R"$\pi_1$")
+op2 = meson_source(D1, (0.2, 0.3), 0.1, R"$\pi_2$")
+op3 = meson_sink(D1, (0.8, 0.7), 0.1, R"$\pi_3$")
+op4 = meson_sink(D1, (0.8, 0.3), 0.1, R"$\pi_4$")
 # draw_diagram(D1, [[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]], [op1, op2, op3, op4]) # direct diagram
-draw_diagram(D1, [[0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 3], [1, 0, 0, 0]], [op1, op2, op3, op4], [None, "r", "b", "b"])
+draw_diagram(
+    D1,
+    [[0, 0, 1, 0], [0, 0, 0, 0], [0, 0, 0, 3], [1, 0, 0, 0]],
+    [op1, op2, op3, op4],
+    [None, "r", "b", "b"],
+)
 
 # op1 = baryon_source(D1, (.2, .5), 0.1, R"$N$")
 # op2 = baryon_sink(D1, (.8, .5), 0.1, R"$N$")
@@ -220,15 +227,21 @@ def is_row_col_zero(matrix, i):
     return row_all_zero and col_all_zero
 
 
-def draw_multi_diagrams(adjacency_matrix_list, vertex_attribute_list, line_color_list, save_path=None):
+def draw_multi_diagrams(
+    adjacency_matrix_list, vertex_attribute_list, line_color_list, save_path=None
+):
     if save_path is None:
         save_path = [None] * len(adjacency_matrix_list)
     for im, isave in zip(adjacency_matrix_list, save_path):
         draw_single_diagram(im, vertex_attribute_list, line_color_list, isave)
 
 
-def draw_single_diagram(adjacency_matrix, vertex_attribute_list, line_color_list, save_path=None):
-    visited_all = [not is_row_col_zero(adjacency_matrix, i) for i in range(len(adjacency_matrix))]
+def draw_single_diagram(
+    adjacency_matrix, vertex_attribute_list, line_color_list, save_path=None
+):
+    visited_all = [
+        not is_row_col_zero(adjacency_matrix, i) for i in range(len(adjacency_matrix))
+    ]
     print(visited_all)
 
     # do not draw unvisited vertex
@@ -238,7 +251,9 @@ def draw_single_diagram(adjacency_matrix, vertex_attribute_list, line_color_list
     ]
     adjacency_matrix = adjacency_matrix_tmp
     print(adjacency_matrix_tmp)
-    vertex_attribute_list = [i for i, flag0 in zip(vertex_attribute_list, visited_all) if flag0]
+    vertex_attribute_list = [
+        i for i, flag0 in zip(vertex_attribute_list, visited_all) if flag0
+    ]
     print(vertex_attribute_list)
 
     fig = plt.figure(figsize=(6, 6))
@@ -246,6 +261,7 @@ def draw_single_diagram(adjacency_matrix, vertex_attribute_list, line_color_list
 
     # usetex
     import matplotlib as mpl
+
     mpl.rc("text", usetex=True)
 
     ax.set_xlim(0, 1)
@@ -280,7 +296,9 @@ def draw_single_diagram(adjacency_matrix, vertex_attribute_list, line_color_list
                         for _path in path:
                             propagators.append([_path, i, j])
                     else:
-                        raise ValueError(F"Invalid value {path} in the adjacency matrix")
+                        raise ValueError(
+                            f"Invalid value {path} in the adjacency matrix"
+                        )
         if propagators == []:
             continue
 
@@ -297,29 +315,29 @@ def draw_single_diagram(adjacency_matrix, vertex_attribute_list, line_color_list
             type = vertex_attribute_list[iop]["type"]
             name = vertex_attribute_list[iop]["name"]
             if pos == "src":
-                y_tmp = (i_src - 0.5) if n_src_op // 2 == 1 else (i_src )
-                xy_tmp = (.2, .5 + y_tmp / 2 * .6)
-                print(F"src: {xy_tmp}, {n_src_op}")
+                y_tmp = (i_src - 0.5) if n_src_op // 2 == 1 else (i_src)
+                xy_tmp = (0.2, 0.5 + y_tmp / 2 * 0.6)
+                print(f"src: {xy_tmp}, {n_src_op}")
                 i_src += 1
                 if type == "meson":
                     operator_list[iop] = meson_source(diagram, xy_tmp, size, name)
                 elif type == "baryon":
                     operator_list[iop] = baryon_source(diagram, xy_tmp, size, name)
                 else:
-                    raise ValueError(F"Invalid hadron type: {type}.")
+                    raise ValueError(f"Invalid hadron type: {type}.")
             elif pos == "snk":
-                y_tmp = (i_snk - .5)  if n_snk_op // 2 == 1 else (i_snk )
-                xy_tmp = (.8, .5 + y_tmp / 2 * .6)
-                print(F"snk: {xy_tmp}, {n_snk_op}")
+                y_tmp = (i_snk - 0.5) if n_snk_op // 2 == 1 else (i_snk)
+                xy_tmp = (0.8, 0.5 + y_tmp / 2 * 0.6)
+                print(f"snk: {xy_tmp}, {n_snk_op}")
                 i_snk += 1
                 if type == "meson":
                     operator_list[iop] = meson_sink(diagram, xy_tmp, size, name)
                 elif type == "baryon":
                     operator_list[iop] = baryon_sink(diagram, xy_tmp, size, name)
                 else:
-                    raise ValueError(F"Invalid hadron type: {type}.")
+                    raise ValueError(f"Invalid hadron type: {type}.")
             else:
-                raise ValueError(F"Invalid position: {pos}.")
+                raise ValueError(f"Invalid position: {pos}.")
 
         print(propagators)
         for propagator in propagators:

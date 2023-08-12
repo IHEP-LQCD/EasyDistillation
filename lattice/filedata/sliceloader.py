@@ -15,7 +15,7 @@ class binloader:
         filename: str,
         dtype: Union[str, type, numpy.dtype] = numpy.uint8,
         offset: int = 0,
-        shape: Tuple[int] = None
+        shape: Tuple[int] = None,
     ):
         if not isinstance(dtype, numpy.dtype):
             descr = numpy.dtype(dtype)
@@ -31,18 +31,24 @@ class binloader:
             if shape is None:
                 bytes = flen - offset
                 if bytes % dbytes:
-                    raise ValueError("Size of available data is not a multiple of the data-type size.")
+                    raise ValueError(
+                        "Size of available data is not a multiple of the data-type size."
+                    )
                 size = bytes // dbytes
-                shape = (size, )
+                shape = (size,)
             elif not isinstance(shape, tuple):
-                shape = tuple(shape, )
+                shape = tuple(
+                    shape,
+                )
                 size = numpy.intp(1)
                 for k in shape:
                     size *= k
                 bytes = offset + size * dbytes
 
             if flen < bytes:
-                raise ValueError("Size of available data is less than acquired by dtype and shape.")
+                raise ValueError(
+                    "Size of available data is less than acquired by dtype and shape."
+                )
 
         self.filename = filename
         self.dtype = descr
@@ -51,7 +57,7 @@ class binloader:
 
     def __getitem__(self, item):
         if not isinstance(item, tuple):
-            item = (item, )
+            item = (item,)
 
         shape = self.shape
         offset = self.offset
@@ -89,7 +95,7 @@ class binloader:
 
                 resshape.append((stop - start) // step)
                 resitem.append(slice(0, stop - start, step))
-                resstride.append(int(numpy.prod(shape[i + 1:])))
+                resstride.append(int(numpy.prod(shape[i + 1 :])))
                 skip += start * stride[i]
                 if step == 1:
                     continuum[i] = True
@@ -100,7 +106,7 @@ class binloader:
                     dim_list = list(dim)
                     resshape.append(len(dim_list))
                     resitem.append(dim_list)
-                    resstride.append(int(numpy.prod(shape[i + 1:])))
+                    resstride.append(int(numpy.prod(shape[i + 1 :])))
                 except TypeError:
                     raise ValueError("Index in [] should be int, slice or iterable.")
 
@@ -108,7 +114,7 @@ class binloader:
         while i < ndim:
             resshape.append(shape[i])
             resitem.append(slice(0, shape[i], 1))
-            resstride.append(int(numpy.prod(shape[i + 1:])))
+            resstride.append(int(numpy.prod(shape[i + 1 :])))
             continuum[i] = True
             full[i] = True
             i += 1
@@ -125,9 +131,9 @@ class binloader:
 
         resoffset = offset + skip * self.dtype.itemsize
         resndim = len(resshape)
-        realshape = resshape[:i - ndim + resndim]
-        realitem = resitem[:i - ndim + resndim]
-        realstride = resstride[:i - ndim + resndim]
+        realshape = resshape[: i - ndim + resndim]
+        realitem = resitem[: i - ndim + resndim]
+        realstride = resstride[: i - ndim + resndim]
 
         return self.load(resshape, realitem, realshape, realstride, rescount, resoffset)
 
@@ -180,8 +186,12 @@ class npyloader:
             fid.seek(0, io.SEEK_SET)
             version = numpy.lib.format.read_magic(fid)
             if version not in [(1, 0), (2, 0), (3, 0), None]:
-                raise ValueError(f"We only support format version (1,0), (2,0), and (3,0), not {version}.")
-            shape, fortran_order, dtype = numpy.lib.format._read_array_header(fid, version)
+                raise ValueError(
+                    f"We only support format version (1,0), (2,0), and (3,0), not {version}."
+                )
+            shape, fortran_order, dtype = numpy.lib.format._read_array_header(
+                fid, version
+            )
             offset = fid.tell()
 
         self.loader = binloader(filename, dtype, offset, shape)

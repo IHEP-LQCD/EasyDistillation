@@ -8,9 +8,24 @@ class MomentumPhase:
         backend = get_backend()
         self.latt_size = latt_size
         Lx, Ly, Lz, Lt = self.latt_size
-        self.x = backend.arange(Lx).reshape(1, 1, Lx).repeat(Lz, 0).repeat(Ly, 1) * 2j * backend.pi / Lx
-        self.y = backend.arange(Ly).reshape(1, Ly, 1).repeat(Lz, 0).repeat(Lx, 2) * 2j * backend.pi / Ly
-        self.z = backend.arange(Lz).reshape(Lz, 1, 1).repeat(Ly, 1).repeat(Lx, 2) * 2j * backend.pi / Lz
+        self.x = (
+            backend.arange(Lx).reshape(1, 1, Lx).repeat(Lz, 0).repeat(Ly, 1)
+            * 2j
+            * backend.pi
+            / Lx
+        )
+        self.y = (
+            backend.arange(Ly).reshape(1, Ly, 1).repeat(Lz, 0).repeat(Lx, 2)
+            * 2j
+            * backend.pi
+            / Ly
+        )
+        self.z = (
+            backend.arange(Lz).reshape(Lz, 1, 1).repeat(Ly, 1).repeat(Lx, 2)
+            * 2j
+            * backend.pi
+            / Lz
+        )
         x = self.x.reshape(1, Lz, Ly, Lx).repeat(Lt, 0)
         y = self.y.reshape(1, Lz, Ly, Lx).repeat(Lt, 0)
         z = self.z.reshape(1, Lz, Ly, Lx).repeat(Lt, 0)
@@ -49,5 +64,7 @@ class MomentumPhase:
         npx, npy, npz = np
         if np not in self.cache_cb2:
             backend = get_backend()
-            self.cache_cb2[np] = backend.exp(npx * self.x_cb2 + npy * self.y_cb2 + npz * self.z_cb2)
+            self.cache_cb2[np] = backend.exp(
+                npx * self.x_cb2 + npy * self.y_cb2 + npz * self.z_cb2
+            )
         return self.cache_cb2[np]

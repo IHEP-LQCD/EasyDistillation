@@ -14,8 +14,9 @@ def get_mom2_list(mom2: int) -> List[Tuple]:
     return ret
 
 
-def get_AB_opratorlist_row(insertion_row_A: InsertionRow, insertion_row_B: InsertionRow,
-                                 mom_list: List[Tuple]) -> List[Operator]:
+def get_AB_opratorlist_row(
+    insertion_row_A: InsertionRow, insertion_row_B: InsertionRow, mom_list: List[Tuple]
+) -> List[Operator]:
     ops_A = []
     ops_B = []
     for i in mom_list:
@@ -26,7 +27,10 @@ def get_AB_opratorlist_row(insertion_row_A: InsertionRow, insertion_row_B: Inser
 
 
 def get_AB_opratorlist_rows(
-    insertions_row_A: List[InsertionRow], insertions_row_B: List[InsertionRow], mom_list: List[Tuple], coeff: List = None
+    insertions_row_A: List[InsertionRow],
+    insertions_row_B: List[InsertionRow],
+    mom_list: List[Tuple],
+    coeff: List = None,
 ) -> List[Operator]:
     assert len(insertions_row_A) == len(insertions_row_B)
     if coeff is None:

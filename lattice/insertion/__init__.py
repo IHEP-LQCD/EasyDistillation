@@ -33,18 +33,29 @@ class InsertionRowMom:
 
 
 class Operator:
-    def __init__(self, name: str, insertion_rows: List[InsertionRowMom], coefficients: List[float]) -> None:
-        assert (
-            len(insertion_rows) == len(coefficients)
-        ), F"Unmatched numbers of insertion rows {len(insertion_rows)} and coefficients {len(coefficients)}"
+    def __init__(
+        self,
+        name: str,
+        insertion_rows: List[InsertionRowMom],
+        coefficients: List[float],
+    ) -> None:
+        assert len(insertion_rows) == len(
+            coefficients
+        ), f"Unmatched numbers of insertion rows {len(insertion_rows)} and coefficients {len(coefficients)}"
         parts = []
         for idx in range(len(insertion_rows)):
-            row, momentum, coefficient = insertion_rows[idx].row, insertion_rows[idx].momentum, coefficients[idx]
+            row, momentum, coefficient = (
+                insertion_rows[idx].row,
+                insertion_rows[idx].momentum,
+                coefficients[idx],
+            )
             for i in range(len(row) // 2):
                 parts.append(row[i * 2])
                 elemental_part = []
                 for derivative_coeff, derivative_idx in row[i * 2 + 1]:
-                    elemental_part.append([coefficient * derivative_coeff, derivative_idx, momentum])
+                    elemental_part.append(
+                        [coefficient * derivative_coeff, derivative_idx, momentum]
+                    )
                 parts.append(elemental_part)
 
         self.name = name
@@ -57,21 +68,24 @@ class InsertionRow:
         self.momentum_dict = momentum_dict
 
     def __call__(self, npx, npy, npz) -> InsertionRowMom:
-        return InsertionRowMom(self.row, list(self.momentum_dict.values()).index(f"{npx} {npy} {npz}"))
+        return InsertionRowMom(
+            self.row, list(self.momentum_dict.values()).index(f"{npx} {npy} {npz}")
+        )
 
     def __str__(self) -> str:
         from .gamma import output as gamma_str
         from .derivative import output as derivative_str
+
         ret = ""
         parts = self.row
         for i in range(len(parts) // 2):
             derivative_part = parts[i * 2 + 1]
             derivative_str_part = ""
             for j in range(len(derivative_part)):
-                derivative_str_part += F"{derivative_str(derivative_part[j])}"
+                derivative_str_part += f"{derivative_str(derivative_part[j])}"
                 if j != len(derivative_part) - 1:
                     derivative_str_part += " + "
-            ret += F"{gamma_str(parts[i*2])} * ({derivative_str_part})"
+            ret += f"{gamma_str(parts[i*2])} * ({derivative_str_part})"
             if i != len(parts) // 2 - 1:
                 ret += " + "
         return ret
@@ -88,7 +102,9 @@ class Insertion:
         self.gamma = gamma_scheme(gamma)
         self.derivative = derivative_scheme(derivative)
         self.parity = gamma_parity(gamma) * derivative_parity(derivative)
-        self.charge_conjugation = gamma_charge_conjugation(gamma) * derivative_charge_conjugation(derivative)
+        self.charge_conjugation = gamma_charge_conjugation(
+            gamma
+        ) * derivative_charge_conjugation(derivative)
         self.hermiticity = gamma_hermiticity(gamma) * derivative_hermiticity(derivative)
         self.projection = [gamma_gourp(gamma), derivative_gourp(derivative), projection]
         self.momentum_dict = momentum_dict
@@ -119,37 +135,66 @@ class Insertion:
             "A_1": ["T_1"],
             "E": ["T_1", "T_2"],
             "T_1": ["A_1", "T_1", "T_2", "E"],
-            "T_2": ["T_1", "T_2", "E", "A_2"]
+            "T_2": ["T_1", "T_2", "E", "A_2"],
         }
         if left == "A_1":
-            assert right == projection, F"{left} x {right} has no irrep {projection}"
+            assert right == projection, f"{left} x {right} has no irrep {projection}"
             for i in range(length[projection]):
                 self.rows.append([gamma[0], derivative[i]])
         elif left == "T_1":
-            assert projection in irrep_T1[right], f"{left} x {right} has no irrep {projection}"
+            assert (
+                projection in irrep_T1[right]
+            ), f"{left} x {right} has no irrep {projection}"
             for i in range(length[projection]):
                 if right == "A_1":
                     self.rows.append([gamma[i], derivative[0]])
                 elif right == "E":
                     raise NotImplementedError(f"{left} x {right} not implemented yet")
                 elif projection in ["A_1", "A_2"]:
-                    self.rows.append([gamma[0], derivative[0], gamma[1], derivative[1], gamma[2], derivative[2]])
+                    self.rows.append(
+                        [
+                            gamma[0],
+                            derivative[0],
+                            gamma[1],
+                            derivative[1],
+                            gamma[2],
+                            derivative[2],
+                        ]
+                    )
                 elif projection in ["E"]:
                     if i == 0:
-                        self.rows.append([gamma[0], derivative[0], gamma[1], self.multiply(-1, derivative[1])])
+                        self.rows.append(
+                            [
+                                gamma[0],
+                                derivative[0],
+                                gamma[1],
+                                self.multiply(-1, derivative[1]),
+                            ]
+                        )
                     else:
                         self.rows.append(
                             [
                                 gamma[0],
-                                self.multiply(-1, derivative[0]), gamma[1],
-                                self.multiply(-1, derivative[1]), gamma[2],
-                                self.multiply(2, derivative[2])
+                                self.multiply(-1, derivative[0]),
+                                gamma[1],
+                                self.multiply(-1, derivative[1]),
+                                gamma[2],
+                                self.multiply(2, derivative[2]),
                             ]
                         )
                 elif projection in ["T_1", "T_2"]:
                     j = (i + 1) % 3
                     k = (i + 2) % 3
                     if right == projection:
-                        self.rows.append([gamma[j], derivative[k], gamma[k], self.multiply(-1, derivative[j])])
+                        self.rows.append(
+                            [
+                                gamma[j],
+                                derivative[k],
+                                gamma[k],
+                                self.multiply(-1, derivative[j]),
+                            ]
+                        )
                     else:
-                        self.rows.append([gamma[j], derivative[k], gamma[k], derivative[j]])
+                        self.rows.append(
+                            [gamma[j], derivative[k], gamma[k], derivative[j]]
+                        )

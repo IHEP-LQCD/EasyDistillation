@@ -49,7 +49,7 @@ graph_D_D_1 = [
     [0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0],
 ]
-#Ds_Ds
+# Ds_Ds
 graph_Ds_Ds_2 = [
     [0, 0, 0, 0, 0, 0],
     [0, 0, 0, 2, 0, 0],
@@ -59,7 +59,15 @@ graph_Ds_Ds_2 = [
     [0, 0, 0, 0, 0, 0],
 ]
 
-adj_matrix_list = [graph_C_DsD, graph_DsD_C, graph_DsD_DsD_1, graph_DsD_DsD_2, graph_DsD_DsD_3, graph_D_D_1, graph_Ds_Ds_2]
+adj_matrix_list = [
+    graph_C_DsD,
+    graph_DsD_C,
+    graph_DsD_DsD_1,
+    graph_DsD_DsD_2,
+    graph_DsD_DsD_3,
+    graph_D_D_1,
+    graph_Ds_Ds_2,
+]
 
 from lattice.quark_draw import draw_single_diagram, draw_multi_diagrams
 
