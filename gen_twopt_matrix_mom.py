@@ -12,13 +12,7 @@ backend = get_backend()
 
 ###############################################################################
 from lattice.insertion.mom_dict import momDict_mom9
-from lattice.insertion import (
-    Insertion,
-    Operator,
-    GammaName,
-    DerivativeName,
-    ProjectionName,
-)
+from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
 
 ins1_hc = Insertion(GammaName.B1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
 print("1+- oprator: ", ins1_hc[2])

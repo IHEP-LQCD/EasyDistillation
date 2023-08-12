@@ -2,7 +2,7 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
-    "python.formatting.provider": "autopep8",
+    "python.formatting.provider": "none",
     "flake8.args": [
         "--ignore=E203,W503,W504,E402",
         "--max-line-length=120"

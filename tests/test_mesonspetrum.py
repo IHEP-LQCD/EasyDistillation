@@ -11,23 +11,9 @@ set_backend("cupy")
 backend = get_backend()
 
 # from lattice.insertion.mom_dict import momDict_mom9
-momentum_dict = {
-    0: "0 0 0",
-    1: "0 0 1",
-    2: "0 1 1",
-    3: "1 1 1",
-    4: "0 0 2",
-    5: "0 1 2",
-    6: "1 1 2",
-}
+momentum_dict = {0: "0 0 0", 1: "0 0 1", 2: "0 1 1", 3: "1 1 1", 4: "0 0 2", 5: "0 1 2", 6: "1 1 2"}
 
-from lattice.insertion import (
-    Insertion,
-    Operator,
-    GammaName,
-    DerivativeName,
-    ProjectionName,
-)
+from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
 
 ###################        set hadron        ##################################
 pi_A1 = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momentum_dict)

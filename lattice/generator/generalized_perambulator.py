@@ -42,16 +42,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
         self.dslash = core.getDslash(
-            latt_size,
-            mass,
-            tol,
-            maxiter,
-            xi_0,
-            nu,
-            clover_coeff_t,
-            clover_coeff_r,
-            anti_periodic_t,
-            multigrid,
+            latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
         )
         self.gamma_list = gamma_list
         self.momentum_list = momentum_list

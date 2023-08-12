@@ -37,7 +37,6 @@ class BinaryFileData(FileData):
 
         backend = get_backend()
         s = time()
-        # fmt: off
         # ret = numpy.asarray(
         #     loader(
         #         self.file,
@@ -46,15 +45,8 @@ class BinaryFileData(FileData):
         #         offset=0,
         #     )[key]
         # )
-        # fmt: on
         ret = backend.asarray(
-            numpy.memmap(
-                self.file,
-                dtype=self.dtype,
-                mode="r",
-                offset=0,
-                shape=tuple(self.shape),
-            )[key].copy()
+            numpy.memmap(self.file, dtype=self.dtype, mode="r", offset=0, shape=tuple(self.shape))[key].copy()
         )
         self.time_in_sec += time() - s
         self.size_in_byte += ret.nbytes

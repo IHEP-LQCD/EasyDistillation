@@ -36,16 +36,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
         self.dslash = core.getDslash(
-            latt_size,
-            mass,
-            tol,
-            maxiter,
-            xi_0,
-            nu,
-            clover_coeff_t,
-            clover_coeff_r,
-            anti_periodic_t,
-            multigrid,
+            latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
         )
         self._SV = backend.zeros((2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._VSV = backend.zeros((Lt, Ns, Ns, Ne, Ne), "<c16")

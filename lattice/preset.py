@@ -53,13 +53,7 @@ class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
 
 
 class EigenvectorTimeSlice(QDPLazyDiskMapObjFile, Eigenvector):
-    def __init__(
-        self,
-        prefix: str,
-        suffix: str,
-        shape: List[int] = [128, 70, 16**3, 3],
-        totNe: int = 70,
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 70, 16**3, 3], totNe: int = 70) -> None:
         super().__init__()
         Eigenvector.__init__(self, FileMetaData(shape, ">c8", 2), totNe)
         self.prefix = prefix
@@ -70,13 +64,7 @@ class EigenvectorTimeSlice(QDPLazyDiskMapObjFile, Eigenvector):
 
 
 class EigenvectorNpy(NdarrayFile, Eigenvector):
-    def __init__(
-        self,
-        prefix: str,
-        suffix: str,
-        shape: List[int] = [70, 128, 16**3, 3],
-        totNe: int = 70,
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [70, 128, 16**3, 3], totNe: int = 70) -> None:
         super().__init__()
         Eigenvector.__init__(self, FileMetaData(shape, "<c16", 2), totNe)
         self.prefix = prefix
@@ -87,13 +75,7 @@ class EigenvectorNpy(NdarrayFile, Eigenvector):
 
 
 class PerambulatorBinary(BinaryFile, Perambulator):
-    def __init__(
-        self,
-        prefix: str,
-        suffix: str,
-        shape: List[int] = [128, 128, 4, 4, 70, 70],
-        totNe: int = 70,
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Perambulator.__init__(self, FileMetaData(shape, "<c16", 0), totNe)
         self.prefix = prefix
@@ -104,13 +86,7 @@ class PerambulatorBinary(BinaryFile, Perambulator):
 
 
 class PerambulatorNpy(NdarrayFile, Perambulator):
-    def __init__(
-        self,
-        prefix: str,
-        suffix: str,
-        shape: List[int] = [128, 128, 4, 4, 70, 70],
-        totNe: int = 70,
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Perambulator.__init__(self, FileMetaData(shape, "<c8", 0), totNe)
         self.prefix = prefix
@@ -121,13 +97,7 @@ class PerambulatorNpy(NdarrayFile, Perambulator):
 
 
 class ElementalBinary(BinaryFile, Elemental):
-    def __init__(
-        self,
-        prefix: str,
-        suffix: str,
-        shape: List[int] = [40, 27, 128, 70, 70],
-        totNe: int = 70,
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [40, 27, 128, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Elemental.__init__(self, FileMetaData(shape, "<c16", 0), totNe)
         self.prefix = prefix
@@ -160,13 +130,7 @@ class GaugeFieldIldg(IldgFile, GaugeField):
 
 
 class ElementalNpy(NdarrayFile, Elemental):
-    def __init__(
-        self,
-        prefix: str,
-        suffix: str,
-        shape: List[int] = [4, 123, 128, 70, 70],
-        totNe: int = 70,
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [4, 123, 128, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Elemental.__init__(self, FileMetaData(shape, "<c8", 0), totNe)
         self.prefix = prefix

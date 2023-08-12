@@ -26,9 +26,7 @@ class DisplacementElementalGenerator:
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu")) as f:
                 code = f.read()
             self.kernel = backend.RawModule(
-                code=code,
-                options=("--std=c++11",),
-                name_expressions=("stout_smear<double>",),
+                code=code, options=("--std=c++11",), name_expressions=("stout_smear<double>",)
             ).get_function(
                 "stout_smear<double>"
             )  # TODO: More template instance.
@@ -95,12 +93,7 @@ class DisplacementElementalGenerator:
             right = self._D(V, U[:, t], dist)
             left = V
             for imom, mom in enumerate(self.momentum_list):
-                VPV[dist, imom] += contract(
-                    "zyx,ezyxc,fzyxc->ef",
-                    momentum_phase.get(mom),
-                    left.conj(),
-                    right,
-                )
+                VPV[dist, imom] += contract("zyx,ezyxc,fzyxc->ef", momentum_phase.get(mom), left.conj(), right)
         return VPV
 
     def project_SU3(self):

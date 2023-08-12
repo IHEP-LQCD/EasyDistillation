@@ -4,13 +4,7 @@ set_backend("cupy")
 
 ###############################################################################
 from lattice.insertion.mom_dict import momDict_mom9
-from lattice.insertion import (
-    Insertion,
-    Operator,
-    GammaName,
-    DerivativeName,
-    ProjectionName,
-)
+from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
 
 pi_A1 = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
 print(pi_A1[0])

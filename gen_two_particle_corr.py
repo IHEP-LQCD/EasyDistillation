@@ -4,21 +4,9 @@ set_backend("cupy")
 
 from lattice import Dispatch, preset
 from lattice.insertion.mom_dict import momDict_mom9
-from lattice.insertion import (
-    Insertion,
-    Operator,
-    GammaName,
-    DerivativeName,
-    ProjectionName,
-)
+from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
 
-from lattice import (
-    Meson,
-    Propagator,
-    PropagatorLocal,
-    QuarkDiagram,
-    compute_diagrams_multitime,
-)
+from lattice import Meson, Propagator, PropagatorLocal, QuarkDiagram, compute_diagrams_multitime
 
 Lt = 128
 
@@ -40,16 +28,10 @@ elemental = preset.ElementalNpy(
     70,
 )
 perambulator_light = preset.PerambulatorBinary(
-    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator/",
-    ".peram",
-    [128, 128, 4, 4, 70, 70],
-    70,
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator/", ".peram", [128, 128, 4, 4, 70, 70], 70
 )
 perambulator_charm = preset.PerambulatorBinary(
-    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/",
-    ".charm.peram",
-    [128, 128, 4, 4, 70, 70],
-    70,
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/", ".charm.peram", [128, 128, 4, 4, 70, 70], 70
 )
 
 D_D = QuarkDiagram(

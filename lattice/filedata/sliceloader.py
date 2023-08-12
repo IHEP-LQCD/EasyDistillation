@@ -35,9 +35,7 @@ class binloader:
                 size = bytes // dbytes
                 shape = (size,)
             elif not isinstance(shape, tuple):
-                shape = tuple(
-                    shape,
-                )
+                shape = tuple(shape)
                 size = numpy.intp(1)
                 for k in shape:
                     size *= k
