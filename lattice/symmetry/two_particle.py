@@ -31,12 +31,8 @@ def make_operator(form, mom="p"):
     elif form[0] == "V":
         return [
             sp.I * Operator(f"{form}_z({mom})"),  # m = 0
-            -sp.I
-            * (Operator(f"{form}_x({mom})") + sp.I * Operator(f"{form}_y({mom})"))
-            / sp.sqrt(2),  # m = 1
-            sp.I
-            * (Operator(f"{form}_x({mom})") - sp.I * Operator(f"{form}_y({mom})"))
-            / sp.sqrt(2),  # m = -1
+            -sp.I * (Operator(f"{form}_x({mom})") + sp.I * Operator(f"{form}_y({mom})")) / sp.sqrt(2),  # m = 1
+            sp.I * (Operator(f"{form}_x({mom})") - sp.I * Operator(f"{form}_y({mom})")) / sp.sqrt(2),  # m = -1
         ]
 
 
@@ -100,9 +96,7 @@ def two_particle_circle_basis(op1, op2, mom2, J, L, Spin):
                         ans += (
                             CG(S(L), S(mL), S(Spin), S(mS), J, M)
                             * CG(S1, s1, S2, s2, S(Spin), mS)
-                            * sp.simplify(Ynm(S(L), S(mL), theta, phi)).expand(
-                                func=True
-                            )
+                            * sp.simplify(Ynm(S(L), S(mL), theta, phi)).expand(func=True)
                             * make_operator(op1, f"{ip}")[s1]
                             * make_operator(op2, f"{[-ii for ii in ip]}")[s2]
                         )
@@ -120,9 +114,7 @@ def two_particle_Cartesian_basis(op1, op2, mom2, J, L, Spin):
         return circle_basis
     elif J == 1:
         return [
-            sp.expand(
-                sp.simplify((circle_basis[0] - circle_basis[2]) * (-sp.I) / sp.sqrt(2))
-            ),
+            sp.expand(sp.simplify((circle_basis[0] - circle_basis[2]) * (-sp.I) / sp.sqrt(2))),
             sp.expand(sp.simplify((circle_basis[0] + circle_basis[2]) / sp.sqrt(2))),
             sp.expand(sp.simplify(circle_basis[1] * (-sp.I))),
         ]

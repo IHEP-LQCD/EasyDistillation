@@ -53,9 +53,7 @@ class Operator:
                 parts.append(row[i * 2])
                 elemental_part = []
                 for derivative_coeff, derivative_idx in row[i * 2 + 1]:
-                    elemental_part.append(
-                        [coefficient * derivative_coeff, derivative_idx, momentum]
-                    )
+                    elemental_part.append([coefficient * derivative_coeff, derivative_idx, momentum])
                 parts.append(elemental_part)
 
         self.name = name
@@ -68,9 +66,7 @@ class InsertionRow:
         self.momentum_dict = momentum_dict
 
     def __call__(self, npx, npy, npz) -> InsertionRowMom:
-        return InsertionRowMom(
-            self.row, list(self.momentum_dict.values()).index(f"{npx} {npy} {npz}")
-        )
+        return InsertionRowMom(self.row, list(self.momentum_dict.values()).index(f"{npx} {npy} {npz}"))
 
     def __str__(self) -> str:
         from .gamma import output as gamma_str
@@ -102,9 +98,7 @@ class Insertion:
         self.gamma = gamma_scheme(gamma)
         self.derivative = derivative_scheme(derivative)
         self.parity = gamma_parity(gamma) * derivative_parity(derivative)
-        self.charge_conjugation = gamma_charge_conjugation(
-            gamma
-        ) * derivative_charge_conjugation(derivative)
+        self.charge_conjugation = gamma_charge_conjugation(gamma) * derivative_charge_conjugation(derivative)
         self.hermiticity = gamma_hermiticity(gamma) * derivative_hermiticity(derivative)
         self.projection = [gamma_gourp(gamma), derivative_gourp(derivative), projection]
         self.momentum_dict = momentum_dict
@@ -142,9 +136,7 @@ class Insertion:
             for i in range(length[projection]):
                 self.rows.append([gamma[0], derivative[i]])
         elif left == "T_1":
-            assert (
-                projection in irrep_T1[right]
-            ), f"{left} x {right} has no irrep {projection}"
+            assert projection in irrep_T1[right], f"{left} x {right} has no irrep {projection}"
             for i in range(length[projection]):
                 if right == "A_1":
                     self.rows.append([gamma[i], derivative[0]])
@@ -195,6 +187,4 @@ class Insertion:
                             ]
                         )
                     else:
-                        self.rows.append(
-                            [gamma[j], derivative[k], gamma[k], derivative[j]]
-                        )
+                        self.rows.append([gamma[j], derivative[k], gamma[k], derivative[j]])

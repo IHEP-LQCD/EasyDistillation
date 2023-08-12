@@ -16,9 +16,7 @@ pi_A1 = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_
 print(pi_A1[0])
 op_pi = Operator("pi", [pi_A1[0](0, 0, 0)], [1])
 
-b1xnabla_A1 = Insertion(
-    GammaName.B1, DerivativeName.NABLA, ProjectionName.A1, momDict_mom9
-)
+b1xnabla_A1 = Insertion(GammaName.B1, DerivativeName.NABLA, ProjectionName.A1, momDict_mom9)
 print(b1xnabla_A1[0])
 op_pi2 = Operator("pi2", [pi_A1[0](0, 0, 0), b1xnabla_A1[0](0, 0, 0)], [3, 1])
 ###############################################################################
@@ -52,33 +50,19 @@ backend = get_backend()
 # compute 2pt
 twopt = twopoint([op_pi, op_pi2], e, p, list(range(128)), 128)  # [Nop, Lt]
 twopt = twopt.real
-print(
-    backend.arccosh(
-        (backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2
-    )
-)
+print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
 
 # compute a 2 by 2 two-point correlation matrix
 twopt_matrix = twopoint_matrix([op_pi, op_pi2], e, p, list(range(128)), 128)
 twopt_matrix = twopt_matrix.real
 print(
     backend.arccosh(
-        (
-            backend.roll(twopt_matrix[0, 0], -1, 0)
-            + backend.roll(twopt_matrix[0, 0], 1, 0)
-        )
-        / twopt_matrix[0, 0]
-        / 2
+        (backend.roll(twopt_matrix[0, 0], -1, 0) + backend.roll(twopt_matrix[0, 0], 1, 0)) / twopt_matrix[0, 0] / 2
     )
 )
 print(
     backend.arccosh(
-        (
-            backend.roll(twopt_matrix[1, 1], -1, 0)
-            + backend.roll(twopt_matrix[1, 1], 1, 0)
-        )
-        / twopt_matrix[1, 1]
-        / 2
+        (backend.roll(twopt_matrix[1, 1], -1, 0) + backend.roll(twopt_matrix[1, 1], 1, 0)) / twopt_matrix[1, 1] / 2
     )
 )
 ###############################################################################

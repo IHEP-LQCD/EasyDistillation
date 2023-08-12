@@ -23,9 +23,7 @@ out_suffix = ".eigenvector.npy"
 
 
 def check(cfg, data):
-    data_ref = EigenvectorNpy(
-        out_prefix, out_suffix, [Lt, Ne, Lz, Ly, Lx, Nc], Ne
-    ).load(cfg)[:]
+    data_ref = EigenvectorNpy(out_prefix, out_suffix, [Lt, Ne, Lz, Ly, Lx, Nc], Ne).load(cfg)[:]
     res = 0
     for t in range(Lt):
         for e in range(Ne):
@@ -44,9 +42,7 @@ for cfg in ["weak_field"]:
     for t in range(Lt):
         s = perf_counter()
         data[t] = eigenvector.calc(t)
-        print(
-            Rf"EASYDISTILLATION: {perf_counter()-s:.3f} sec to solve the lowest {Ne} eigensystem at t={t}."
-        )
+        print(Rf"EASYDISTILLATION: {perf_counter()-s:.3f} sec to solve the lowest {Ne} eigensystem at t={t}.")
 
     # backend.save(F"{out_prefix}{cfg}{out_suffix}", data)
     check(cfg, data)

@@ -23,11 +23,7 @@ class DisplacementElementalGenerator:
         if backend.__name__ == "cupy":
             import os
 
-            with open(
-                os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu"
-                )
-            ) as f:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu")) as f:
                 code = f.read()
             self.kernel = backend.RawModule(
                 code=code,
@@ -113,10 +109,7 @@ class DisplacementElementalGenerator:
         Uinv = backend.linalg.inv(U)
         while (
             backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15
-            or backend.max(
-                backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))
-            )
-            > 1e-15
+            or backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15
         ):
             U = 0.5 * (U + contract("...ab->...ba", Uinv.conj()))
             Uinv = backend.linalg.inv(U)
@@ -132,11 +125,7 @@ class DisplacementElementalGenerator:
             for mu in range(Nd - 1):
                 for nu in range(Nd - 1):
                     if mu != nu:
-                        Q[mu] += (
-                            U[nu]
-                            @ backend.roll(U[mu], -1, 3 - nu)
-                            @ backend.roll(U_dag[nu], -1, 3 - mu)
-                        )
+                        Q[mu] += U[nu] @ backend.roll(U[mu], -1, 3 - nu) @ backend.roll(U_dag[nu], -1, 3 - mu)
                         Q[mu] += (
                             backend.roll(U_dag[nu], +1, 3 - nu)
                             @ backend.roll(U[mu], +1, 3 - nu)
@@ -145,9 +134,7 @@ class DisplacementElementalGenerator:
 
             Q = rho * Q @ U_dag
             Q = 0.5j * (Q.transpose(0, 1, 2, 3, 4, 6, 5).conj() - Q)
-            contract("...aa->...a", Q)[:] -= (
-                1 / Nc * contract("...aa->...", Q)[..., None]
-            )
+            contract("...aa->...a", Q)[:] -= 1 / Nc * contract("...aa->...", Q)[..., None]
             Q_sq = Q @ Q
             c0 = contract("...aa->...", Q @ Q_sq).real / 3
             c1 = contract("...aa->...", Q_sq).real / 2
@@ -180,21 +167,13 @@ class DisplacementElementalGenerator:
                 + e_iu_real * 2 * u * (3 * u_sq + w_sq) * sinc_w
             ) * f_denom
             f1_real = (
-                2 * u * e_2iu_real
-                - e_iu_real * 2 * u * cos_w
-                + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_real - e_iu_real * 2 * u * cos_w + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
             f1_imag = (
-                2 * u * e_2iu_imag
-                + e_iu_imag * 2 * u * cos_w
-                + e_iu_real * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_imag + e_iu_imag * 2 * u * cos_w + e_iu_real * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
-            f2_real = (
-                e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w
-            ) * f_denom
-            f2_imag = (
-                e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w
-            ) * f_denom
+            f2_real = (e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w) * f_denom
+            f2_imag = (e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w) * f_denom
             f0_imag[parity] *= -1
             f1_real[parity] *= -1
             f2_imag[parity] *= -1
@@ -212,9 +191,7 @@ class DisplacementElementalGenerator:
 
         for _ in range(nstep):
             U_in = U.copy()
-            self.kernel(
-                (Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt)
-            )
+            self.kernel((Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt))
 
         self._U = U
 

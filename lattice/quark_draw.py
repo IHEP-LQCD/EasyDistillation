@@ -85,9 +85,7 @@ def draw_diagram(diagram, adjacency_matrix, operator_list, line_color_list):
                         for _path in path:
                             propagators.append([_path, i, j])
                     else:
-                        raise ValueError(
-                            f"Invalid value {path} in the adjacency matrix"
-                        )
+                        raise ValueError(f"Invalid value {path} in the adjacency matrix")
         if propagators == []:
             continue
         print(propagators)
@@ -227,21 +225,15 @@ def is_row_col_zero(matrix, i):
     return row_all_zero and col_all_zero
 
 
-def draw_multi_diagrams(
-    adjacency_matrix_list, vertex_attribute_list, line_color_list, save_path=None
-):
+def draw_multi_diagrams(adjacency_matrix_list, vertex_attribute_list, line_color_list, save_path=None):
     if save_path is None:
         save_path = [None] * len(adjacency_matrix_list)
     for im, isave in zip(adjacency_matrix_list, save_path):
         draw_single_diagram(im, vertex_attribute_list, line_color_list, isave)
 
 
-def draw_single_diagram(
-    adjacency_matrix, vertex_attribute_list, line_color_list, save_path=None
-):
-    visited_all = [
-        not is_row_col_zero(adjacency_matrix, i) for i in range(len(adjacency_matrix))
-    ]
+def draw_single_diagram(adjacency_matrix, vertex_attribute_list, line_color_list, save_path=None):
+    visited_all = [not is_row_col_zero(adjacency_matrix, i) for i in range(len(adjacency_matrix))]
     print(visited_all)
 
     # do not draw unvisited vertex
@@ -251,9 +243,7 @@ def draw_single_diagram(
     ]
     adjacency_matrix = adjacency_matrix_tmp
     print(adjacency_matrix_tmp)
-    vertex_attribute_list = [
-        i for i, flag0 in zip(vertex_attribute_list, visited_all) if flag0
-    ]
+    vertex_attribute_list = [i for i, flag0 in zip(vertex_attribute_list, visited_all) if flag0]
     print(vertex_attribute_list)
 
     fig = plt.figure(figsize=(6, 6))
@@ -296,9 +286,7 @@ def draw_single_diagram(
                         for _path in path:
                             propagators.append([_path, i, j])
                     else:
-                        raise ValueError(
-                            f"Invalid value {path} in the adjacency matrix"
-                        )
+                        raise ValueError(f"Invalid value {path} in the adjacency matrix")
         if propagators == []:
             continue
 

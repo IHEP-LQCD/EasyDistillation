@@ -1,9 +1,7 @@
 import os
 
 os.environ["CUPY_ACCELERATORS"] = "cub,cutensor"
-os.environ[
-    "CUTENSOR_PATH"
-] = "/dg_hpc/LQCD/jiangxiangyu/libcutensor-local-repo-rhel7-1.7.0/usr"
+os.environ["CUTENSOR_PATH"] = "/dg_hpc/LQCD/jiangxiangyu/libcutensor-local-repo-rhel7-1.7.0/usr"
 
 from lattice import set_backend, get_backend
 
@@ -114,11 +112,7 @@ for cfg in ["2000"]:
     twopt[1] = -twopt[0] + 2 * twopt[1]
     twopt[0] = -twopt[0]
     print(twopt)
-    print(
-        backend.arccosh(
-            (backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2
-        )
-    )
+    print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
 
     rho_src.load(cfg)
     pi_snk.load(cfg)

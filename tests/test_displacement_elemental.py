@@ -25,23 +25,17 @@ Ne = 20
 distance = 8
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", R".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(
-    f"{test_dir}/", R".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne
-)
+eigenvector = EigenvectorNpy(f"{test_dir}/", R".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
 
 mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 1, 2), (1, 1, 2)]
 num_mom = len(mom_list)
-elemental = DisplacementElementalGenerator(
-    latt_size, gauge_field, eigenvector, distance, mom_list
-)
+elemental = DisplacementElementalGenerator(latt_size, gauge_field, eigenvector, distance, mom_list)
 out_prefix = f"{test_dir}/"
 out_suffix = ".displacement_elemental.npy"
 
 
 def check(cfg, data):
-    data_ref = ElementalNpy(
-        out_prefix, out_suffix, [distance + 1, num_mom, Lt, Ne, Ne], Ne
-    ).load(cfg)[:]
+    data_ref = ElementalNpy(out_prefix, out_suffix, [distance + 1, num_mom, Lt, Ne, Ne], Ne).load(cfg)[:]
     res = backend.linalg.norm(data_ref - data)
     print(f"Test cfg {cfg}, res = {res}")
 
@@ -54,9 +48,7 @@ for cfg in ["weak_field"]:
     for t in range(Lt):
         s = perf_counter()
         data[t] = elemental.calc(t)
-        print(
-            f"EASYDISTILLATION: {perf_counter() - s:.2f}sec to calculate elemental at t={t}"
-        )
+        print(f"EASYDISTILLATION: {perf_counter() - s:.2f}sec to calculate elemental at t={t}")
 
     # backend.save(F"{out_prefix}{cfg}{out_suffix}", data.transpose(1, 2, 0, 3, 4))
     check(cfg, data.transpose(1, 2, 0, 3, 4))

@@ -32,9 +32,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         from pyquda import core
 
         backend = get_backend()
-        assert (
-            backend.__name__ == "cupy"
-        ), "PyQuda only support cupy as the ndarray implementation"
+        assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
         import numpy as np
         from cupyx import zeros_pinned
 
@@ -65,9 +63,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
             (Ne, len(gamma_list), len(momentum_list), 2, Lz, Ly, Lx // 2, Ns, Ns),
             "<c16",
         )
-        self._VSSV = np.zeros(
-            (Ne, Ne, len(gamma_list), len(momentum_list), Lz, Ly, Lx, Ns, Ns), "<c16"
-        )
+        self._VSSV = np.zeros((Ne, Ne, len(gamma_list), len(momentum_list), Lz, Ly, Lx, Ns, Ns), "<c16")
         self._stream = backend.cuda.Stream()
         self._t = None
         self._tf = None
@@ -135,25 +131,19 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
             if ti != self._t:
                 for spin in range(Ns):
                     V[:, ti, :, :, :, spin, :] = data_cb2[0, eigen, :, :, :, :, :]
-                    SV_i[eigen, :, :, :, :, :, spin, :] = dslash.invert(
-                        _V
-                    ).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)[
-                        :, tau, :, :, :, :, :
-                    ]
+                    SV_i[eigen, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(
+                        2, Lt, Lz, Ly, Lx // 2, Ns, Nc
+                    )[:, tau, :, :, :, :, :]
                     V[:] = 0
 
             if tf != self._tf:
                 for spin in range(Ns):
                     V[:, tf, :, :, :, spin, :] = data_cb2[1, eigen, :, :, :, :, :]
-                    SV_f[eigen, :, :, :, :, :, spin, :] = dslash.invert(
-                        _V
-                    ).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)[
-                        :, tau, :, :, :, :, :
-                    ]
+                    SV_f[eigen, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(
+                        2, Lt, Lz, Ly, Lx // 2, Ns, Nc
+                    )[:, tau, :, :, :, :, :]
                     V[:] = 0
-            SV_f[:] = contract(
-                "ii,kezyxjic,jj->kezyxijc", gamma(15), SV_f.conj(), gamma(15)
-            )
+            SV_f[:] = contract("ii,kezyxjic,jj->kezyxijc", gamma(15), SV_f.conj(), gamma(15))
 
         if ti != self._t:
             self._t = ti
@@ -176,18 +166,10 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
                 for y in range(Ly):
                     eo = (tau + z + y) % 2
                     if eo == 0:
-                        VSSV[eigen_f, :, :, :, z, y, 1::2] = VSSV_cb2[
-                            :, :, :, 1, z, y, :
-                        ]
-                        VSSV[eigen_f, :, :, :, z, y, 0::2] = VSSV_cb2[
-                            :, :, :, 0, z, y, :
-                        ]
+                        VSSV[eigen_f, :, :, :, z, y, 1::2] = VSSV_cb2[:, :, :, 1, z, y, :]
+                        VSSV[eigen_f, :, :, :, z, y, 0::2] = VSSV_cb2[:, :, :, 0, z, y, :]
                     else:
-                        VSSV[eigen_f, :, :, :, z, y, 1::2] = VSSV_cb2[
-                            :, :, :, 0, z, y, :
-                        ]
-                        VSSV[eigen_f, :, :, :, z, y, 0::2] = VSSV_cb2[
-                            :, :, :, 1, z, y, :
-                        ]
+                        VSSV[eigen_f, :, :, :, z, y, 1::2] = VSSV_cb2[:, :, :, 0, z, y, :]
+                        VSSV[eigen_f, :, :, :, z, y, 0::2] = VSSV_cb2[:, :, :, 1, z, y, :]
 
         return VSSV.transpose(2, 3, 4, 5, 6, 7, 8, 0, 1)

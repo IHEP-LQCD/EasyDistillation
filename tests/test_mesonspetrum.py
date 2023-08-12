@@ -34,9 +34,7 @@ pi_A1 = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momentum
 print(pi_A1[0])
 op_pi = Operator("pi", [pi_A1[0](0, 0, 0)], [1])
 
-b1xnabla_A1 = Insertion(
-    GammaName.B1, DerivativeName.NABLA, ProjectionName.A1, momentum_dict
-)
+b1xnabla_A1 = Insertion(GammaName.B1, DerivativeName.NABLA, ProjectionName.A1, momentum_dict)
 print(b1xnabla_A1[0])
 op_pi2 = Operator("pi2", [pi_A1[0](0, 0, 0), b1xnabla_A1[0](0, 0, 0)], [3, 1])
 
@@ -49,12 +47,8 @@ Vol = Lx * Ly * Lz * Lt
 Ne = 20
 Ns = 4
 
-elemental = preset.ElementalNpy(
-    f"{test_dir}/", ".elemental.npy", [13, 6, Lt, Ne, Ne], Ne
-)
-perambulator = preset.PerambulatorNpy(
-    f"{test_dir}/", ".perambulators.npy", [Lt, Lt, Ns, Ns, Ne, Ne], Ne
-)
+elemental = preset.ElementalNpy(f"{test_dir}/", ".elemental.npy", [13, 6, Lt, Ne, Ne], Ne)
+perambulator = preset.PerambulatorNpy(f"{test_dir}/", ".perambulators.npy", [Lt, Lt, Ns, Ns, Ne, Ne], Ne)
 
 cfg = "weak_field"
 e = elemental.load(cfg)
@@ -66,11 +60,7 @@ from lattice.correlator.one_particle import twopoint, twopoint_matrix
 # compute 2pt
 twopt = twopoint([op_pi, op_pi2], e, p, list(range(Lt)), Lt)  # [Nop, Lt]
 twopt = twopt.real
-print(
-    backend.arccosh(
-        (backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2
-    )
-)
+print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
 
 # compute a 2 by 2 two-point correlation matrix
 twopt_matrix = twopoint_matrix([op_pi, op_pi2], e, p, list(range(Lt)), Lt)
@@ -78,23 +68,13 @@ twopt_matrix = twopt_matrix.real
 print(
     "effmass:\n",
     backend.arccosh(
-        (
-            backend.roll(twopt_matrix[0, 0], -1, 0)
-            + backend.roll(twopt_matrix[0, 0], 1, 0)
-        )
-        / twopt_matrix[0, 0]
-        / 2
+        (backend.roll(twopt_matrix[0, 0], -1, 0) + backend.roll(twopt_matrix[0, 0], 1, 0)) / twopt_matrix[0, 0] / 2
     ),
 )
 print(
     "effmass:\n",
     backend.arccosh(
-        (
-            backend.roll(twopt_matrix[1, 1], -1, 0)
-            + backend.roll(twopt_matrix[1, 1], 1, 0)
-        )
-        / twopt_matrix[1, 1]
-        / 2
+        (backend.roll(twopt_matrix[1, 1], -1, 0) + backend.roll(twopt_matrix[1, 1], 1, 0)) / twopt_matrix[1, 1] / 2
     ),
 )
 

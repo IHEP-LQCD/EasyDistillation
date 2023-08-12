@@ -12,12 +12,7 @@ class Tag(NamedTuple):
 
 class Insertion(Dummy):
     def __new__(cls, name: str, tag: Tag, dagger: bool, **assumptions) -> None:
-        obj = super().__new__(
-            cls,
-            Rf"{name}^\dagger" if dagger else Rf"{name}",
-            commutative=False,
-            **assumptions
-        )
+        obj = super().__new__(cls, Rf"{name}^\dagger" if dagger else Rf"{name}", commutative=False, **assumptions)
         obj.tag = tag
         obj.dagger = dagger
         return obj
@@ -26,10 +21,7 @@ class Insertion(Dummy):
 class Qurak(Symbol):
     def __new__(cls, flavor: Flavor, tag: Tag, anti: bool, **assumptions) -> None:
         obj = super().__new__(
-            cls,
-            Rf"\bar{{{flavor}}}({tag.tag})" if anti else Rf"{flavor}({tag.tag})",
-            commutative=False,
-            **assumptions
+            cls, Rf"\bar{{{flavor}}}({tag.tag})" if anti else Rf"{flavor}({tag.tag})", commutative=False, **assumptions
         )
         obj.flavor = flavor
         obj.tag = tag
@@ -38,9 +30,7 @@ class Qurak(Symbol):
 
 
 class Meson:
-    def __init__(
-        self, qbar: Flavor, insertion: str, q: Flavor, tag: Tag, dagger: bool = False
-    ) -> None:
+    def __init__(self, qbar: Flavor, insertion: str, q: Flavor, tag: Tag, dagger: bool = False) -> None:
         if dagger:
             qbar, q = q, qbar
         self.qbar = qbar
@@ -48,11 +38,7 @@ class Meson:
         self.insertion = insertion
         self.tag = tag
         self.dagger = dagger
-        self.expression = (
-            Qurak(qbar, tag, True)
-            * Insertion(insertion, tag, dagger)
-            * Qurak(q, tag, False)
-        )
+        self.expression = Qurak(qbar, tag, True) * Insertion(insertion, tag, dagger) * Qurak(q, tag, False)
 
     def __add__(self, obj):
         return self.expression + obj
@@ -77,20 +63,12 @@ class Meson:
 
 
 class Propagator(Symbol):
-    def __new__(
-        cls, flavor: Flavor, source_tag: Tag, sink_tag: Tag, **assumptions
-    ) -> None:
-        obj = super().__new__(
-            cls, Rf"S^{flavor}({sink_tag.tag}, {source_tag.tag})", **assumptions
-        )
+    def __new__(cls, flavor: Flavor, source_tag: Tag, sink_tag: Tag, **assumptions) -> None:
+        obj = super().__new__(cls, Rf"S^{flavor}({sink_tag.tag}, {source_tag.tag})", **assumptions)
         obj.flavor = flavor
         obj.source_tag = source_tag
         obj.sink_tag = sink_tag
-        obj.tag = (
-            Rf"S^{flavor}_\mathrm{{local}}"
-            if source_tag.time == sink_tag.time
-            else Rf"S^{flavor}"
-        )
+        obj.tag = Rf"S^{flavor}_\mathrm{{local}}" if source_tag.time == sink_tag.time else Rf"S^{flavor}"
         return obj
 
 
@@ -161,30 +139,14 @@ def quark_contract(expr, num_particles, degenerate=True):
             else:
                 if factor.tag not in propagators:
                     propagators.append(factor.tag)
-                diagram[factor.source_tag.tag][factor.sink_tag.tag] = propagators.index(
-                    factor.tag
-                )
+                diagram[factor.source_tag.tag][factor.sink_tag.tag] = propagators.index(factor.tag)
         diagrams.append(diagram)
         coeffs.append(coeff)
     return diagrams, coeffs, particles, propagators
 
 
-a = (
-    S(1)
-    / sqrt(2)
-    * (
-        Meson("u", R"γ_5", "u", Tag(0, 0), True)
-        + Meson("d", R"γ_5", "d", Tag(0, 0), True)
-    )
-)
-b = (
-    S(1)
-    / sqrt(2)
-    * (
-        Meson("u", R"γ_5", "u", Tag(1, 1), False)
-        + Meson("d", R"γ_5", "d", Tag(1, 1), False)
-    )
-)
+a = S(1) / sqrt(2) * (Meson("u", R"γ_5", "u", Tag(0, 0), True) + Meson("d", R"γ_5", "d", Tag(0, 0), True))
+b = S(1) / sqrt(2) * (Meson("u", R"γ_5", "u", Tag(1, 1), False) + Meson("d", R"γ_5", "d", Tag(1, 1), False))
 c = Meson("u", R"γ_5", "d", Tag(0, 0), True)
 d = Meson("u", R"γ_5", "d", Tag(1, 1), False)
 e = Meson("u", R"γ_i", "u", Tag(0, 0), True)

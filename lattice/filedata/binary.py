@@ -19,9 +19,7 @@ class BinaryFileData(FileData):
         self.shape = elem.shape
         self.dtype = elem.dtype
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
-        self.bytes = int(
-            re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes")
-        )
+        self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
         self.time_in_sec = 0.0
         self.size_in_byte = 0
 
