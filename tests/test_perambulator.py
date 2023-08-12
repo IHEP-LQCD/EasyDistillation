@@ -24,10 +24,23 @@ Vol = Lx * Ly * Lz * Lt
 Ne = 20
 Ns = 4
 
-gauge_field = GaugeFieldIldg(F"{test_dir}/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(F"{test_dir}/", ".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
+gauge_field = GaugeFieldIldg(f"{test_dir}/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
+eigenvector = EigenvectorNpy(
+    f"{test_dir}/", ".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne
+)
 perambulator = PerambulatorGenerator(
-    latt_size, gauge_field, eigenvector, 0.09253, 1e-9, 1000, 4.8965, 0.86679, 0.8549165664, 2.32582045, True, False
+    latt_size,
+    gauge_field,
+    eigenvector,
+    0.09253,
+    1e-9,
+    1000,
+    4.8965,
+    0.86679,
+    0.8549165664,
+    2.32582045,
+    True,
+    False,
 )  # arbitrary dslash parameters
 perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
 
@@ -36,9 +49,11 @@ out_suffix = ".perambulators.npy"
 
 
 def check(cfg, data):
-    data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt, Lt, Ns, Ns, Ne, Ne], Ne).load(cfg)[:]
+    data_ref = PerambulatorNpy(
+        out_prefix, out_suffix, [Lt, Lt, Ns, Ns, Ne, Ne], Ne
+    ).load(cfg)[:]
     res = backend.linalg.norm(data_ref - data)
-    print(F"Test cfg {cfg}, res = {res}")
+    print(f"Test cfg {cfg}, res = {res}")
 
 
 peramb = backend.zeros((Lt, Lt, Ns, Ns, Ne, Ne), "<c16")

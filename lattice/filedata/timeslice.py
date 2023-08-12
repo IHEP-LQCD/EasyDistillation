@@ -34,20 +34,26 @@ def prod(a):
 
 class QDPLazyDiskMapObjFileData(FileData):
     def __init__(
-        self, file: str, elem: FileMetaData, offsets: Dict[Tuple[int], int], xml_tree: ET.ElementTree
+        self,
+        file: str,
+        elem: FileMetaData,
+        offsets: Dict[Tuple[int], int],
+        xml_tree: ET.ElementTree,
     ) -> None:
         self.file = file
-        self.shape = elem.shape[elem.extra:]
+        self.shape = elem.shape[elem.extra :]
         self.dtype = elem.dtype
         self.extra = elem.extra
-        self.extraShape = elem.shape[0:elem.extra]
+        self.extraShape = elem.shape[0 : elem.extra]
         self.offsets = offsets
         latt_size = [int(x) for x in xml_tree.find("lattSize").text.split(" ")]
         self.latt_size = latt_size.copy()
         decay_dir = int(xml_tree.find("decay_dir").text)
         assert decay_dir == 3
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
-        self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
+        self.bytes = int(
+            re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes")
+        )
         self.time_in_sec = 0.0
         self.size_in_byte = 0
 
@@ -59,28 +65,31 @@ class QDPLazyDiskMapObjFileData(FileData):
 
     def get_offset(self, key: Tuple[int]):
         offset = 0
-        for a, b in zip(key, self.stride[0:len(key)]):
+        for a, b in zip(key, self.stride[0 : len(key)]):
             offset += a * b
         return offset * self.bytes
 
     def __getitem__(self, key: Tuple[int]):
         import numpy
+
         backend = get_backend()
         if isinstance(key, int):
-            key = (key, )
-        if key[0:self.extra] not in self.offsets:
+            key = (key,)
+        if key[0 : self.extra] not in self.offsets:
             raise IndexError(f"index {key} is out of bounds for axes")
         else:
             s = time()
+            # fmt: off
             ret = backend.asarray(
                 numpy.memmap(
                     self.file,
                     dtype=self.dtype,
                     mode="r",
-                    offset=self.offsets[key[:self.extra]],
+                    offset=self.offsets[key[: self.extra]],
                     shape=tuple(self.shape),
-                )[key[self.extra:]].copy().astype("<c8")
-            )  # yapf: disable
+                )[key[self.extra :]].copy().astype("<c8")
+            )
+            # fmt: on
             self.time_in_sec += time() - s
             self.size_in_byte += ret.nbytes
             return ret

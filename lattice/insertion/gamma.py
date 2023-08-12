@@ -20,45 +20,53 @@ class _Constant:
     @lru_cache(1)
     def gamma_0():
         backend = get_backend()
-        return backend.array([
-            [0, 0, 0, 1j],
-            [0, 0, 1j, 0],
-            [0, -1j, 0, 0],
-            [-1j, 0, 0, 0],
-        ])
+        return backend.array(
+            [
+                [0, 0, 0, 1j],
+                [0, 0, 1j, 0],
+                [0, -1j, 0, 0],
+                [-1j, 0, 0, 0],
+            ]
+        )
 
     @staticmethod
     @lru_cache(1)
     def gamma_1():
         backend = get_backend()
-        return backend.array([
-            [0, 0, 0, -1],
-            [0, 0, 1, 0],
-            [0, 1, 0, 0],
-            [-1, 0, 0, 0],
-        ])
+        return backend.array(
+            [
+                [0, 0, 0, -1],
+                [0, 0, 1, 0],
+                [0, 1, 0, 0],
+                [-1, 0, 0, 0],
+            ]
+        )
 
     @staticmethod
     @lru_cache(1)
     def gamma_2():
         backend = get_backend()
-        return backend.array([
-            [0, 0, 1j, 0],
-            [0, 0, 0, -1j],
-            [-1j, 0, 0, 0],
-            [0, 1j, 0, 0],
-        ])
+        return backend.array(
+            [
+                [0, 0, 1j, 0],
+                [0, 0, 0, -1j],
+                [-1j, 0, 0, 0],
+                [0, 1j, 0, 0],
+            ]
+        )
 
     @staticmethod
     @lru_cache(1)
     def gamma_3():
         backend = get_backend()
-        return backend.array([
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-        ])
+        return backend.array(
+            [
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+            ]
+        )
 
 
 def output(n: int):
@@ -72,13 +80,13 @@ def output(n: int):
     elif n == 8:
         return "γ4"
     elif n in [14, 13, 11]:
-        return F"γ5γ{[14, 13, 11].index(n)+1}"
+        return f"γ5γ{[14, 13, 11].index(n)+1}"
     elif n in [1, 2, 4]:
-        return F"γ{[1, 2, 4].index(n)+1}"
+        return f"γ{[1, 2, 4].index(n)+1}"
     elif n in [9, 10, 12]:
-        return F"γ4γ{[9, 10, 12].index(n)+1}"
+        return f"γ4γ{[9, 10, 12].index(n)+1}"
     elif n in [6, 5, 3]:
-        return F"γ4γ5γ{[6, 5, 3].index(n)+1}"
+        return f"γ4γ5γ{[6, 5, 3].index(n)+1}"
 
 
 def gamma(n: int):

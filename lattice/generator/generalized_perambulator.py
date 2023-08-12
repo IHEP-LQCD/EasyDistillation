@@ -25,14 +25,18 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         anti_periodic_t: bool = True,
         multigrid: List[List[int]] = None,
         gamma_list: List[int] = [i for i in range(Ns * Ns)],
-        momentum_list: List[Tuple[int]] = [(0, 0, 0)]
+        momentum_list: List[Tuple[int]] = [(0, 0, 0)],
     ) -> None:
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator")
         from pyquda import core
+
         backend = get_backend()
-        assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
+        assert (
+            backend.__name__ == "cupy"
+        ), "PyQuda only support cupy as the ndarray implementation"
         from cupyx import zeros_pinned
+
         Lx, Ly, Lz, Lt = latt_size
         Ne = eigenvector.Ne
 
@@ -40,7 +44,16 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
         self.dslash = core.getDslash(
-            latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
+            latt_size,
+            mass,
+            tol,
+            maxiter,
+            xi_0,
+            nu,
+            clover_coeff_t,
+            clover_coeff_r,
+            anti_periodic_t,
+            multigrid,
         )
         self.gamma_list = gamma_list
         self.momentum_list = momentum_list
@@ -49,8 +62,12 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self._SV_f = backend.zeros((2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._h_SV_i = zeros_pinned((Ne, 2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._h_SV_f = zeros_pinned((Ne, 2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
-        self._VSSV_fi = backend.zeros((len(gamma_list), len(momentum_list), Lt, Ns, Ns), "<c16")
-        self._VSSV = zeros_pinned((Ne, Ne, len(gamma_list), len(momentum_list), Lt, Ns, Ns), "<c16")
+        self._VSSV_fi = backend.zeros(
+            (len(gamma_list), len(momentum_list), Lt, Ns, Ns), "<c16"
+        )
+        self._VSSV = zeros_pinned(
+            (Ne, Ne, len(gamma_list), len(momentum_list), Lt, Ns, Ns), "<c16"
+        )
         self._stream_i = backend.cuda.Stream()
         self._stream_f = backend.cuda.Stream()
         self._ti = None
@@ -58,12 +75,14 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
 
     def load(self, key: str):
         from pyquda.utils import gauge_utils
+
         self.dslash.loadGauge(gauge_utils.readIldg(self.gauge_field.load(key).file))
         self._eigenvector_data = self.eigenvector.load(key)
 
     def calc(self, ti: int, tf: int):
         import numpy as np
         from pyquda.field import LatticeFermion
+
         backend = get_backend()
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size
@@ -122,7 +141,9 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
                 stream_i.synchronize()
                 for spin in range(Ns):
                     V[:, ti, :, :, :, spin, :] = data_cb2[0, eigen, :, :, :, :, :]
-                    SV_i[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                    SV_i[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(
+                        2, Lt, Lz, Ly, Lx // 2, Ns, Nc
+                    )
                     V[:] = 0
                 SV_i.get(stream_i, out=h_SV_i[eigen])
 
@@ -130,9 +151,13 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
                 stream_f.synchronize()
                 for spin in range(Ns):
                     V[:, tf, :, :, :, spin, :] = data_cb2[1, eigen, :, :, :, :, :]
-                    SV_f[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                    SV_f[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(
+                        2, Lt, Lz, Ly, Lx // 2, Ns, Nc
+                    )
                     V[:] = 0
-                SV_f[:] = contract("ii,etzyxjic,jj->etzyxijc", gamma(15), SV_f.conj(), gamma(15))
+                SV_f[:] = contract(
+                    "ii,etzyxjic,jj->etzyxijc", gamma(15), SV_f.conj(), gamma(15)
+                )
                 SV_f.get(stream_f, out=h_SV_f[eigen])
 
         if ti != self._ti:

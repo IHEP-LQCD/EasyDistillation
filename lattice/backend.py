@@ -19,9 +19,11 @@ def set_backend(backend: Literal["numpy", "cupy"]):
     assert backend in ["numpy", "cupy"]
     if backend == "numpy":
         import numpy
+
         _BACKEND = numpy
     elif backend == "cupy":
         import cupy
+
         _BACKEND = cupy
     # elif backend == "torch":
     #     import torch
@@ -37,12 +39,13 @@ def check_QUDA():
         try:
             import os
             from pyquda import mpi
+
             os.environ["QUDA_RESOURCE_PATH"] = ".cache"
             mpi.init()
         except ImportError as e:
-            print(F"ImportError: {e}")
+            print(f"ImportError: {e}")
         except RuntimeError as e:
-            print(F"RuntimeError: {e}")
+            print(f"RuntimeError: {e}")
         else:
             PYQUDA = True
     if PYQUDA is None:

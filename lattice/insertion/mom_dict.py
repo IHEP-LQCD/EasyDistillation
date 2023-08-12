@@ -168,7 +168,7 @@ def mom_dict_to_list(mom: int = 9):
     elif mom == 9:
         mom_dict = momDict_mom9
     else:
-        raise ValueError(F"Unknown mom max = {mom}")
+        raise ValueError(f"Unknown mom max = {mom}")
     mom_list = []
     for val in mom_dict.values():
         mom_list.append(tuple([int(p) for p in val.split(" ")]))

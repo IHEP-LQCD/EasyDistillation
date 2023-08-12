@@ -15,13 +15,16 @@ class NdarrayFileData(FileData):
 
     def __getitem__(self, key: Tuple[int]):
         import numpy
+
         backend = get_backend()
         s = time()
+        # fmt: off
         # ret = numpy.asarray(
         #     loader(
         #         self.file,
         #     )[key]
-        # )  # yapf: disable
+        # )
+        # fmt: on
         ret = backend.asarray(
             numpy.load(
                 self.file,

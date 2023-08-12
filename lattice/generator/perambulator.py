@@ -26,8 +26,11 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator")
         from pyquda import core
+
         backend = get_backend()
-        assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
+        assert (
+            backend.__name__ == "cupy"
+        ), "PyQuda only support cupy as the ndarray implementation"
         Lx, Ly, Lz, Lt = latt_size
         Ne = eigenvector.Ne
 
@@ -35,7 +38,16 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
         self.dslash = core.getDslash(
-            latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
+            latt_size,
+            mass,
+            tol,
+            maxiter,
+            xi_0,
+            nu,
+            clover_coeff_t,
+            clover_coeff_r,
+            anti_periodic_t,
+            multigrid,
         )
         self._SV = backend.zeros((2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
         self._VSV = backend.zeros((Lt, Ns, Ns, Ne, Ne), "<c16")
@@ -44,6 +56,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         import numpy as np
         from pyquda import core
         from pyquda.utils import gauge_utils
+
         backend = get_backend()
         set_backend("numpy")
         Lx, Ly, Lz, Lt = self.latt_size
@@ -62,6 +75,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
 
     def calc(self, t: int):
         from pyquda.field import LatticeFermion
+
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size
         Vol = Lx * Ly * Lz * Lt
@@ -77,6 +91,10 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
                 V = LatticeFermion(latt_size)
                 data = V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
                 data[:, t, :, :, :, spin, :] = eigenvector[eigen, :, t, :, :, :, :]
-                SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dslash.invert(V).data.reshape(Vol, Ns, Nc)
-            VSV[:, :, :, :, eigen] = contract("ketzyxa,etzyxija->tijk", eigenvector.conj(), SV)
+                SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dslash.invert(
+                    V
+                ).data.reshape(Vol, Ns, Nc)
+            VSV[:, :, :, :, eigen] = contract(
+                "ketzyxa,etzyxija->tijk", eigenvector.conj(), SV
+            )
         return VSV

@@ -10,7 +10,11 @@ from ..backend import get_backend
 
 
 def twopoint(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -24,17 +28,28 @@ def twopoint(
         for idx in range(Nop):
             phi = phis[idx]
             ret[idx] += contract(
-                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi[0], backend.roll(phi[1], -t, 1), tau, phi[0],
-                phi[1][:, t].conj()
+                "tijab,xjk,xtbc,tklcd,yli,yad->t",
+                tau_bw,
+                phi[0],
+                backend.roll(phi[1], -t, 1),
+                tau,
+                phi[0],
+                phi[1][:, t].conj(),
             )
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+        print(
+            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
+        )
     ret /= Nt
 
     return -ret
 
 
 def twopoint_matrix(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -48,19 +63,32 @@ def twopoint_matrix(
         for isrc in range(Nop):
             for isnk in range(Nop):
                 phi_src = phis[isrc]
-                gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
+                gamma_src = contract(
+                    "ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8)
+                )
                 phi_snk = phis[isnk]
                 ret[isrc, isnk] += contract(
-                    "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi_snk[0], backend.roll(phi_snk[1], -t, 1), tau,
-                    gamma_src, phi_src[1][:, t].conj()
+                    "tijab,xjk,xtbc,tklcd,yli,yad->t",
+                    tau_bw,
+                    phi_snk[0],
+                    backend.roll(phi_snk[1], -t, 1),
+                    tau,
+                    gamma_src,
+                    phi_src[1][:, t].conj(),
                 )
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+        print(
+            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
+        )
     ret /= Nt
     return -ret
 
 
 def twopoint_isoscalar(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -80,12 +108,21 @@ def twopoint_isoscalar(
             phi = phis[idx]
             gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi[0].conj(), gamma(8))
             connected[idx] += contract(
-                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi[0], backend.roll(phi[1], -t, 1), tau, gamma_src,
-                phi[1][:, t].conj()
+                "tijab,xjk,xtbc,tklcd,yli,yad->t",
+                tau_bw,
+                phi[0],
+                backend.roll(phi[1], -t, 1),
+                tau,
+                gamma_src,
+                phi[1][:, t].conj(),
             )
-            loop_src[idx, t] = contract("ijab,yji,yab", tau[0], gamma_src, phi[1][:, t].conj())
+            loop_src[idx, t] = contract(
+                "ijab,yji,yab", tau[0], gamma_src, phi[1][:, t].conj()
+            )
             loop_snk[idx, t] = contract("ijab,xji,xba", tau[0], phi[0], phi[1][:, t])
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+        print(
+            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
+        )
     connected /= Nt
 
     disconnected = contract("xi, xj -> xij", loop_src, loop_snk)
@@ -96,8 +133,12 @@ def twopoint_isoscalar(
 
 
 def twopoint_matrix_multi_mom(
-    insertions: List[InsertionRow], momList: List, elemental: FileData, perambulator: FileData,
-    timeslices: Iterable[int], Lt: int
+    insertions: List[InsertionRow],
+    momList: List,
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
 ):
     backend = get_backend()
     Nmom = len(momList)
@@ -121,13 +162,22 @@ def twopoint_matrix_multi_mom(
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for item in range(Nterm):
             phi_src = phis_src[item]
-            gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
+            gamma_src = contract(
+                "ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8)
+            )
             phi_snk = phis_snk[item]
             ret[item] += contract(
-                "tijab,xjk,xtbc,tklcd,yli,yad->t", tau_bw, phi_snk[0], backend.roll(phi_snk[1], -t, 1), tau, gamma_src,
-                phi_src[1][:, t].conj()
+                "tijab,xjk,xtbc,tklcd,yli,yad->t",
+                tau_bw,
+                phi_snk[0],
+                backend.roll(phi_snk[1], -t, 1),
+                tau,
+                gamma_src,
+                phi_src[1][:, t].conj(),
             )
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+        print(
+            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
+        )
     ret /= Nt
     ret = ret.reshape((Nmom, Nop, Nop, Lt))
     return -ret

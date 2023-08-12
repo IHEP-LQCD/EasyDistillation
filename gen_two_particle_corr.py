@@ -4,15 +4,31 @@ set_backend("cupy")
 
 from lattice import Dispatch, preset
 from lattice.insertion.mom_dict import momDict_mom9
-from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
+from lattice.insertion import (
+    Insertion,
+    Operator,
+    GammaName,
+    DerivativeName,
+    ProjectionName,
+)
 
-from lattice import Meson, Propagator, PropagatorLocal, QuarkDiagram, compute_diagrams_multitime
+from lattice import (
+    Meson,
+    Propagator,
+    PropagatorLocal,
+    QuarkDiagram,
+    compute_diagrams_multitime,
+)
 
 Lt = 128
 
 ins_D = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
-ins_Dstar = Insertion(GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
-ins_chic1 = Insertion(GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
+ins_Dstar = Insertion(
+    GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9
+)
+ins_chic1 = Insertion(
+    GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9
+)
 op_chic1 = Operator("Chic1", [ins_chic1[0](0, 0, 0)], [1])
 
 # op_A = u_bar gamma5 c
@@ -22,40 +38,56 @@ op_Ds = Operator("Dbar_star", [ins_Dstar[2](0, 0, 0)], [1])
 
 # Read peramulators and elemental from file
 elemental = preset.ElementalNpy(
-    "/dg_hpc/LQCD/jiangxiangyu/chkDeriv/DATA/light.20200720.b20.16_128/04.meson/", ".meson.npy",
-    [128, 13, 123, 70, 70], 70
+    "/dg_hpc/LQCD/jiangxiangyu/chkDeriv/DATA/light.20200720.b20.16_128/04.meson/",
+    ".meson.npy",
+    [128, 13, 123, 70, 70],
+    70,
 )
 perambulator_light = preset.PerambulatorBinary(
-    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator/", ".peram", [128, 128, 4, 4, 70, 70], 70
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator/",
+    ".peram",
+    [128, 128, 4, 4, 70, 70],
+    70,
 )
 perambulator_charm = preset.PerambulatorBinary(
-    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/", ".charm.peram", [128, 128, 4, 4, 70, 70], 70
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/",
+    ".charm.peram",
+    [128, 128, 4, 4, 70, 70],
+    70,
 )
 
-D_D = QuarkDiagram([
-    [0, 0, 1, 0],
-    [0, 0, 0, 0],
-    [2, 0, 0, 0],
-    [0, 0, 0, 0],
-])
-Ds_Ds = QuarkDiagram([
-    [0, 0, 0, 0],
-    [0, 0, 0, 2],
-    [0, 0, 0, 0],
-    [0, 1, 0, 0],
-])
-DDsbar_DDsbar_direct = QuarkDiagram([
-    [0, 0, 1, 0],
-    [0, 0, 0, 2],
-    [2, 0, 0, 0],
-    [0, 1, 0, 0],
-])
-DDsbar_DDsbar_cross = QuarkDiagram([
-    [0, 0, 2, 0],
-    [3, 0, 0, 0],
-    [0, 0, 0, 3],
-    [0, 2, 0, 0],
-])
+D_D = QuarkDiagram(
+    [
+        [0, 0, 1, 0],
+        [0, 0, 0, 0],
+        [2, 0, 0, 0],
+        [0, 0, 0, 0],
+    ]
+)
+Ds_Ds = QuarkDiagram(
+    [
+        [0, 0, 0, 0],
+        [0, 0, 0, 2],
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
+    ]
+)
+DDsbar_DDsbar_direct = QuarkDiagram(
+    [
+        [0, 0, 1, 0],
+        [0, 0, 0, 2],
+        [2, 0, 0, 0],
+        [0, 1, 0, 0],
+    ]
+)
+DDsbar_DDsbar_cross = QuarkDiagram(
+    [
+        [0, 0, 2, 0],
+        [3, 0, 0, 0],
+        [0, 0, 0, 3],
+        [0, 2, 0, 0],
+    ]
+)
 # Some extra examples for {\chi_{c1}}\to{D}{D^*} and {\chi_{c1}\to}
 # chic1_DDs = QuarkDiagram([
 #     [0, 1, 0, 0, 0],
@@ -92,6 +124,7 @@ for cfg in ["s1.0_cfg_2000.stout.n20.f0.12.nev70"]:
     Ds_snk.load(cfg)
 
     import numpy
+
     t_snk = numpy.arange(128)
     backend = get_backend()
 
@@ -108,4 +141,8 @@ for cfg in ["s1.0_cfg_2000.stout.n20.f0.12.nev70"]:
 
     twopt /= 128
     print(twopt)
-    print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
+    print(
+        backend.arccosh(
+            (backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2
+        )
+    )

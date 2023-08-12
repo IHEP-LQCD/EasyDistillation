@@ -1,7 +1,9 @@
 import os
 
 os.environ["CUPY_ACCELERATORS"] = "cub,cutensor"
-os.environ["CUTENSOR_PATH"] = "/dg_hpc/LQCD/jiangxiangyu/libcutensor-local-repo-rhel7-1.7.0/usr"
+os.environ[
+    "CUTENSOR_PATH"
+] = "/dg_hpc/LQCD/jiangxiangyu/libcutensor-local-repo-rhel7-1.7.0/usr"
 
 from lattice import set_backend, get_backend
 
@@ -11,7 +13,13 @@ Lt = 128
 
 ###############################################################################
 from lattice.insertion.mom_dict import momDict_mom9
-from lattice.insertion import Insertion, Operator, GammaName, DerivativeName, ProjectionName
+from lattice.insertion import (
+    Insertion,
+    Operator,
+    GammaName,
+    DerivativeName,
+    ProjectionName,
+)
 
 pi_A1 = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
 print(pi_A1[0])
@@ -31,31 +39,47 @@ from lattice import preset
 
 elemental = preset.ElementalNpy(
     "/dg_hpc/LQCD/shichunjiang/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/04.meson.mom9/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
-    ".mom9.npy", [4, 123, 128, 70, 70], 70
+    ".mom9.npy",
+    [4, 123, 128, 70, 70],
+    70,
 )
 perambulator = preset.PerambulatorNpy(
     "/dg_hpc/LQCD/shichunjiang/DATA/clqcd_nf2_clov_L16_T128_b2.0_ml-0.05862_sn2_srho0.12_gg5.65_gf5.2_usg0.780268_usf0.949104/03.perambulator.light.single.prec1e-9/clqcd_nf2_clov_L16_T128_b2.0_xi5_ml-0.05862_cfg_",
-    ".peram.npy", [128, 128, 4, 4, 70, 70], 70
+    ".peram.npy",
+    [128, 128, 4, 4, 70, 70],
+    70,
 )
 
 ###############################################################################
 
 ###############################################################################
-from lattice import QuarkDiagram, compute_diagrams_multitime, Meson, Propagator, PropagatorLocal
+from lattice import (
+    QuarkDiagram,
+    compute_diagrams_multitime,
+    Meson,
+    Propagator,
+    PropagatorLocal,
+)
 
-connected = QuarkDiagram([
-    [0, 1],
-    [1, 0],
-])
-disconnected = QuarkDiagram([
-    [2, 0],
-    [0, 2],
-])
-rho2pipi = QuarkDiagram([
-    [0, 1, 0],
-    [0, 0, 2],
-    [1, 0, 0],
-])
+connected = QuarkDiagram(
+    [
+        [0, 1],
+        [1, 0],
+    ]
+)
+disconnected = QuarkDiagram(
+    [
+        [2, 0],
+        [0, 2],
+    ]
+)
+rho2pipi = QuarkDiagram(
+    [
+        [0, 1, 0],
+        [0, 0, 2],
+        [1, 0, 0],
+    ]
+)
 eta_src = Meson(elemental, op_pi2, True)
 eta_snk = Meson(elemental, op_pi2, False)
 rho_src = Meson(elemental, op_rho, True)
@@ -68,6 +92,7 @@ propag_local = PropagatorLocal(perambulator, Lt)
 for cfg in ["2000"]:
     backend = get_backend()
     import numpy
+
     t_snk = numpy.arange(128)
 
     eta_src.load(cfg)
@@ -89,7 +114,11 @@ for cfg in ["2000"]:
     twopt[1] = -twopt[0] + 2 * twopt[1]
     twopt[0] = -twopt[0]
     print(twopt)
-    print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
+    print(
+        backend.arccosh(
+            (backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2
+        )
+    )
 
     rho_src.load(cfg)
     pi_snk.load(cfg)
