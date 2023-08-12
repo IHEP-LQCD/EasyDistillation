@@ -42,9 +42,7 @@ class TwoPoint:
 
 
 class GaugeFieldTimeSlice(QDPLazyDiskMapObjFile, GaugeField):
-    def __init__(
-        self, prefix: str, suffix: str, shape: List[int] = [128, 4, 16**3, 3, 3]
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 4, 16**3, 3, 3]) -> None:
         super().__init__()
         GaugeField.__init__(self, FileMetaData(shape, ">c16", 2))
         self.prefix = prefix
@@ -65,9 +63,7 @@ class EigenvectorTimeSlice(QDPLazyDiskMapObjFile, Eigenvector):
         super().__init__()
         Eigenvector.__init__(self, FileMetaData(shape, ">c8", 2), totNe)
         self.prefix = prefix
-        self.suffix = (
-            ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
-        )
+        self.suffix = ".stout.n20.f0.12.laplace_eigs.3d.mod" if suffix is None else suffix
 
     def load(self, key: str):
         return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
@@ -142,9 +138,7 @@ class ElementalBinary(BinaryFile, Elemental):
 
 
 class Jpsi2gammaBinary(BinaryFile, TwoPoint):
-    def __init__(
-        self, prefix: str, suffix: str, shape: List[int] = [128, 2, 3, 4, 27, 128]
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 2, 3, 4, 27, 128]) -> None:
         super().__init__()
         TwoPoint.__init__(self, FileMetaData(shape, "<f8", 0))
         self.prefix = prefix
@@ -155,9 +149,7 @@ class Jpsi2gammaBinary(BinaryFile, TwoPoint):
 
 
 class GaugeFieldIldg(IldgFile, GaugeField):
-    def __init__(
-        self, prefix: str, suffix: str, shape: List[int] = [128, 16**3, 4, 3, 3]
-    ) -> None:
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 16**3, 4, 3, 3]) -> None:
         super().__init__()
         GaugeField.__init__(self, FileMetaData(shape, ">c16", 0))
         self.prefix = prefix

@@ -30,13 +30,9 @@ backend = get_backend()
 
 ins_D = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
 
-ins_Dstar = Insertion(
-    GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9
-)
+ins_Dstar = Insertion(GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
 
-ins_chic1 = Insertion(
-    GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9
-)
+ins_chic1 = Insertion(GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
 
 # # op_A = u_bar gamma5 c
 # op_D = Operator("D", [ins_D[0](0, 0, 0)], [1])
@@ -143,9 +139,7 @@ for cfg in dispatcher:
         s = perf_counter()
         for i_mom2 in range(mom_max)[1:]:
             mom_list = get_mom2_list(i_mom2)
-            op_D_list, op_Ds_list = get_AB_opratorlist_row(
-                ins_D[0], ins_Dstar[2], mom_list
-            )
+            op_D_list, op_Ds_list = get_AB_opratorlist_row(ins_D[0], ins_Dstar[2], mom_list)
 
             for i_mom_pair_src in range(len(mom_list)):
                 for i_mom_pair_snk in range(len(mom_list)):

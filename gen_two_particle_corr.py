@@ -23,12 +23,8 @@ from lattice import (
 Lt = 128
 
 ins_D = Insertion(GammaName.PI, DerivativeName.IDEN, ProjectionName.A1, momDict_mom9)
-ins_Dstar = Insertion(
-    GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9
-)
-ins_chic1 = Insertion(
-    GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9
-)
+ins_Dstar = Insertion(GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
+ins_chic1 = Insertion(GammaName.A1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
 op_chic1 = Operator("Chic1", [ins_chic1[0](0, 0, 0)], [1])
 
 # op_A = u_bar gamma5 c
@@ -141,8 +137,4 @@ for cfg in ["s1.0_cfg_2000.stout.n20.f0.12.nev70"]:
 
     twopt /= 128
     print(twopt)
-    print(
-        backend.arccosh(
-            (backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2
-        )
-    )
+    print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))

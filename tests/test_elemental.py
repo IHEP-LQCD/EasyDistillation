@@ -25,9 +25,7 @@ Ne = 20
 Nnabla = 2
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", R".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(
-    f"{test_dir}/", R".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne
-)
+eigenvector = EigenvectorNpy(f"{test_dir}/", R".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
 
 num_deriv = (3 ** (Nnabla + 1) - 1) // 2
 mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 0, 2), (0, 1, 2), (1, 1, 2)]
@@ -38,9 +36,7 @@ out_suffix = ".elemental.npy"
 
 
 def check(cfg, data):
-    data_ref = ElementalNpy(
-        out_prefix, out_suffix, [num_deriv, num_mom, Lt, Ne, Ne], Ne
-    ).load(cfg)[:]
+    data_ref = ElementalNpy(out_prefix, out_suffix, [num_deriv, num_mom, Lt, Ne, Ne], Ne).load(cfg)[:]
     res = backend.linalg.norm(data_ref - data)
     print(f"Test cfg {cfg}, res = {res}.")
 
@@ -53,9 +49,7 @@ for cfg in ["weak_field"]:
     for t in range(Lt):
         s = perf_counter()
         data[t] = elemental.calc(t)
-        print(
-            f"EASYDISTILLATION: {perf_counter() - s:.2f}sec to calculate elemental at t={t}"
-        )
+        print(f"EASYDISTILLATION: {perf_counter() - s:.2f}sec to calculate elemental at t={t}")
 
     # backend.save(F"{out_prefix}{cfg}{out_suffix}", data.transpose(1, 2, 0, 3, 4))
     check(cfg, data.transpose(1, 2, 0, 3, 4))

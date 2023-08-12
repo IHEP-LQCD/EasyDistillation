@@ -17,9 +17,7 @@ def prod(a):
 
 
 class IldgFileData(FileData):
-    def __init__(
-        self, file: str, elem: FileMetaData, offset: Tuple[int], xmlTree: ET.ElementTree
-    ) -> None:
+    def __init__(self, file: str, elem: FileMetaData, offset: Tuple[int], xmlTree: ET.ElementTree) -> None:
         self.file = file
         self.shape = elem.shape
         self.dtype = elem.dtype
@@ -32,9 +30,7 @@ class IldgFileData(FileData):
             int(xmlTree.find(f"{tag}lt").text),
         ]
         self.stride = [prod(self.shape[i:]) for i in range(1, len(self.shape))] + [1]
-        self.bytes = int(
-            re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes")
-        )
+        self.bytes = int(re.match(r"^[<>=]?[iufc](?P<bytes>\d+)$", elem.dtype).group("bytes"))
         assert self.bytes == int(xmlTree.find(f"{tag}precision").text) // 8 * 2
         assert prod(elem.shape) * self.bytes == offset[1]
         self.timeInSec = 0.0
@@ -91,11 +87,7 @@ class IldgFile(File):
 
         offset = obj_pos_size["ildg-binary-data"]
         f.seek(obj_pos_size["ildg-format"][0])
-        xml_tree = ET.ElementTree(
-            ET.fromstring(
-                f.read(obj_pos_size["ildg-format"][1]).strip(b"\x00").decode("utf-8")
-            )
-        )
+        xml_tree = ET.ElementTree(ET.fromstring(f.read(obj_pos_size["ildg-format"][1]).strip(b"\x00").decode("utf-8")))
         return offset, xml_tree
 
     def get_file_data(self, name: str, elem: FileMetaData) -> IldgFileData:

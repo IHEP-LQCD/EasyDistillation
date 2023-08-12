@@ -31,11 +31,7 @@ class EigenvectorGenerator:
         if backend.__name__ == "cupy":
             import os
 
-            with open(
-                os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu"
-                )
-            ) as f:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu")) as f:
                 code = f.read()
             self.kernel = backend.RawModule(
                 code=code,
@@ -52,9 +48,7 @@ class EigenvectorGenerator:
 
     def load(self, key: str):
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[: Nd - 1]
-        print(
-            f"{self.gauge_field.load(key).sizeInByte/1024**2/self.gauge_field.load(key).timeInSec:.3f} MB/s"
-        )
+        print(f"{self.gauge_field.load(key).sizeInByte/1024**2/self.gauge_field.load(key).timeInSec:.3f} MB/s")
         self._gauge_field_path = self.gauge_field.load(key).file
 
     def project_SU3(self):
@@ -63,10 +57,7 @@ class EigenvectorGenerator:
         Uinv = backend.linalg.inv(U)
         while (
             backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15
-            or backend.max(
-                backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))
-            )
-            > 1e-15
+            or backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15
         ):
             U = 0.5 * (U + contract("...ab->...ba", Uinv.conj()))
             Uinv = backend.linalg.inv(U)
@@ -119,13 +110,8 @@ class EigenvectorGenerator:
             w_large = w[large]
             sinc_w[large] = backend.sin(w_large) / w_large
             f_denom = 1 / (9 * u_sq - w_sq)
-            f0 = (
-                (u_sq - w_sq) * e_2iu
-                + e_iu * (8 * u_sq * cos_w + 2j * u * (3 * u_sq + w_sq) * sinc_w)
-            ) * f_denom
-            f1 = (
-                2 * u * e_2iu - e_iu * (2 * u * cos_w - 1j * (3 * u_sq - w_sq) * sinc_w)
-            ) * f_denom
+            f0 = ((u_sq - w_sq) * e_2iu + e_iu * (8 * u_sq * cos_w + 2j * u * (3 * u_sq + w_sq) * sinc_w)) * f_denom
+            f1 = (2 * u * e_2iu - e_iu * (2 * u * cos_w - 1j * (3 * u_sq - w_sq) * sinc_w)) * f_denom
             f2 = (e_2iu - e_iu * (cos_w + 3j * u * sinc_w)) * f_denom
             f0[parity] = f0[parity].conj()
             f1[parity] = -f1[parity].conj()
@@ -147,11 +133,7 @@ class EigenvectorGenerator:
             for mu in range(Nd - 1):
                 for nu in range(Nd - 1):
                     if mu != nu:
-                        Q[mu] += (
-                            U[nu]
-                            @ backend.roll(U[mu], -1, 3 - nu)
-                            @ backend.roll(U_dag[nu], -1, 3 - mu)
-                        )
+                        Q[mu] += U[nu] @ backend.roll(U[mu], -1, 3 - nu) @ backend.roll(U_dag[nu], -1, 3 - mu)
                         Q[mu] += (
                             backend.roll(U_dag[nu], +1, 3 - nu)
                             @ backend.roll(U[mu], +1, 3 - nu)
@@ -160,9 +142,7 @@ class EigenvectorGenerator:
 
             Q = rho * Q @ U_dag
             Q = 0.5j * (Q.transpose(0, 1, 2, 3, 4, 6, 5).conj() - Q)
-            contract("...aa->...a", Q)[:] -= (
-                1 / Nc * contract("...aa->...", Q)[..., None]
-            )
+            contract("...aa->...a", Q)[:] -= 1 / Nc * contract("...aa->...", Q)[..., None]
             Q_sq = Q @ Q
             c0 = contract("...aa->...", Q @ Q_sq).real / 3
             c1 = contract("...aa->...", Q_sq).real / 2
@@ -195,21 +175,13 @@ class EigenvectorGenerator:
                 + e_iu_real * 2 * u * (3 * u_sq + w_sq) * sinc_w
             ) * f_denom
             f1_real = (
-                2 * u * e_2iu_real
-                - e_iu_real * 2 * u * cos_w
-                + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_real - e_iu_real * 2 * u * cos_w + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
             f1_imag = (
-                2 * u * e_2iu_imag
-                + e_iu_imag * 2 * u * cos_w
-                + e_iu_real * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_imag + e_iu_imag * 2 * u * cos_w + e_iu_real * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
-            f2_real = (
-                e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w
-            ) * f_denom
-            f2_imag = (
-                e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w
-            ) * f_denom
+            f2_real = (e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w) * f_denom
+            f2_imag = (e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w) * f_denom
             f0_imag[parity] *= -1
             f1_real[parity] *= -1
             f2_imag[parity] *= -1
@@ -227,9 +199,7 @@ class EigenvectorGenerator:
 
         for _ in range(nstep):
             U_in = U.copy()
-            self.kernel(
-                (Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt)
-            )
+            self.kernel((Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt))
 
         self._U = U
 
@@ -244,9 +214,7 @@ class EigenvectorGenerator:
 
         core.smear(gauge.latt_size, gauge, nstep, rho)
 
-        self._U = backend.asarray(
-            gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)[: Nd - 1]
-        )
+        self._U = backend.asarray(gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)[: Nd - 1])
 
     def stout_smear(self, nstep, rho):
         from ..backend import check_QUDA
@@ -273,12 +241,8 @@ class EigenvectorGenerator:
 
         U = backend.asarray(self._U[: Nd - 1, t])
         U_dag = U.transpose(0, 1, 2, 3, 5, 4).conj()
-        Laplacian = functools.partial(
-            _Laplacian, U=U, U_dag=U_dag, latt_size=self.latt_size
-        )
-        A = linalg.LinearOperator(
-            (Lz * Ly * Lx * Nc, Lz * Ly * Lx * Nc), matvec=Laplacian, matmat=Laplacian
-        )
+        Laplacian = functools.partial(_Laplacian, U=U, U_dag=U_dag, latt_size=self.latt_size)
+        A = linalg.LinearOperator((Lz * Ly * Lx * Nc, Lz * Ly * Lx * Nc), matvec=Laplacian, matmat=Laplacian)
         evals, evecs = linalg.eigsh(A, self.Ne, which="SA", tol=self.tol)
 
         # [Ne, Lz * Ly * Lx, Nc]

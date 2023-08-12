@@ -28,9 +28,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         from pyquda import core
 
         backend = get_backend()
-        assert (
-            backend.__name__ == "cupy"
-        ), "PyQuda only support cupy as the ndarray implementation"
+        assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
         Lx, Ly, Lz, Lt = latt_size
         Ne = eigenvector.Ne
 
@@ -91,10 +89,6 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
                 V = LatticeFermion(latt_size)
                 data = V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
                 data[:, t, :, :, :, spin, :] = eigenvector[eigen, :, t, :, :, :, :]
-                SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dslash.invert(
-                    V
-                ).data.reshape(Vol, Ns, Nc)
-            VSV[:, :, :, :, eigen] = contract(
-                "ketzyxa,etzyxija->tijk", eigenvector.conj(), SV
-            )
+                SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dslash.invert(V).data.reshape(Vol, Ns, Nc)
+            VSV[:, :, :, :, eigen] = contract("ketzyxa,etzyxija->tijk", eigenvector.conj(), SV)
         return VSV

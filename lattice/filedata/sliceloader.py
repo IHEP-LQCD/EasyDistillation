@@ -31,9 +31,7 @@ class binloader:
             if shape is None:
                 bytes = flen - offset
                 if bytes % dbytes:
-                    raise ValueError(
-                        "Size of available data is not a multiple of the data-type size."
-                    )
+                    raise ValueError("Size of available data is not a multiple of the data-type size.")
                 size = bytes // dbytes
                 shape = (size,)
             elif not isinstance(shape, tuple):
@@ -46,9 +44,7 @@ class binloader:
                 bytes = offset + size * dbytes
 
             if flen < bytes:
-                raise ValueError(
-                    "Size of available data is less than acquired by dtype and shape."
-                )
+                raise ValueError("Size of available data is less than acquired by dtype and shape.")
 
         self.filename = filename
         self.dtype = descr
@@ -186,12 +182,8 @@ class npyloader:
             fid.seek(0, io.SEEK_SET)
             version = numpy.lib.format.read_magic(fid)
             if version not in [(1, 0), (2, 0), (3, 0), None]:
-                raise ValueError(
-                    f"We only support format version (1,0), (2,0), and (3,0), not {version}."
-                )
-            shape, fortran_order, dtype = numpy.lib.format._read_array_header(
-                fid, version
-            )
+                raise ValueError(f"We only support format version (1,0), (2,0), and (3,0), not {version}.")
+            shape, fortran_order, dtype = numpy.lib.format._read_array_header(fid, version)
             offset = fid.tell()
 
         self.loader = binloader(filename, dtype, offset, shape)

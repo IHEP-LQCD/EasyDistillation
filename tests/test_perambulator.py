@@ -25,9 +25,7 @@ Ne = 20
 Ns = 4
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(
-    f"{test_dir}/", ".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne
-)
+eigenvector = EigenvectorNpy(f"{test_dir}/", ".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
 perambulator = PerambulatorGenerator(
     latt_size,
     gauge_field,
@@ -49,9 +47,7 @@ out_suffix = ".perambulators.npy"
 
 
 def check(cfg, data):
-    data_ref = PerambulatorNpy(
-        out_prefix, out_suffix, [Lt, Lt, Ns, Ns, Ne, Ne], Ne
-    ).load(cfg)[:]
+    data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt, Lt, Ns, Ns, Ne, Ne], Ne).load(cfg)[:]
     res = backend.linalg.norm(data_ref - data)
     print(f"Test cfg {cfg}, res = {res}")
 

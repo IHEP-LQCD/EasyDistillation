@@ -23,9 +23,7 @@ from lattice.insertion import (
 ins1_hc = Insertion(GammaName.B1, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
 print("1+- oprator: ", ins1_hc[2])
 
-ins1_jpsi = Insertion(
-    GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9
-)
+ins1_jpsi = Insertion(GammaName.RHO, DerivativeName.IDEN, ProjectionName.T1, momDict_mom9)
 print("1-- oprator: ", ins1_jpsi[2])
 
 momlist = [
@@ -66,7 +64,5 @@ for cfg in dispatch:
     backend = get_backend()
 
     # compute 2pt
-    twopt = twopoint_matrix_multi_mom(
-        [ins1_hc[2], ins1_jpsi[2]], momlist, e, p, list(range(128)), 128
-    )  # [Nop, Lt]
+    twopt = twopoint_matrix_multi_mom([ins1_hc[2], ins1_jpsi[2]], momlist, e, p, list(range(128)), 128)  # [Nop, Lt]
     backend.save(save_path, twopt)

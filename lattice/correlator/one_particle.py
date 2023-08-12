@@ -36,9 +36,7 @@ def twopoint(
                 phi[0],
                 phi[1][:, t].conj(),
             )
-        print(
-            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
-        )
+        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
     ret /= Nt
 
     return -ret
@@ -63,9 +61,7 @@ def twopoint_matrix(
         for isrc in range(Nop):
             for isnk in range(Nop):
                 phi_src = phis[isrc]
-                gamma_src = contract(
-                    "ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8)
-                )
+                gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
                 phi_snk = phis[isnk]
                 ret[isrc, isnk] += contract(
                     "tijab,xjk,xtbc,tklcd,yli,yad->t",
@@ -76,9 +72,7 @@ def twopoint_matrix(
                     gamma_src,
                     phi_src[1][:, t].conj(),
                 )
-        print(
-            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
-        )
+        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
     ret /= Nt
     return -ret
 
@@ -116,13 +110,9 @@ def twopoint_isoscalar(
                 gamma_src,
                 phi[1][:, t].conj(),
             )
-            loop_src[idx, t] = contract(
-                "ijab,yji,yab", tau[0], gamma_src, phi[1][:, t].conj()
-            )
+            loop_src[idx, t] = contract("ijab,yji,yab", tau[0], gamma_src, phi[1][:, t].conj())
             loop_snk[idx, t] = contract("ijab,xji,xba", tau[0], phi[0], phi[1][:, t])
-        print(
-            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
-        )
+        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
     connected /= Nt
 
     disconnected = contract("xi, xj -> xij", loop_src, loop_snk)
@@ -162,9 +152,7 @@ def twopoint_matrix_multi_mom(
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for item in range(Nterm):
             phi_src = phis_src[item]
-            gamma_src = contract(
-                "ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8)
-            )
+            gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
             phi_snk = phis_snk[item]
             ret[item] += contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
@@ -175,9 +163,7 @@ def twopoint_matrix_multi_mom(
                 gamma_src,
                 phi_src[1][:, t].conj(),
             )
-        print(
-            f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s"
-        )
+        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
     ret /= Nt
     ret = ret.reshape((Nmom, Nop, Nop, Lt))
     return -ret
