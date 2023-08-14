@@ -24,6 +24,7 @@ def twopoint_mom2(
     perambulator: FileData,
     timeslices: Iterable[int],
     Lt: int,
+    usedNe: int = None
 ):
     operators = get_mom2_oprator(insertion_row, mom2)
-    return twopoint([operators], elemental, perambulator, timeslices, Lt)
+    return twopoint([operators], elemental, perambulator, timeslices, Lt, usedNe)

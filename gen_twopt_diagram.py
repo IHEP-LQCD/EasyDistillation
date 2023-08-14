@@ -81,10 +81,10 @@ for cfg in ["2000"]:
 
     t_snk = numpy.arange(128)
 
-    eta_src.load(cfg)
-    eta_snk.load(cfg)
-    propag.load(cfg)
-    propag_local.load(cfg)
+    eta_src.load(cfg, usedNe=50)
+    eta_snk.load(cfg, usedNe=50)
+    propag.load(cfg, usedNe=50)
+    propag_local.load(cfg, usedNe=50)
 
     twopt = backend.zeros((2, 128))
     for t_src in range(128):
@@ -102,10 +102,10 @@ for cfg in ["2000"]:
     print(twopt)
     print(backend.arccosh((backend.roll(twopt, -1, 1) + backend.roll(twopt, 1, 1)) / twopt / 2))
 
-    rho_src.load(cfg)
-    pi_snk.load(cfg)
-    propag.load(cfg)
-    propag_local.load(cfg)
+    rho_src.load(cfg, usedNe=50)
+    pi_snk.load(cfg, usedNe=50)
+    propag.load(cfg, usedNe=50)
+    propag_local.load(cfg, usedNe=50)
 
     twopt = backend.zeros((1, 128))
     for t_src in range(128):
