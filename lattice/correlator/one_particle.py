@@ -112,24 +112,28 @@ def twopoint_isoscalar(
 
 def twopoint_matrix_multi_mom(
     insertions: List[InsertionRow],
-    momList: List,
+    mom_list: List,
     elemental: FileData,
     perambulator: FileData,
     timeslices: Iterable[int],
     Lt: int,
+    insertions_coeff_list: List = None,
 ):
     backend = get_backend()
-    Nmom = len(momList)
+    Nmom = len(mom_list)
     Nt = len(timeslices)
     Nop = len(insertions)
     op_src_list = []
     op_snk_list = []
+    if insertions_coeff_list is None:
+        insertions_coeff_list = [1] * len(insertions)
+    assert len(insertions) == len(insertions_coeff_list)
     for imom in range(Nmom):
-        px, py, pz = momList[imom]
+        px, py, pz = mom_list[imom]
         for isrc in range(Nop):
             for isnk in range(Nop):
-                op_src_list.append(Operator("", [insertions[isrc](px, py, pz)], [1]))
-                op_snk_list.append(Operator("", [insertions[isnk](px, py, pz)], [1]))
+                op_src_list.append(Operator("", [insertions[isrc](px, py, pz)], [insertions_coeff_list[isrc]]))
+                op_snk_list.append(Operator("", [insertions[isnk](px, py, pz)], [insertions_coeff_list[isnk]]))
     Nterm = Nmom * Nop * Nop
 
     ret = backend.zeros((Nterm, Lt), "<c16")
