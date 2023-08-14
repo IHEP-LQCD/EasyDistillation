@@ -10,7 +10,12 @@ from ..backend import get_backend
 
 
 def twopoint(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int, usedNe: int = None 
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
+    usedNe: int = None,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -23,8 +28,14 @@ def twopoint(
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
-            print(tau_bw.shape, phi[0].shape, backend.roll(phi[1], -t, 1).shape, tau.shape, phi[0].shape,
-                phi[1][:, t].conj().shape)
+            print(
+                tau_bw.shape,
+                phi[0].shape,
+                backend.roll(phi[1], -t, 1).shape,
+                tau.shape,
+                phi[0].shape,
+                phi[1][:, t].conj().shape,
+            )
             ret[idx] += contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
                 tau_bw,
@@ -41,7 +52,12 @@ def twopoint(
 
 
 def twopoint_matrix(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int, usedNe:int = None
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
+    usedNe: int = None,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -72,7 +88,12 @@ def twopoint_matrix(
 
 
 def twopoint_isoscalar(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int, usedNe: int = None
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
+    usedNe: int = None,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -119,7 +140,7 @@ def twopoint_matrix_multi_mom(
     perambulator: FileData,
     timeslices: Iterable[int],
     Lt: int,
-    usedNe:int = None,
+    usedNe: int = None,
     insertions_coeff_list: List = None,
 ):
     backend = get_backend()
