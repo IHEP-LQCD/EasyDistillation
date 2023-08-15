@@ -10,19 +10,32 @@ from ..backend import get_backend
 
 
 def twopoint(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
+    usedNe: int = None,
 ):
     backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
 
     ret = backend.zeros((Nop, Lt), "<c16")
-    phis = get_elemental_data(operators, elemental)
+    phis = get_elemental_data(operators, elemental, usedNe)
     for t in timeslices:
-        tau = perambulator[t]
+        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
+            print(
+                tau_bw.shape,
+                phi[0].shape,
+                backend.roll(phi[1], -t, 1).shape,
+                tau.shape,
+                phi[0].shape,
+                phi[1][:, t].conj().shape,
+            )
             ret[idx] += contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
                 tau_bw,
@@ -39,16 +52,21 @@ def twopoint(
 
 
 def twopoint_matrix(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
+    usedNe: int = None,
 ):
     backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
 
     ret = backend.zeros((Nop, Nop, Lt), "<c16")
-    phis = get_elemental_data(operators, elemental)
+    phis = get_elemental_data(operators, elemental, usedNe)
     for t in timeslices:
-        tau = perambulator[t]
+        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for isrc in range(Nop):
             for isnk in range(Nop):
@@ -70,7 +88,12 @@ def twopoint_matrix(
 
 
 def twopoint_isoscalar(
-    operators: List[Operator], elemental: FileData, perambulator: FileData, timeslices: Iterable[int], Lt: int
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
+    usedNe: int = None,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -81,10 +104,10 @@ def twopoint_isoscalar(
     connected = backend.zeros((Nop, Lt), "<c16")
     loop_src = backend.zeros((Nop, Lt), "<c16")
     loop_snk = backend.zeros((Nop, Lt), "<c16")
-    phis = get_elemental_data(operators, elemental)
+    phis = get_elemental_data(operators, elemental, usedNe)
 
     for t in timeslices:
-        tau = perambulator[t]
+        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
@@ -117,6 +140,7 @@ def twopoint_matrix_multi_mom(
     perambulator: FileData,
     timeslices: Iterable[int],
     Lt: int,
+    usedNe: int = None,
     insertions_coeff_list: List = None,
 ):
     backend = get_backend()
@@ -137,10 +161,10 @@ def twopoint_matrix_multi_mom(
     Nterm = Nmom * Nop * Nop
 
     ret = backend.zeros((Nterm, Lt), "<c16")
-    phis_src = get_elemental_data(op_src_list, elemental)
-    phis_snk = get_elemental_data(op_snk_list, elemental)
+    phis_src = get_elemental_data(op_src_list, elemental, usedNe)
+    phis_snk = get_elemental_data(op_snk_list, elemental, usedNe)
     for t in timeslices:
-        tau = perambulator[t]
+        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for item in range(Nterm):
             phi_src = phis_src[item]
