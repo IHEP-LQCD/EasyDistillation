@@ -90,10 +90,11 @@ class Meson(Particle):
         self.inward = 1
         self.cache = None
 
-    def load(self, key):
+    def load(self, key, usedNe: int = None):
         if self.key != key:
             self.key = key
             self.elemental_data = self.elemental.load(key)
+            self.usedNe = usedNe
             self._make_cache()
 
     def _make_cache(self):
@@ -113,7 +114,9 @@ class Meson(Particle):
                 elemental_coeff, derivative_idx, momentum_idx = elemental_part[j]
                 deriv_mom_tuple = (derivative_idx, momentum_idx)
                 if deriv_mom_tuple not in cache:
-                    cache[deriv_mom_tuple] = self.elemental_data[derivative_idx, momentum_idx]
+                    cache[deriv_mom_tuple] = self.elemental_data[
+                        derivative_idx, momentum_idx, :, : self.usedNe, : self.usedNe
+                    ]
                 if j == 0:
                     ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
                 else:
@@ -152,9 +155,10 @@ class Propagator:
         self.cache_dagger = None
         self.cached_time = None
 
-    def load(self, key):
+    def load(self, key, usedNe: int = None):
         if self.key != key:
             self.key = key
+            self.usedNe = usedNe
             self.perambulator_data = self.perambulator.load(key)
 
     def get(self, t_source, t_sink):
@@ -162,7 +166,7 @@ class Propagator:
 
         if isinstance(t_source, int) and isinstance(t_sink, int):
             if self.cached_time != t_source and self.cached_time != t_sink:
-                self.cache = self.perambulator_data[t_source]
+                self.cache = self.perambulator_data[t_source, :, :, :, : self.usedNe, : self.usedNe]
                 self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
                 self.cached_time = t_source
             if self.cached_time == t_source:
@@ -171,13 +175,13 @@ class Propagator:
                 return self.cache_dagger[(t_source - t_sink) % self.Lt]
         elif isinstance(t_source, int):
             if self.cached_time != t_source:
-                self.cache = self.perambulator_data[t_source]
+                self.cache = self.perambulator_data[t_source, :, :, :, : self.usedNe, : self.usedNe]
                 self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
                 self.cached_time = t_source
             return self.cache[(t_sink - t_source) % self.Lt]
         elif isinstance(t_sink, int):
             if self.cached_time != t_sink:
-                self.cache = self.perambulator_data[t_sink]
+                self.cache = self.perambulator_data[t_sink, :, :, :, : self.usedNe, : self.usedNe]
                 self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
                 self.cached_time = t_sink
             return self.cache_dagger[(t_source - t_sink) % self.Lt]
@@ -192,16 +196,17 @@ class PropagatorLocal:
         self.Lt = Lt
         self.cache = None
 
-    def load(self, key):
+    def load(self, key, usedNe: int = None):
         if self.key != key:
             self.key = key
             self.perambulator_data = self.perambulator.load(key)
+            self.usedNe = usedNe
             self._make_cache()
 
     def _make_cache(self):
-        self.cache = self.perambulator_data[0]
+        self.cache = self.perambulator_data[0, :, :, :, : self.usedNe, : self.usedNe]
         for t_source in range(1, self.Lt):
-            self.cache[t_source] = self.perambulator_data[t_source, 0]
+            self.cache[t_source] = self.perambulator_data[t_source, 0, :, :, : self.usedNe, : self.usedNe]
 
     def get(self, t_source, t_sink):
         if isinstance(t_source, int):
