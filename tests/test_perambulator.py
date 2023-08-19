@@ -45,6 +45,7 @@ peramb = backend.zeros((Lt, Lt, Ns, Ns, Ne, Ne), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
     perambulator.load(cfg)
+    perambulator.stout_smear(20, 0.1)
     for t in range(Lt):
         peramb[t] = perambulator.calc(t)
     # backend.save(f"{out_prefix}{cfg}{out_suffix}", peramb)

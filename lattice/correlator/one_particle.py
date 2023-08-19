@@ -28,14 +28,6 @@ def twopoint(
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
-            print(
-                tau_bw.shape,
-                phi[0].shape,
-                backend.roll(phi[1], -t, 1).shape,
-                tau.shape,
-                phi[0].shape,
-                phi[1][:, t].conj().shape,
-            )
             ret[idx] += contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
                 tau_bw,
