@@ -2,7 +2,7 @@ from typing import List
 
 from opt_einsum import contract
 
-from ..constant import Nc, Ns
+from ..constant import Nc, Ns, Nd
 from ..backend import set_backend, get_backend, check_QUDA
 from ..preset import GaugeField, Eigenvector
 
@@ -34,6 +34,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
 
         self.latt_size = latt_size
         self.gauge_field = gauge_field
+        self.gauge_field_smear = None
         self.eigenvector = eigenvector
         self.dslash = core.getDslash(
             latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
@@ -50,7 +51,8 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         set_backend("numpy")
         Lx, Ly, Lz, Lt = self.latt_size
         Ne = self.eigenvector.Ne
-        self.dslash.loadGauge(gauge_utils.readIldg(self.gauge_field.load(key).file))
+        self.gauge_field_smear = gauge_utils.readIldg(self.gauge_field.load(key).file)
+
         eigenvector_data = self.eigenvector.load(key)
         eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), "<c16")
         for e in range(Ne):
@@ -62,8 +64,33 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         self._eigenvector_data = eigenvector_data_cb2
         set_backend(backend)
 
+    def _stout_smear_quda(self, nstep, rho):
+        backend = get_backend()
+        from pyquda import core
+        from pyquda.utils import gauge_utils
+
+        gauge = self.gauge_field_smear
+        if self.gauge_field_smear is None:
+            raise ValueError("Gauge not loaded, please use .load() before .stout_smear().")
+
+        latt_size = gauge.latt_size
+        Lx, Ly, Lz, Lt = latt_size
+
+        core.smear(gauge.latt_size, gauge, nstep, rho)
+        self.gauge_field_smear = gauge
+
+    def stout_smear(self, nstep, rho):
+        backend = get_backend()
+        if backend.__name__ == "numpy":
+            raise NotImplementedError("Ndarray stout smear not implement in PerambulatorGenerator.")
+        elif backend.__name__ == "cupy":
+            # __init__() has check_QUDA() before !
+            self._stout_smear_quda(nstep, rho)
+
     def calc(self, t: int):
         from pyquda.field import LatticeFermion
+        
+        self.dslash.loadGauge(self.gauge_field_smear)  #loadGauge after 
 
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size
