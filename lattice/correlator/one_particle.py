@@ -25,6 +25,7 @@ def twopoint(
     phis = get_elemental_data(operators, elemental, usedNe)
     for t in timeslices:
         tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+        # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
@@ -59,6 +60,7 @@ def twopoint_matrix(
     phis = get_elemental_data(operators, elemental, usedNe)
     for t in timeslices:
         tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+        # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for isrc in range(Nop):
             for isnk in range(Nop):
@@ -86,6 +88,7 @@ def twopoint_isoscalar(
     timeslices: Iterable[int],
     Lt: int,
     usedNe: int = None,
+    Nf: int = 2
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -100,6 +103,7 @@ def twopoint_isoscalar(
 
     for t in timeslices:
         tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+        # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
@@ -122,7 +126,7 @@ def twopoint_isoscalar(
     for t in timeslices:
         disconnected[:, t, :] = backend.roll(disconnected[:, t, :], -t, axis=1)
     disconnected = disconnected.mean(1)
-    return -connected + 2 * disconnected
+    return -connected + Nf * disconnected
 
 
 def twopoint_matrix_multi_mom(
@@ -157,6 +161,7 @@ def twopoint_matrix_multi_mom(
     phis_snk = get_elemental_data(op_snk_list, elemental, usedNe)
     for t in timeslices:
         tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+        # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for item in range(Nterm):
             phi_src = phis_src[item]

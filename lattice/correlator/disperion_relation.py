@@ -25,6 +25,7 @@ def twopoint_mom2(
     timeslices: Iterable[int],
     Lt: int,
     usedNe: int = None,
+    func = twopoint,
 ):
     operators = get_mom2_oprator(insertion_row, mom2)
-    return twopoint([operators], elemental, perambulator, timeslices, Lt, usedNe)
+    return func([operators], elemental, perambulator, timeslices, Lt, usedNe)

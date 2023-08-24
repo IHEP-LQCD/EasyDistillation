@@ -74,7 +74,6 @@ class DisplacementElementalGenerator:
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[: Nd - 1]
         self._gauge_field_data = self.gauge_field.load(key).file
         self._eigenvector_data = self.eigenvector.load(key)
-        # print(self._gauge_field_data.shape, self._eigenvector_data.shape)
 
     def calc(self, t: int):
         gauge_field = self._gauge_field_data

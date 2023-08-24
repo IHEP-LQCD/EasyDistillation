@@ -65,7 +65,6 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         set_backend(backend)
 
     def _stout_smear_quda(self, nstep, rho):
-        backend = get_backend()
         from pyquda import core
         from pyquda.utils import gauge_utils
 
@@ -88,6 +87,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
             self._stout_smear_quda(nstep, rho)
 
     def calc(self, t: int):
+        backend = get_backend()
         from pyquda.field import LatticeFermion
         
         self.dslash.loadGauge(self.gauge_field_smear)  #loadGauge after 
@@ -109,4 +109,4 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
                 data[:, t, :, :, :, spin, :] = eigenvector[eigen, :, t, :, :, :, :]
                 SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dslash.invert(V).data.reshape(Vol, Ns, Nc)
             VSV[:, :, :, :, eigen] = contract("ketzyxa,etzyxija->tijk", eigenvector.conj(), SV)
-        return VSV
+        return backend.roll(VSV, shift=-t, axis=0)
