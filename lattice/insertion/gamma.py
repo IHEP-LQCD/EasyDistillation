@@ -76,17 +76,17 @@ def output(n: int):
     elif n == 15:
         return "γ5"
     elif n == 7:
-        return "γ4γ5"
+        return "γ5γ4"
     elif n == 8:
         return "γ4"
     elif n in [14, 13, 11]:
-        return f"γ5γ{[14, 13, 11].index(n)+1}"
+        return f"γ{[14, 13, 11].index(n)+1}γ5"
     elif n in [1, 2, 4]:
         return f"γ{[1, 2, 4].index(n)+1}"
     elif n in [9, 10, 12]:
-        return f"γ4γ{[9, 10, 12].index(n)+1}"
+        return f"γ{[9, 10, 12].index(n)+1}γ4"
     elif n in [6, 5, 3]:
-        return f"γ4γ5γ{[6, 5, 3].index(n)+1}"
+        return f"γ{[6, 5, 3].index(n)+1}γ5γ4"
 
 
 def gamma(n: int):
