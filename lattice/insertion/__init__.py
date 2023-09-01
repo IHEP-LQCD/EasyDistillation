@@ -44,6 +44,9 @@ class Operator:
                 parts.append(row[i * 2])
                 elemental_part = []
                 for derivative_coeff, derivative_idx in row[i * 2 + 1]:
+                    if parts[-1] == 5 or parts[-1] == 13:
+                        # gamma_3gamma_1 = -gamma(5), gamma_3gamma_1gamma_4 = -gamma(13)
+                        derivative_coeff *= -1
                     elemental_part.append([coefficient * derivative_coeff, derivative_idx, momentum])
                 parts.append(elemental_part)
 
