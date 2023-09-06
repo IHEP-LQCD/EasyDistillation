@@ -275,7 +275,7 @@ class ElementalGenerator:
                     else:
                         pick_left.append(direction)
                     pick >>= 1
-                coeff = -(1 ** len(pick_right))
+                coeff = (-1) ** len(pick_right)
                 right = self._nD(V, U[:, t], pick_right)
                 left = self._nD(V, U[:, t], pick_left[::-1])
                 for momentum_idx, momentum in enumerate(self.momentum_list):
