@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 from opt_einsum import contract
+from time import perf_counter
 
 from ..constant import Nc, Ns
 from ..backend import set_backend, get_backend, check_QUDA
@@ -68,6 +69,8 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         import numpy as np
         from pyquda.field import LatticeFermion
 
+        s = perf_counter()
+
         backend = get_backend()
         latt_size = self.latt_size
         Lx, Ly, Lz, Lt = latt_size
@@ -78,7 +81,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         momentum_list = self.momentum_list
         momentum_phase = self._momentum_phase
 
-        data_lexico = np.zeros((2, Ne, Lz * Ly * Lx, Nc), "<c16")
+        data_lexico = np.zeros((2, Ne, Lz, Ly, Lx, Nc), "<c16")
         data_cb2 = np.zeros((2, Ne, 2, Lz, Ly, Lx // 2, Nc), "<c16")
         set_backend("numpy")
         for e in range(Ne):
@@ -110,6 +113,9 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
                         data_cb2[1, :, 1, z, y, :] = data_lexico[1, :, z, y, 0::2]
         data_cb2 = backend.asarray(data_cb2)
 
+        print(f"load lexico timer = {perf_counter() -s:.2f}")
+
+
         _V = LatticeFermion(latt_size)
         V = _V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
         SV_i = self._SV_i
@@ -121,7 +127,9 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         stream_i = self._stream_i
         stream_f = self._stream_f
 
+        s = perf_counter()
         for eigen in range(Ne):
+            print(f"calc: Ne = {eigen},, time = {s-perf_counter():.2f} sec.")
             if ti != self._ti:
                 stream_i.synchronize()
                 for spin in range(Ns):
@@ -146,7 +154,9 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         stream_i.synchronize()
         stream_f.synchronize()
 
+        s = perf_counter()
         for eigen_i in range(Ne):
+            print(f"calc contraction: Ne = {eigen_i}, time = {s-perf_counter():.2f} sec.")
             SV_i.set(h_SV_i[eigen_i])
             for eigen_f in range(Ne):
                 SV_f.set(h_SV_f[eigen_f])
