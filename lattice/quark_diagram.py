@@ -1,5 +1,6 @@
+import os
+import sys
 from typing import Dict, List
-
 from opt_einsum import contract
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
