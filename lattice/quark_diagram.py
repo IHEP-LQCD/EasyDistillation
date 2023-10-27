@@ -7,7 +7,6 @@ from .backend import get_backend
 _SUB_A = "abcdefghijklABCDEFGHIJKL"
 _SUB_M = "mnopqruvwxyzMNOPQRUVWXYZ"
 
-
 class QuarkDiagram:
     def __init__(self, adjacency_matrix) -> None:
         self.adjacency_matrix = adjacency_matrix
@@ -74,9 +73,290 @@ class QuarkDiagram:
             self.operands.append([propagator_operands, vertex_operands])
             self.subscripts.append(",".join(propagator_subscripts) + "," + ",".join(vertex_subscripts))
 
+class BaryonDiagram:
+    def __init__(self, adjacency_matrix, contype: str) -> None:
+        self.adjacency_matrix = adjacency_matrix
+        self.operands = []
+        self.subscripts = []
+        self.operands_data = []
+        self.contype = contype
+        self.analyse()
+
+    def analyse(self) -> None:
+        from copy import deepcopy
+
+        adjacency_matrix = deepcopy(self.adjacency_matrix)
+        num_vertex = len(adjacency_matrix)
+        visited = [False] * num_vertex
+        propagators = []
+        for idx in range(num_vertex):
+            if visited[idx]:
+                continue
+            # propagators = []
+            visited[idx] = True
+            queue = [idx]
+            while queue != []:
+                i = queue.pop(0)
+                for j in range(num_vertex):
+                    path = adjacency_matrix[i][j]
+                    if path != 0:
+                        adjacency_matrix[i][j] = 0
+                        if not visited[j]:
+                            visited[j] = True
+                            queue.append(j)
+                        if isinstance(path, int):
+                            propagators.append([path, i, j])
+                        elif isinstance(path, list):
+                            for _path in path:
+                                propagators.append([_path, i, j])
+                        else:
+                            raise ValueError(
+                                f"Invalid value {path} in the adjacency matrix"
+                            )
+
+        vertex_operands = []
+        vertex_subscripts = []
+        propagator_operands = []
+        propagator_subscripts = []
+        Ptex_subscripts = []
+        Ptex_save_subscripts = []
+        node = 0
+
+        for propagator in propagators:
+            propagator_operands.append(propagator)
+            propagator_subscripts.append(
+                _SUB_M[node] + _SUB_A[node + 1] + _SUB_M[node + 1] + _SUB_A[node]
+            )
+            if node <= (len(propagators) - 1) * 2 and ((node + 2) / 6) % 1 != 0:
+                if propagator[1] not in vertex_operands:
+                    vertex_operands.append(propagator[1])
+                    vertex_subscripts.append(_SUB_M[node])
+                else:
+                    i = vertex_operands.index(propagator[1])
+                    vertex_subscripts[i] = vertex_subscripts[i] + _SUB_M[node]
+
+                if propagator[2] not in vertex_operands:
+                    vertex_operands.append(propagator[2])
+                    vertex_subscripts.append(_SUB_M[node + 1])
+                else:
+                    i = vertex_operands.index(propagator[2])
+                    vertex_subscripts[i] = vertex_subscripts[i] + _SUB_M[node + 1]
+                print(vertex_subscripts)
+            node += 2
+        node = 0
+
+        for propagator in propagators:
+            i = vertex_operands.index(propagator[1])
+            vertex_subscripts[i] = vertex_subscripts[i] + _SUB_A[node]
+            i = vertex_operands.index(propagator[2])
+            vertex_subscripts[i] = vertex_subscripts[i] + _SUB_A[node + 1]
+            node += 2
+            if (node / 6) % 1 == 0 and len(propagators) > 3:
+                Ptex_subscripts.append(_SUB_M[node - 2] + _SUB_M[12 + node - 2])
+                Ptex_subscripts.append(_SUB_M[node - 1] + _SUB_M[12 + node - 1])
+            if (node / 6) % 1 == 0 and len(propagators) == 3:
+                vertex_subscripts.append(_SUB_M[node - 1] + _SUB_M[node - 2])
+
+        if self.contype != None and self.contype[0] <= self.contype[1]:
+            print("a")
+            mid1 = propagator_subscripts[self.contype[0] - 1][2:4]
+            mid2 = propagator_subscripts[self.contype[1] - 1][2:4]
+            propagator_subscripts[self.contype[0] - 1] = (
+                propagator_subscripts[self.contype[0] - 1][0:2] + mid2
+            )
+            propagator_subscripts[self.contype[1] - 1] = (
+                propagator_subscripts[self.contype[1] - 1][0:2] + mid1
+            )
+            if (
+                len(propagator_subscripts) > 3
+                and self.contype[2] <= self.contype[3]
+                and self.contype[4] <= self.contype[5]
+            ):
+                print("b")
+                mid3 = propagator_subscripts[self.contype[2] - 1][2:4]
+                mid4 = propagator_subscripts[self.contype[3] - 1][2:4]
+                propagator_subscripts[self.contype[2] - 1] = (
+                    propagator_subscripts[self.contype[2] - 1][0:2] + mid4
+                )
+                propagator_subscripts[self.contype[3] - 1] = (
+                    propagator_subscripts[self.contype[3] - 1][0:2] + mid3
+                )
+                mid5 = propagator_subscripts[self.contype[4] - 1][2:4]
+                mid6 = propagator_subscripts[self.contype[5] - 1][2:4]
+                propagator_subscripts[self.contype[4] - 1] = (
+                    propagator_subscripts[self.contype[4] - 1][0:2] + mid6
+                )
+                propagator_subscripts[self.contype[5] - 1] = (
+                    propagator_subscripts[self.contype[5] - 1][0:2] + mid5
+                )
+
+        for key in range(len(propagator_subscripts)):
+            propagator_subscripts[key] = (
+                propagator_subscripts[key][0::2] + propagator_subscripts[key][1::2]
+            )
+
+        print("vertex_subscripts_change", vertex_subscripts)
+
+        for ptex in Ptex_subscripts:
+            Ptex_save_subscripts.append(ptex[:1])
+
+        self.operands.append([propagator_operands, vertex_operands])
+        if len(propagator_subscripts) > 3:
+            self.subscripts.append(
+                ",".join(propagator_subscripts)
+                + ","
+                + ",".join(vertex_subscripts)
+                + "->"
+                + "".join(Ptex_save_subscripts)
+            )
+        else:
+            self.subscripts.append(
+                ",".join(propagator_subscripts) + "," + ",".join(vertex_subscripts)
+            )
+
+        print("self.operands", self.operands)
+        print("self.subscripts", self.subscripts)
+
 
 class Particle:
     pass
+
+class Baryon(Particle):
+    def __init__(self, elemental, operator, source) -> None:
+        self.elemental = elemental
+        self.elemental_data = None
+        self.key = None
+        self.operator = operator
+        self.dagger = source
+        self.outward = 1
+        self.inward = 1
+        self.cache = None
+
+    def load(self, key, usedNe: int = None):
+        if self.key != key:
+            self.key = key
+            self.elemental_data = self.elemental.load(key)
+            self.usedNe = usedNe
+            self._make_cache()
+
+    def _make_cache(self):
+        from lattice.insertion.gamma import gamma
+
+        backend = get_backend()
+
+        cache: Dict[int, backend.ndarray] = {}
+
+        parts = self.operator.parts
+        ret_gamma = []
+        ret_elemental = []
+        for i in range(len(parts) // 2):
+            ret_gamma.append(gamma(parts[i * 2]))
+            elemental_part = parts[i * 2 + 1]
+            for j in range(len(elemental_part)):
+                elemental_coeff, derivative_idx, momentum_idx = elemental_part[j]
+                deriv_mom_tuple = (derivative_idx, momentum_idx)
+                if deriv_mom_tuple not in cache:
+                    cache[deriv_mom_tuple] = self.elemental_data[
+                        :, : self.usedNe, : self.usedNe, : self.usedNe
+                    ]  # T,Ne,Ne,Ne
+                if j == 0:
+                    ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
+                else:
+                    ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
+        if self.dagger:
+            self.cache = (
+                backend.asarray(ret_gamma),
+                backend.asarray(ret_elemental).conj(),
+            )
+        else:
+            self.cache = (
+                backend.asarray(ret_gamma),
+                backend.asarray(ret_elemental),
+            )
+
+    def get(self, t):
+        if isinstance(t, int):
+            if self.dagger:
+                return contract("xij,xabc->ijabc", self.cache[0], self.cache[1][:, t])
+            else:
+                return contract("xij,xabc->ijabc", self.cache[0], self.cache[1][:, t])
+
+        else:
+            if self.dagger:
+                return contract("xij,xtabc->tijabc", self.cache[0], self.cache[1][:, t])
+            else:
+                return contract("xij,xtabc->tijabc", self.cache[0], self.cache[1][:, t])
+
+
+class Meson(Particle):
+    def __init__(self, elemental, operator, source) -> None:
+        self.elemental = elemental
+        self.elemental_data = None
+        self.key = None
+        self.operator = operator
+        self.dagger = source
+        self.outward = 1
+        self.inward = 1
+        self.cache = None
+
+    def load(self, key, usedNe: int = None):
+        if self.key != key:
+            self.key = key
+            self.elemental_data = self.elemental.load(key)
+            self.usedNe = usedNe
+            self._make_cache()
+
+    def _make_cache(self):
+        from lattice.insertion.gamma import gamma
+
+        backend = get_backend()
+
+        cache: Dict[int, backend.ndarray] = {}
+
+        parts = self.operator.parts
+        ret_gamma = []
+        ret_elemental = []
+        for i in range(len(parts) // 2):
+            ret_gamma.append(gamma(parts[i * 2]))
+            elemental_part = parts[i * 2 + 1]
+            for j in range(len(elemental_part)):
+                elemental_coeff, derivative_idx, momentum_idx = elemental_part[j]
+                deriv_mom_tuple = (derivative_idx, momentum_idx)
+                if deriv_mom_tuple not in cache:
+                    cache[deriv_mom_tuple] = self.elemental_data[
+                        derivative_idx, momentum_idx, :, : self.usedNe, : self.usedNe
+                    ]
+                if j == 0:
+                    ret_elemental.append(elemental_coeff * cache[deriv_mom_tuple])
+                else:
+                    ret_elemental[-1] += elemental_coeff * cache[deriv_mom_tuple]
+        if self.dagger:
+            self.cache = (
+                contract(
+                    "ik,xlk,lj->xij",
+                    gamma(8),
+                    backend.asarray(ret_gamma).conj(),
+                    gamma(8),
+                ),
+                contract("xtba->xtab", backend.asarray(ret_elemental).conj()),
+            )
+        else:
+            self.cache = (
+                backend.asarray(ret_gamma),
+                backend.asarray(ret_elemental),
+            )
+
+    def get(self, t):
+        if isinstance(t, int):
+            if self.dagger:
+                return contract("xij,xab->ijab", self.cache[0], self.cache[1][:, t])
+            else:
+                return contract("xij,xab->ijab", self.cache[0], self.cache[1][:, t])
+        else:
+            if self.dagger:
+                return contract("xij,xtab->tijab", self.cache[0], self.cache[1][:, t])
+            else:
+                return contract("xij,xtab->tijab", self.cache[0], self.cache[1][:, t])
 
 
 class Meson(Particle):
