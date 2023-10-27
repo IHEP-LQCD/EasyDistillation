@@ -496,7 +496,11 @@ class PropagatorLocal:
         return self.cache[t_source]
 
 
-def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
+def compute_diagrams_multitime(
+    diagrams: List[BaryonDiagram], time_list, vertex_list, propagator_list, parity: str
+):
+    from lattice.insertion.gamma import gamma
+
     backend = get_backend()
     diagram_value = []
     for diagram in diagrams:
@@ -507,8 +511,12 @@ def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_l
             idx = 0
             operands_data = []
             for item in operands[0]:
-                operands_data.append(propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
-                if not isinstance(time_list[item[1]], int) or not isinstance(time_list[item[2]], int):
+                operands_data.append(
+                    propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]])
+                )
+                if not isinstance(time_list[item[1]], int) or not isinstance(
+                    time_list[item[2]], int
+                ):
                     subscripts[idx] = "t" + subscripts[idx]
                     have_multitime = True
                 idx += 1
@@ -518,13 +526,23 @@ def compute_diagrams_multitime(diagrams: List[QuarkDiagram], time_list, vertex_l
                     subscripts[idx] = "t" + subscripts[idx]
                     have_multitime = True
                 idx += 1
+            if parity == "pp":
+                operands_data.append((gamma(0) + gamma(8)) / 2)
+            elif parity == "pm":
+                operands_data.append((gamma(0) - gamma(8)) / 2)
             if have_multitime:
                 subscripts[-1] = subscripts[-1] + "->t"
-            diagram_value[-1] = diagram_value[-1] * contract(",".join(subscripts), *operands_data)
+            diagram_value[-1] = diagram_value[-1] * contract(
+                ",".join(subscripts), *operands_data
+            )
     return backend.asarray(diagram_value)
 
 
-def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propagator_list):
+def compute_diagrams(
+    diagrams: List[BaryonDiagram], time_list, vertex_list, propagator_list, parity: str
+):
+    from lattice.insertion.gamma import gamma
+
     backend = get_backend()
     diagram_value = []
     for diagram in diagrams:
@@ -532,8 +550,14 @@ def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propa
         for operands, subscripts in zip(diagram.operands, diagram.subscripts):
             operands_data = []
             for item in operands[0]:
-                operands_data.append(propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]]))
+                operands_data.append(
+                    propagator_list[item[0]].get(time_list[item[1]], time_list[item[2]])
+                )
             for item in operands[1]:
                 operands_data.append(vertex_list[item].get(time_list[item]))
-            diagram_value[-1] *= contract(subscripts, *operands_data)
+            if parity == "pp":
+                operands_data.append((gamma(0) + gamma(8)) / 2)
+            elif parity == "pm":
+                operands_data.append((gamma(0) - gamma(8)) / 2)
+            diagram_value[-1] = diagram_value[-1] * contract(subscripts, *operands_data)
     return backend.asarray(diagram_value)
