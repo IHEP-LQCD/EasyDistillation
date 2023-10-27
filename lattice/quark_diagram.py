@@ -2,6 +2,9 @@ from typing import Dict, List
 
 from opt_einsum import contract
 
+test_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(test_dir, "/public/home/gengyq/EasyDistillation"))
+
 from .backend import get_backend
 
 _SUB_A = "abcdefghijklABCDEFGHIJKL"
