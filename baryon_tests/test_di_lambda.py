@@ -118,7 +118,7 @@ twopt = backend.zeros((3, Lt, 4, 4, 4, 4), "<c16")
 
 for t_src in range(1):
     st1 = time.time()
-    # peram_all_light[t_src] = np.roll(peram_all_light[t_src], t_src, 0)
+
     for t_snk in range(Lt):
         tmp = compute_diagrams_multitime(
             [P_P1, P_P2, P_P3],
@@ -127,12 +127,9 @@ for t_src in range(1):
             [None, peramb_u, peramb_u, peramb_s],
             "",
         )
-        # print(tmp[0], tmp[1], tmp[2])
         if t_snk < t_src:
             tmp = -tmp
         twopt[:, (t_snk - t_src) % Lt] += tmp
-
-        # print(tmp[0], tmp[1], tmp[2])
 
         # del peram_u
         # cp._default_memory_pool.free_all_blocks()
@@ -142,13 +139,11 @@ for t_src in range(1):
     # tmp = backend.roll(tmp, -t_src, 1)
     # tmp[0, Lt - t_src : Lt] = -tmp[0, Lt - t_src : Lt]
     # twopt += tmp
+    ed1 = time.time()
+    print(f"time{t_src} caululate done, time used: %.3f s" % (ed1 - st1))
 
 np.save("/public/home/gengyq/laph/Lambda/result/di_lambda_diagram_dirac.npy", twopt)
 di_baryon = np.zeros((Lt, 4, 4, 4, 4), "<c16")
 di_baryon = -2 * twopt[0] + 2 * twopt[2] + 4 * twopt[1]
 print(di_baryon)
 np.save("/public/home/gengyq/laph/Lambda/result/di_lambda_dirac.npy", di_baryon)
-#     ed1 = time.time()
-#     print(f"time{t_src} caululate done, time used: %.3f s" % (ed1 - st1))
-# print(twopt)
-# np.save("/public/home/gengyq/Proton_v/result/proton.npy", twopt)
