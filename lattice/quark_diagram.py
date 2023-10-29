@@ -175,7 +175,7 @@ class BaryonDiagram:
                 Ptex_subscripts.append(_SUB_M[node - 2] + _SUB_M[12 + node - 2])
                 Ptex_subscripts.append(_SUB_M[node - 1] + _SUB_M[12 + node - 1])
             if (node / 6) % 1 == 0 and len(propagators) == 3:
-                vertex_subscripts.append(_SUB_M[node - 1] + _SUB_M[node - 2])
+                vertex_subscripts.append(_SUB_M[node - 2] + _SUB_M[node - 1])
 
         if self.contype != None and self.contype[0] <= self.contype[1]:
             print("a")
