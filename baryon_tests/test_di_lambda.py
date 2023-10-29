@@ -114,11 +114,11 @@ print("diagram set done")
 # t_snk = np.arange(Lt)
 
 backend = get_backend()
-twopt = backend.zeros((3, Lt, 4, 4, 4, 4), "<c16")
+twopt = cp.zeros((3, Lt, 4, 4, 4, 4), "<c16")
 
 for t_src in range(1):
     st1 = time.time()
-
+    # peram_all_light[t_src] = np.roll(peram_all_light[t_src], t_src, 0)
     for t_snk in range(Lt):
         tmp = compute_diagrams_multitime(
             [P_P1, P_P2, P_P3],
@@ -127,23 +127,24 @@ for t_src in range(1):
             [None, peramb_u, peramb_u, peramb_s],
             "",
         )
-        if t_snk < t_src:
-            tmp = -tmp
+
+        # if t_snk < t_src:
+        # tmp = -tmp
         twopt[:, (t_snk - t_src) % Lt] += tmp
 
-        # del peram_u
-        # cp._default_memory_pool.free_all_blocks()
+from lattice.gamma import gamma
 
-    # if one want to cauculate per source to all sink, please use below:
+ed1 = time.time()
+print(f"time{t_src} caululate done, time used: %.3f s" % (ed1 - st1))
+pp = (gamma(0) + gamma(8)) / 2
+pm = (gamma(0) - gamma(8)) / 2
+corr_diagram = contract("ntqryz,Qq,Rr,Yy,Zz->ntQRYZ", twopt, pp, pp, pp, pp)
 
-    # tmp = backend.roll(tmp, -t_src, 1)
-    # tmp[0, Lt - t_src : Lt] = -tmp[0, Lt - t_src : Lt]
-    # twopt += tmp
-    ed1 = time.time()
-    print(f"time{t_src} caululate done, time used: %.3f s" % (ed1 - st1))
-
-np.save("/public/home/gengyq/laph/Lambda/result/di_lambda_diagram_dirac.npy", twopt)
+np.save(
+    "/public/home/gengyq/laph/Lambda/result/di_lambda_diagram_dirac_t0.npy",
+    corr_diagram,
+)
 di_baryon = np.zeros((Lt, 4, 4, 4, 4), "<c16")
-di_baryon = -2 * twopt[0] + 2 * twopt[2] + 4 * twopt[1]
+di_baryon = -2 * corr_diagram[0] + 2 * corr_diagram[2] + 4 * corr_diagram[1]
 print(di_baryon)
-np.save("/public/home/gengyq/laph/Lambda/result/di_lambda_dirac.npy", di_baryon)
+np.save("/public/home/gengyq/laph/Lambda/result/di_lambda_dirac_t0.npy", di_baryon)
