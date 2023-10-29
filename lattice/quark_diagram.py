@@ -11,6 +11,7 @@ from .backend import get_backend
 _SUB_A = "abcdefghijklABCDEFGHIJKL"
 _SUB_M = "mnopqruvwxyzMNOPQRUVWXYZ"
 
+
 class QuarkDiagram:
     def __init__(self, adjacency_matrix) -> None:
         self.adjacency_matrix = adjacency_matrix
@@ -46,7 +47,9 @@ class QuarkDiagram:
                             for _path in path:
                                 propagators.append([_path, i, j])
                         else:
-                            raise ValueError(f"Invalid value {path} in the adjacency matrix")
+                            raise ValueError(
+                                f"Invalid value {path} in the adjacency matrix"
+                            )
             if propagators == []:
                 continue
             vertex_operands = []
@@ -56,26 +59,39 @@ class QuarkDiagram:
             node = 0
             for propagator in propagators:
                 propagator_operands.append(propagator)
-                propagator_subscripts.append(_SUB_M[node + 1] + _SUB_A[node + 1] + _SUB_M[node] + _SUB_A[node])
+                propagator_subscripts.append(
+                    _SUB_M[node + 1] + _SUB_A[node + 1] + _SUB_M[node] + _SUB_A[node]
+                )
                 if propagator[1] not in vertex_operands:
                     vertex_operands.append(propagator[1])
                     vertex_subscripts.append(_SUB_M[node] + _SUB_A[node])
                 else:
                     i = vertex_operands.index(propagator[1])
-                    vertex_subscripts[i] = _SUB_M[node] + _SUB_A[node] + vertex_subscripts[i]
+                    vertex_subscripts[i] = (
+                        _SUB_M[node] + _SUB_A[node] + vertex_subscripts[i]
+                    )
                 if propagator[2] not in vertex_operands:
                     vertex_operands.append(propagator[2])
                     vertex_subscripts.append(_SUB_M[node + 1] + _SUB_A[node + 1])
                 else:
                     i = vertex_operands.index(propagator[2])
-                    vertex_subscripts[i] = vertex_subscripts[i] + _SUB_M[node + 1] + _SUB_A[node + 1]
+                    vertex_subscripts[i] = (
+                        vertex_subscripts[i] + _SUB_M[node + 1] + _SUB_A[node + 1]
+                    )
                 node += 2
             for key in range(len(propagator_subscripts)):
-                propagator_subscripts[key] = propagator_subscripts[key][0::2] + propagator_subscripts[key][1::2]
+                propagator_subscripts[key] = (
+                    propagator_subscripts[key][0::2] + propagator_subscripts[key][1::2]
+                )
             for key in range(len(vertex_subscripts)):
-                vertex_subscripts[key] = vertex_subscripts[key][0::2] + vertex_subscripts[key][1::2]
+                vertex_subscripts[key] = (
+                    vertex_subscripts[key][0::2] + vertex_subscripts[key][1::2]
+                )
             self.operands.append([propagator_operands, vertex_operands])
-            self.subscripts.append(",".join(propagator_subscripts) + "," + ",".join(vertex_subscripts))
+            self.subscripts.append(
+                ",".join(propagator_subscripts) + "," + ",".join(vertex_subscripts)
+            )
+
 
 class BaryonDiagram:
     def __init__(self, adjacency_matrix, contype: str) -> None:
@@ -129,7 +145,7 @@ class BaryonDiagram:
         for propagator in propagators:
             propagator_operands.append(propagator)
             propagator_subscripts.append(
-                _SUB_M[node] + _SUB_A[node + 1] + _SUB_M[node + 1] + _SUB_A[node]
+                _SUB_M[node + 1] + _SUB_A[node + 1] + _SUB_M[node] + _SUB_A[node]
             )
             if node <= (len(propagators) - 1) * 2 and ((node + 2) / 6) % 1 != 0:
                 if propagator[1] not in vertex_operands:
@@ -224,6 +240,7 @@ class BaryonDiagram:
 
 class Particle:
     pass
+
 
 class Baryon(Particle):
     def __init__(self, elemental, operator, source) -> None:
@@ -384,8 +401,12 @@ class Propagator:
 
         if isinstance(t_source, int) and isinstance(t_sink, int):
             if self.cached_time != t_source and self.cached_time != t_sink:
-                self.cache = self.perambulator_data[t_source, :, :, :, : self.usedNe, : self.usedNe]
-                self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
+                self.cache = self.perambulator_data[
+                    t_source, :, :, :, : self.usedNe, : self.usedNe
+                ]
+                self.cache_dagger = contract(
+                    "ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15)
+                )
                 self.cached_time = t_source
             if self.cached_time == t_source:
                 return self.cache[(t_sink - t_source) % self.Lt]
@@ -393,14 +414,22 @@ class Propagator:
                 return self.cache_dagger[(t_source - t_sink) % self.Lt]
         elif isinstance(t_source, int):
             if self.cached_time != t_source:
-                self.cache = self.perambulator_data[t_source, :, :, :, : self.usedNe, : self.usedNe]
-                self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
+                self.cache = self.perambulator_data[
+                    t_source, :, :, :, : self.usedNe, : self.usedNe
+                ]
+                self.cache_dagger = contract(
+                    "ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15)
+                )
                 self.cached_time = t_source
             return self.cache[(t_sink - t_source) % self.Lt]
         elif isinstance(t_sink, int):
             if self.cached_time != t_sink:
-                self.cache = self.perambulator_data[t_sink, :, :, :, : self.usedNe, : self.usedNe]
-                self.cache_dagger = contract("ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15))
+                self.cache = self.perambulator_data[
+                    t_sink, :, :, :, : self.usedNe, : self.usedNe
+                ]
+                self.cache_dagger = contract(
+                    "ik,tlkba,lj->tijab", gamma(15), self.cache.conj(), gamma(15)
+                )
                 self.cached_time = t_sink
             return self.cache_dagger[(t_source - t_sink) % self.Lt]
         else:
@@ -424,7 +453,9 @@ class PropagatorLocal:
     def _make_cache(self):
         self.cache = self.perambulator_data[0, :, :, :, : self.usedNe, : self.usedNe]
         for t_source in range(1, self.Lt):
-            self.cache[t_source] = self.perambulator_data[t_source, 0, :, :, : self.usedNe, : self.usedNe]
+            self.cache[t_source] = self.perambulator_data[
+                t_source, 0, :, :, : self.usedNe, : self.usedNe
+            ]
 
     def get(self, t_source, t_sink):
         if isinstance(t_source, int):
