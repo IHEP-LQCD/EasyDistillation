@@ -88,7 +88,7 @@ def twopoint_isoscalar(
     timeslices: Iterable[int],
     Lt: int,
     usedNe: int = None,
-    Nf: int = 2
+    Nf: int = 2,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -126,6 +126,52 @@ def twopoint_isoscalar(
     for t in timeslices:
         disconnected[:, t, :] = backend.roll(disconnected[:, t, :], -t, axis=1)
     disconnected = disconnected.mean(1)
+    return -connected + Nf * disconnected
+
+
+def twopoint_isoscalar_matrix(
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    Lt: int,
+    usedNe: int = None,
+    Nf: int = 2,
+):
+    backend = get_backend()
+    Nop = len(operators)
+    Nt = len(timeslices)
+
+    connected = backend.zeros((Nop, Nop, Lt), "<c16")
+    loop_src = backend.zeros((Nop, Lt), "<c16")
+    loop_snk = backend.zeros((Nop, Lt), "<c16")
+    phis = get_elemental_data(operators, elemental, usedNe)
+    for t in timeslices:
+        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+        # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
+        tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
+        for isrc in range(Nop):
+            phi_src = phis[isrc]
+            gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
+            loop_src[isrc, t] = contract("ijab,yji,yab", tau[0], gamma_src, phi_src[1][:, t].conj())
+            loop_snk[isrc, t] = contract("ijab,xji,xba", tau[0], phi_src[0], phi_src[1][:, t])
+            for isnk in range(Nop):
+                phi_snk = phis[isnk]
+                connected[isrc, isnk] += contract(
+                    "tijab,xjk,xtbc,tklcd,yli,yad->t",
+                    tau_bw,
+                    phi_snk[0],
+                    backend.roll(phi_snk[1], -t, 1),
+                    tau,
+                    gamma_src,
+                    phi_src[1][:, t].conj(),
+                )
+        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+    connected /= Nt
+    disconnected = contract("xi, yj -> xyij", loop_src, loop_snk)
+    for t in timeslices:
+        disconnected[:, :, t, :] = backend.roll(disconnected[:, :, t, :], -t, axis=2)
+    disconnected = disconnected.mean(2)
     return -connected + Nf * disconnected
 
 
