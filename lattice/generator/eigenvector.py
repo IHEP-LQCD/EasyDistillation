@@ -215,17 +215,21 @@ class EigenvectorGenerator:
 
         backend = get_backend()
         if backend.__name__ == "numpy":
+            print(f"Use numpy to stout_smear(nstep={nstep}, rho={rho})")
             self._stout_smear_ndarray(nstep, rho)
         elif backend.__name__ == "cupy":
             if self.kernel is not None:
+                print(f"Use cuda kernel to stout_smear(nstep={nstep}, rho={rho})")
                 self._stout_smear_cuda_kernel(nstep, rho)
             elif check_QUDA():
+                print(f"Use quda to stout_smear(nstep={nstep}, rho={rho})")
                 self._stout_smear_quda(nstep, rho)
             else:
+                print(f"Use cupy to stout_smear(nstep={nstep}, rho={rho})")
                 self._stout_smear_ndarray(nstep, rho)
                 # self._stout_smear_ndarray_naive(nstep, rho)
 
-    def calc(self, t: int):
+    def calc(self, t: int, apply_renorm_phase=True):
         backend = get_backend()
         if backend.__name__ == "numpy":
             from scipy.sparse import linalg
@@ -240,4 +244,8 @@ class EigenvectorGenerator:
         evals, evecs = linalg.eigsh(A, self.Ne, which="SA", tol=self.tol)
 
         # [Ne, Lz * Ly * Lx, Nc]
-        return evecs.transpose(1, 0).reshape(self.Ne, Lz, Ly, Lx, Nc)
+        evecs = evecs.transpose(1, 0).reshape(self.Ne, -1)
+        if apply_renorm_phase:
+            renorm_phase = backend.angle(evecs[:, 0])
+            evecs *= backend.exp(-1.0j * renorm_phase)[:, None]
+        return evecs.reshape(self.Ne, Lz, Ly, Lx, Nc), evals

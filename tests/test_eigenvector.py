@@ -22,17 +22,21 @@ out_prefix = f"{test_dir}/"
 out_suffix = ".eigenvector.npy"
 
 
-def check(cfg, data):
-    data_ref = EigenvectorNpy(out_prefix, out_suffix, [Lt, Ne, Lz, Ly, Lx, Nc], Ne).load(cfg)[:]
+def check(cfg, evecs, evals):
+    data_evecs_ref = EigenvectorNpy(out_prefix, out_suffix, [Lt, Ne, Lz, Ly, Lx, Nc], Ne).load(cfg)[:]
+    data_evals_ref = backend.load(F"{out_prefix}{cfg}.eigenvalue.npy")
     res = 0
     for t in range(Lt):
         for e in range(Ne):
-            phase = data_ref[t, e].reshape(-1)[0] / data[t, e].reshape(-1)[0]
-            res += backend.linalg.norm(data_ref[t, e] / data[t, e] / phase - 1)
+            phase = data_evecs_ref[t, e].reshape(-1)[0] / evecs[t, e].reshape(-1)[0]
+            res += backend.linalg.norm(data_evecs_ref[t, e] / evecs[t, e] / phase - 1)
         print(f"Test cfg {cfg}, t = {t}, res = {res}")
+    
+    print(f"Test cfg {cfg}, eigen values, res = {backend.linalg.norm(data_evals_ref - evals)}")
 
 
-data = backend.zeros((Lt, Ne, Lz, Ly, Lx, Nc), "<c16")
+eigne_vecs = backend.zeros((Lt, Ne, Lz, Ly, Lx, Nc), "<c16")
+eigen_vals = backend.zeros((Lt, Ne), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
 
@@ -41,10 +45,11 @@ for cfg in ["weak_field"]:
     # eigenvector.project_SU3()
     for t in range(Lt):
         s = perf_counter()
-        data[t] = eigenvector.calc(t)
+        eigne_vecs[t], eigen_vals[t] = eigenvector.calc(t)
         print(Rf"EASYDISTILLATION: {perf_counter()-s:.3f} sec to solve the lowest {Ne} eigensystem at t={t}.")
 
-    # backend.save(F"{out_prefix}{cfg}{out_suffix}", data)
-    check(cfg, data)
+    # backend.save(F"{out_prefix}{cfg}.eigenvector.npy", eigne_vecs)
+    # backend.save(F"{out_prefix}{cfg}.eigenvalue.npy", eigen_vals)
+    check(cfg, eigne_vecs, eigen_vals)
 
 print("Test ends!")
