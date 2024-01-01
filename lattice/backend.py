@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List
 
 _BACKEND = None
 PYQUDA = None
@@ -33,15 +33,15 @@ def set_backend(backend: Literal["numpy", "cupy"]):
         raise ValueError(R'backend must be "numpy", "cupy" or "torch"')
 
 
-def check_QUDA():
+def check_QUDA(grid_size: List[int] = None):
     global PYQUDA
     if PYQUDA is None:
         try:
             import os
-            from pyquda import mpi
+            from pyquda import init
 
             os.environ["QUDA_RESOURCE_PATH"] = ".cache"
-            mpi.init()
+            init(grid_size)
         except ImportError as e:
             print(f"ImportError: {e}")
         except RuntimeError as e:

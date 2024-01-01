@@ -24,7 +24,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         multigrid: List[List[int]] = None,
     ) -> None:
         if not check_QUDA():
-            raise ImportError("Please install PyQuda to generate the perambulator")
+            raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
         from pyquda import core
 
         backend = get_backend()
@@ -45,13 +45,13 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
     def load(self, key: str):
         import numpy as np
         from pyquda import core
-        from pyquda.utils import gauge_utils
+        from pyquda.utils import io
 
         backend = get_backend()
         set_backend("numpy")
         Lx, Ly, Lz, Lt = self.latt_size
         Ne = self.eigenvector.Ne
-        self.gauge_field_smear = gauge_utils.readIldg(self.gauge_field.load(key).file)
+        self.gauge_field_smear = io.readQIOGauge(self.gauge_field.load(key).file)
 
         eigenvector_data = self.eigenvector.load(key)
         eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), "<c16")
@@ -66,7 +66,6 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
 
     def _stout_smear_quda(self, nstep, rho):
         from pyquda import core
-        from pyquda.utils import gauge_utils
 
         gauge = self.gauge_field_smear
         if self.gauge_field_smear is None:

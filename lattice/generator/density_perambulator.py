@@ -28,7 +28,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         momentum_list: List[Tuple[int]] = [(0, 0, 0)],
     ) -> None:
         if not check_QUDA():
-            raise ImportError("Please install PyQuda to generate the perambulator")
+            raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
         from pyquda import core
 
         backend = get_backend()
@@ -57,9 +57,9 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         self._tf = None
 
     def load(self, key: str):
-        from pyquda.utils import gauge_utils
+        from pyquda.utils import io
 
-        self.dslash.loadGauge(gauge_utils.readIldg(self.gauge_field.load(key).file))
+        self.dslash.loadGauge(io.readQIOGauge(self.gauge_field.load(key).file))
         self._eigenvector_data = self.eigenvector.load(key)
 
     def calc(self, ti: int, tf: int, tau: int):

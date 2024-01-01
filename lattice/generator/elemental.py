@@ -210,9 +210,9 @@ class ElementalGenerator:
     def _stout_smear_quda(self, nstep, rho):
         backend = get_backend()
         from pyquda import core
-        from pyquda.utils import gauge_utils
+        from pyquda.utils import io
 
-        gauge = gauge_utils.readIldg(self._gauge_field_path)
+        gauge = io.readQIOGauge(self._gauge_field_path)
         latt_size = gauge.latt_size
         Lx, Ly, Lz, Lt = latt_size
 
