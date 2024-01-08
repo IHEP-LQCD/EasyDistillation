@@ -37,11 +37,14 @@ def check_QUDA(grid_size: List[int] = None):
     global PYQUDA
     if PYQUDA is None:
         try:
-            import os
-            from pyquda import init
+            # import os
+            # os.environ["QUDA_RESOURCE_PATH"] = ".cache" # set your QUDA_RESOURCE_PATH before init()
+            import pyquda
 
-            os.environ["QUDA_RESOURCE_PATH"] = ".cache"
-            init(grid_size)
+            pyquda.init(grid_size)
+            print(pyquda.__file__)
+            if pyquda.__version__ < "0.5.0":
+                raise ImportError(f"PyQuda version {pyquda.__version__} < Required 0.5.0")
         except ImportError as e:
             print(f"ImportError: {e}")
         except RuntimeError as e:
