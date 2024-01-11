@@ -5,12 +5,10 @@ test_dir = os.path.dirname(os.path.abspath(__file__))
 print(test_dir)
 sys.path.insert(0, os.path.join(test_dir, ".."))
 
-sys.path.insert(0, "/dg_hpc/LQCD/shichunjiang/PyQuda_devel")
-os.environ["QUDA_RESOURCE_PATH"] = "/dg_hpc/LQCD/shichunjiang/PyQuda_devel/.cache"
 
 from lattice import set_backend, get_backend, check_QUDA
 
-grid_size = [1, 1, 1, 2]
+grid_size = [1, 1, 2, 2]
 if not check_QUDA(grid_size):
     raise ImportError("Please install PyQuda")
 latt_size = [4, 4, 4, 8]
@@ -20,12 +18,9 @@ Lx, Ly, Lz, Lt = [Lx // Gx, Ly // Gy, Lz // Gz, Lt // Gt]
 Ne = 20
 Ns = 4
 
-from pyquda import getGridCoord, getMPIRank
-
-gx, gy, gz, gt = getGridCoord()
 
 from lattice import PerambulatorGenerator, PerambulatorNpy
-from pyquda import enum_quda, gather
+from pyquda import enum_quda
 
 set_backend("cupy")
 backend = get_backend()
@@ -45,16 +40,15 @@ out_suffix = ".perambulator.npy"
 
 
 def check(cfg, data):
-    # data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt * Gt, Lt, Ns, Ns, Ne, Ne], Ne).load(cfg)[
-    #     :, Lt * (gt) : Lt * (gt + 1), :, :, :, :
-    # ]
+    from pyquda import getGridCoord
+
+    gx, gy, gz, gt = getGridCoord()
     data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt * Gt, Lt * Gt, Ns, Ns, Ne, Ne], Ne).load(cfg)[
         :, :, :, :, :, :
     ]
     for t in range(Lt * Gt):
         data_ref[t] = backend.roll(data_ref[t], shift=+t, axis=0)
     res = backend.linalg.norm(data_ref[:, Lt * (gt) : Lt * (gt + 1)] - data)
-    # res = backend.linalg.norm(data_ref - data)
     print(f"Test cfg {cfg}, res = {res}")
 
 
@@ -65,12 +59,19 @@ for cfg in ["weak_field"]:
     perambulator.stout_smear(20, 0.1)
     for t in range(Lt * Gt):
         peramb[t] = perambulator.calc(t)
+
+    # mpi gather lattice data and save
     # import numpy
-    # peramb = gather(peramb.get(), axes = [1, -1, -1, -1], root=0)
-    # if getMPIRank == 0:
+    # from pyquda.core import gatherLattice
+    # from pyquda import getMPIRank
+    # # Note: For perambulator, mpi gather always gather timeslices and reduce space!
+    # peramb_h = gatherLattice(peramb.get(), axes = [1, -1, -1, -1], reduce_op="sum", root=0)
+    # if getMPIRank() == 0:
     #     for t in range(Lt * Gt):
-    #         peramb[t] = numpy.roll(peramb[t], -t 0)
+    #         peramb_h[t] = numpy.roll(peramb_h[t], -t, 0)
     #     numpy.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
+
+    # check data
     check(cfg, peramb)
 
 perambulator.dslash.destroy()
