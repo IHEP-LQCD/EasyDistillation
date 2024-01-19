@@ -20,7 +20,8 @@ Ns = 4
 
 
 from lattice import PerambulatorGenerator, PerambulatorNpy
-from pyquda import enum_quda
+from pyquda import enum_quda, getMPIRank
+from pyquda.core import gatherLattice
 
 set_backend("cupy")
 backend = get_backend()
@@ -40,18 +41,11 @@ out_suffix = ".perambulator.npy"
 
 
 def check(cfg, data):
-    from pyquda import getGridCoord
-
-    gx, gy, gz, gt = getGridCoord()
-    data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt * Gt, Lt * Gt, Ns, Ns, Ne, Ne], Ne).load(cfg)[
-        :, :, :, :, :, :
-    ]
-    for t in range(Lt * Gt):
-        data_ref[t] = backend.roll(data_ref[t], shift=+t, axis=0)
-    res = backend.linalg.norm(data_ref[:, Lt * (gt) : Lt * (gt + 1)] - data)
+    data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt * Gt, Lt * Gt, Ns, Ns, Ne, Ne], Ne).load(cfg)
+    res = backend.linalg.norm(data_ref[:] - backend.array(data))
     print(f"Test cfg {cfg}, res = {res}")
 
-
+# save all timeslices in one
 peramb = backend.zeros((Lt * Gt, Lt, Ns, Ns, Ne, Ne), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
@@ -59,19 +53,32 @@ for cfg in ["weak_field"]:
     perambulator.stout_smear(20, 0.1)
     for t in range(Lt * Gt):
         peramb[t] = perambulator.calc(t)
-
     # mpi gather lattice data and save
-    # import numpy
-    # from pyquda.core import gatherLattice
-    # from pyquda import getMPIRank
-    # # Note: For perambulator, mpi gather always gather timeslices and reduce space!
-    # peramb_h = gatherLattice(peramb.get(), axes = [1, -1, -1, -1], reduce_op="sum", root=0)
-    # if getMPIRank() == 0:
-    #     for t in range(Lt * Gt):
-    #         peramb_h[t] = numpy.roll(peramb_h[t], -t, 0)
-    #     numpy.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
+    # Note: For perambulator, mpi gather always gather timeslices and reduce space!
+    import numpy
+    peramb_h = gatherLattice(peramb.get(), axes = [1, -1, -1, -1], reduce_op="sum", root=0)
+    if getMPIRank() == 0:
+        for t in range(Lt * Gt):
+            peramb_h[t] = numpy.roll(peramb_h[t], -t, 0)
+        # numpy.save(f"{out_prefix}{cfg}{out_suffix}", peramb_h)
 
-    # check data
-    check(cfg, peramb)
+        # check data
+        check(cfg, peramb_h)
 
-perambulator.dslash.destroy()
+# save timeslices seprately
+# peramb = backend.zeros((1, Lt, Ns, Ns, Ne, Ne), "<c16")
+# for cfg in ["weak_field"]:
+#     print(cfg)
+#     perambulator.load(cfg)
+#     perambulator.stout_smear(20, 0.1)
+#     import numpy
+#     for t in range(Lt * Gt):
+#         peramb[0] = perambulator.calc(t)
+#         # mpi gather lattice data and save
+#         # Note: For perambulator, mpi gather always gather timeslices and reduce space!
+#         peramb_h = gatherLattice(peramb.get(), axes = [1, -1, -1, -1], reduce_op="sum", root=0)
+#         if getMPIRank() == 0:
+#             peramb_h[0] = numpy.roll(peramb_h[0], -t, 0)
+#             numpy.save(f"{out_prefix}{cfg}.t{t:03d}.{out_suffix}", peramb_h[0])
+
+# perambulator.dslash.destroy()
