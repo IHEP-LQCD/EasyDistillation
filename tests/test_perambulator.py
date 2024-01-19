@@ -47,7 +47,7 @@ for cfg in ["weak_field"]:
     perambulator.load(cfg)
     perambulator.stout_smear(20, 0.1)
     for t in range(Lt):
-        peramb[t] = perambulator.calc(t)
+        peramb[t] = backend.roll(perambulator.calc(t), -t, 0)
     # backend.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
     check(cfg, peramb)
 
