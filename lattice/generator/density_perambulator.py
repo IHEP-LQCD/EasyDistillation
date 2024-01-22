@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Literal, Tuple
 
 from opt_einsum import contract
 
@@ -22,7 +22,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         nu: float = 1.0,
         clover_coeff_t: float = 0.0,
         clover_coeff_r: float = 1.0,
-        anti_periodic_t: bool = True,
+        t_boundary: Literal[1, -1] = 1,
         multigrid: List[List[int]] = None,
         gamma_list: List[int] = [i for i in range(Ns * Ns)],
         momentum_list: List[Tuple[int]] = [(0, 0, 0)],
@@ -30,6 +30,9 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
         from pyquda import core
+        from pyquda.field import LatticeInfo
+
+        self.latt_info = LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
 
         backend = get_backend()
         assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
@@ -42,9 +45,20 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         self.latt_size = latt_size
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
-        self.dslash = core.getDslash(
-            latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
+        # self.dslash = core.getDslash(
+        #     latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
+        # ) # deprecated
+        self.dirac = core.getDirac(
+            self.latt_info,
+            mass,
+            tol,
+            maxiter,
+            xi_0,
+            clover_coeff_t,
+            clover_coeff_r,
+            multigrid,
         )
+
         self.gamma_list = gamma_list
         self.momentum_list = momentum_list
         self._momentum_phase = MomentumPhase(latt_size)
@@ -59,7 +73,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
     def load(self, key: str):
         from pyquda.utils import io
 
-        self.dslash.loadGauge(io.readQIOGauge(self.gauge_field.load(key).file))
+        self.dirac.loadGauge(io.readQIOGauge(self.gauge_field.load(key).file))
         self._eigenvector_data = self.eigenvector.load(key)
 
     def calc(self, ti: int, tf: int, tau: int):
@@ -71,7 +85,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         Lx, Ly, Lz, Lt = latt_size
         Ne = self.eigenvector.Ne
         eigenvector = self._eigenvector_data
-        dslash = self.dslash
+        dirac = self.dirac
         gamma_list = self.gamma_list
         momentum_list = self.momentum_list
         momentum_phase = self._momentum_phase
@@ -119,7 +133,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
             if ti != self._t:
                 for spin in range(Ns):
                     V[:, ti, :, :, :, spin, :] = data_cb2[0, eigen, :, :, :, :, :]
-                    SV_i[eigen, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(
+                    SV_i[eigen, :, :, :, :, :, spin, :] = dirac.invert(_V).data.reshape(
                         2, Lt, Lz, Ly, Lx // 2, Ns, Nc
                     )[:, tau, :, :, :, :, :]
                     V[:] = 0
@@ -127,7 +141,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
             if tf != self._tf:
                 for spin in range(Ns):
                     V[:, tf, :, :, :, spin, :] = data_cb2[1, eigen, :, :, :, :, :]
-                    SV_f[eigen, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(
+                    SV_f[eigen, :, :, :, :, :, spin, :] = dirac.invert(_V).data.reshape(
                         2, Lt, Lz, Ly, Lx // 2, Ns, Nc
                     )[:, tau, :, :, :, :, :]
                     V[:] = 0

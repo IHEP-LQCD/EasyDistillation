@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 
 from opt_einsum import contract
 
@@ -20,7 +20,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         nu: float = 1.0,
         clover_coeff_t: float = 0.0,
         clover_coeff_r: float = 1.0,
-        anti_periodic_t: bool = True,
+        t_boundary: Literal[1, -1] = 1,
         multigrid: List[List[int]] = None,
     ) -> None:
         if not check_QUDA():
@@ -28,7 +28,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         from pyquda import core
         from pyquda.field import LatticeInfo
 
-        self.latt_info = LatticeInfo(latt_size)
+        self.latt_info = LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
 
         backend = get_backend()
         assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
@@ -38,16 +38,26 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         self.gauge_field = gauge_field
         self.gauge_field_smear = None
         self.eigenvector = eigenvector
-        self.dslash = core.getDslash(
-            self.latt_info.size,
+        # self.dslash = core.getDslash(
+        #     self.latt_info.size,
+        #     mass,
+        #     tol,
+        #     maxiter,
+        #     xi_0,
+        #     nu,
+        #     clover_coeff_t,
+        #     clover_coeff_r,
+        #     anti_periodic_t,
+        #     multigrid,
+        # )  # deprecated
+        self.dirac = core.getDirac(
+            self.latt_info,
             mass,
             tol,
             maxiter,
             xi_0,
-            nu,
             clover_coeff_t,
             clover_coeff_r,
-            anti_periodic_t,
             multigrid,
         )
         self._SV = backend.zeros((2, Lt, Lz, Ly, Lx // 2, Ns, Ns, Nc), "<c16")
@@ -101,14 +111,14 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
         backend = get_backend()
         from pyquda.field import LatticeFermion
 
-        self.dslash.loadGauge(self.gauge_field_smear)  # loadGauge after
+        self.dirac.loadGauge(self.gauge_field_smear)  # loadGauge after
 
         latt_info = self.latt_info
         Lx, Ly, Lz, Lt = latt_info.size
         Vol = Lx * Ly * Lz * Lt
         Ne = self.eigenvector.Ne
         eigenvector = self._eigenvector_data
-        dslash = self.dslash
+        dirac = self.dirac
         gx, gy, gz, gt = self.latt_info.grid_coord
 
         SV = self._SV
@@ -120,9 +130,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
                 data = V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
                 if gt * Lt <= t and (gt + 1) * Lt > t:
                     data[:, t % Lt, :, :, :, spin, :] = eigenvector[eigen, :, t % Lt, :, :, :, :]  # [Ne, etzyx, Nc]
-                SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dslash.invert(V).data.reshape(Vol, Ns, Nc)
-            VSV[:, :, :, :, eigen] = contract(
-                "ketzyxa,etzyxija->tijk", eigenvector[:, :, :, :, :, :, :].conj(), SV
-            )
+                SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dirac.invert(V).data.reshape(Vol, Ns, Nc)
+            VSV[:, :, :, :, eigen] = contract("ketzyxa,etzyxija->tijk", eigenvector[:, :, :, :, :, :, :].conj(), SV)
         # return backend.roll(VSV, shift=-t, axis=0)
         return VSV

@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Literal, Tuple
 
 from opt_einsum import contract
 from time import perf_counter
@@ -23,7 +23,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         nu: float = 1.0,
         clover_coeff_t: float = 0.0,
         clover_coeff_r: float = 1.0,
-        anti_periodic_t: bool = True,
+        t_boundary: Literal[1, -1] = 1,
         multigrid: List[List[int]] = None,
         gamma_list: List[int] = [i for i in range(Ns * Ns)],
         momentum_list: List[Tuple[int]] = [(0, 0, 0)],
@@ -31,6 +31,9 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
         from pyquda import core
+        from pyquda.field import LatticeInfo
+
+        self.latt_info = LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
 
         backend = get_backend()
         assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
@@ -42,8 +45,18 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self.latt_size = latt_size
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
-        self.dslash = core.getDslash(
-            latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
+        # self.dslash = core.getDslash(
+        #     latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
+        # ) # deprecated
+        self.dirac = core.getDirac(
+            self.latt_info,
+            mass,
+            tol,
+            maxiter,
+            xi_0,
+            clover_coeff_t,
+            clover_coeff_r,
+            multigrid,
         )
         self.gamma_list = gamma_list
         self.momentum_list = momentum_list
@@ -62,7 +75,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
     def load(self, key: str):
         from pyquda.utils import io
 
-        self.dslash.loadGauge(io.readQIOGauge(self.gauge_field.load(key).file))
+        self.dirac.loadGauge(io.readQIOGauge(self.gauge_field.load(key).file))
         self._eigenvector_data = self.eigenvector.load(key)
 
     def calc(self, ti: int, tf: int):
@@ -76,7 +89,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         Lx, Ly, Lz, Lt = latt_size
         Ne = self.eigenvector.Ne
         eigenvector = self._eigenvector_data
-        dslash = self.dslash
+        dirac = self.dirac
         gamma_list = self.gamma_list
         momentum_list = self.momentum_list
         momentum_phase = self._momentum_phase
@@ -115,7 +128,6 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
 
         print(f"load lexico timer = {perf_counter() -s:.2f}")
 
-
         _V = LatticeFermion(latt_size)
         V = _V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
         SV_i = self._SV_i
@@ -134,7 +146,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
                 stream_i.synchronize()
                 for spin in range(Ns):
                     V[:, ti, :, :, :, spin, :] = data_cb2[0, eigen, :, :, :, :, :]
-                    SV_i[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                    SV_i[:, :, :, :, :, :, spin, :] = dirac.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
                     V[:] = 0
                 SV_i.get(stream_i, out=h_SV_i[eigen])
 
@@ -142,7 +154,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
                 stream_f.synchronize()
                 for spin in range(Ns):
                     V[:, tf, :, :, :, spin, :] = data_cb2[1, eigen, :, :, :, :, :]
-                    SV_f[:, :, :, :, :, :, spin, :] = dslash.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                    SV_f[:, :, :, :, :, :, spin, :] = dirac.invert(_V).data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
                     V[:] = 0
                 SV_f[:] = contract("ii,etzyxjic,jj->etzyxijc", gamma(15), SV_f.conj(), gamma(15))
                 SV_f.get(stream_f, out=h_SV_f[eigen])

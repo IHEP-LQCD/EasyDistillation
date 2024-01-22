@@ -26,22 +26,22 @@ eigenvector = EigenvectorTimeSlice(
     Ne,
 )
 perambulator = DensityPerambulatorGenerator(
-    latt_size,
-    gauge_field,
-    eigenvector,
-    0.09253,
-    1e-15,
-    1000,
-    4.8965,
-    0.86679,
-    0.8549165664,
-    2.32582045,
-    True,
-    [[4, 4, 4, 4], [4, 4, 4, 4]],
-    [1, 2, 4, 8],
-    [(0, 0, 0)],
+    latt_size=latt_size,
+    gauge_field=gauge_field,
+    eigenvector=eigenvector,
+    mass=0.09253,
+    tol=1e-15,
+    maxiter=1000,
+    xi_0=4.8965,
+    nu=0.86679,
+    clover_coeff_t=0.8549165664,
+    clover_coeff_r=2.32582045,
+    t_boundary=-1,  # for this test lattice, use t_boundary=-1
+    multigrid=[[4, 4, 4, 4], [4, 4, 4, 4]],
+    gamma_list=[1, 2, 4, 8],
+    momentum_list=[(0, 0, 0)],
 )
-perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
+perambulator.dirac.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
 
 out_prefix = "tests/"
 out_suffix = ".perambulators.npy"
@@ -56,4 +56,4 @@ for cfg in ["s1.0_cfg_2000"]:
     print(peramb.shape)
     # backend.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
 
-perambulator.dslash.destroy()
+perambulator.dirac.destroy()

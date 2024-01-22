@@ -213,10 +213,7 @@ class ElementalGenerator:
         from pyquda.utils import io
 
         gauge = io.readQIOGauge(self._gauge_field_path)
-        latt_size = gauge.latt_size
-        Lx, Ly, Lz, Lt = latt_size
-
-        core.smear(gauge.latt_size, gauge, nstep, rho)
+        gauge.smearSTOUT(nstep, rho, dir=3)
 
         self._U = backend.asarray(gauge.lexico()[: Nd - 1])
 

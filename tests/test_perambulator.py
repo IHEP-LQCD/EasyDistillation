@@ -26,10 +26,23 @@ Ns = 4
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", ".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
 eigenvector = EigenvectorNpy(f"{test_dir}/", ".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
+
 perambulator = PerambulatorGenerator(
-    latt_size, gauge_field, eigenvector, 0.09253, 1e-9, 1000, 4.8965, 0.86679, 0.8549165664, 2.32582045, True, False
-)  # arbitrary dslash parameters
-perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
+    latt_size=latt_size,
+    gauge_field=gauge_field,
+    eigenvector=eigenvector,
+    mass=0.09253,
+    tol=1e-9,
+    maxiter=1000,
+    xi_0=4.8965,
+    nu=0.86679,
+    clover_coeff_t=0.8549165664,
+    clover_coeff_r=2.32582045,
+    t_boundary=-1,  # for this test lattice, use t_boundary=-1
+    multigrid=False,
+)  # arbitrary dirac parameters
+
+perambulator.dirac.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
 
 out_prefix = "tests/"
 out_suffix = ".perambulator.npy"
@@ -51,4 +64,4 @@ for cfg in ["weak_field"]:
     # backend.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
     check(cfg, peramb)
 
-perambulator.dslash.destroy()
+perambulator.dirac.destroy()
