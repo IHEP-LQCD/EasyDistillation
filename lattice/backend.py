@@ -43,7 +43,7 @@ def check_QUDA(grid_size: List[int] = None):
 
             pyquda.init(grid_size)
             print(pyquda.__file__)
-            if pyquda.__version__ < "0.5.0":
+            if pyquda.__version__ < "0.5.2":
                 raise ImportError(f"PyQuda version {pyquda.__version__} < Required 0.5.0")
         except ImportError as e:
             print(f"ImportError: {e}")

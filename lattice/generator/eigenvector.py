@@ -206,7 +206,7 @@ class EigenvectorGenerator:
         latt_size = gauge.latt_size
         Lx, Ly, Lz, Lt = latt_size
 
-        core.smear(gauge.latt_size, gauge, nstep, rho)
+        gauge.smearSTOUT(nstep, rho, dir=3)
 
         self._U = backend.asarray(gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)[: Nd - 1])
 

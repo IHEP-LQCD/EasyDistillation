@@ -31,10 +31,22 @@ from lattice import GaugeFieldIldg, EigenvectorNpy, Nc, Nd
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", ".lime", [Gt * Lt, Gz * Lz, Gy * Ly, Gx * Lx, Nd, Nc, Nc])
 eigenvector = EigenvectorNpy(f"{test_dir}/", ".eigenvector.npy", [Gt * Lt, Gz * Lz, Gy * Ly, Gx * Lx, Nc], Ne)
+
 perambulator = PerambulatorGenerator(
-    latt_size, gauge_field, eigenvector, 0.09253, 1e-9, 1000, 4.8965, 0.86679, 0.8549165664, 2.32582045, True, False
-)  # arbitrary dslash parameters
-perambulator.dslash.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
+    latt_size=latt_size,
+    gauge_field=gauge_field,
+    eigenvector=eigenvector,
+    mass=0.09253,
+    tol=1e-9,
+    maxiter=1000,
+    xi_0=4.8965,
+    nu=0.86679,
+    clover_coeff_t=0.8549165664,
+    clover_coeff_r=2.32582045,
+    t_boundary=-1,  # for this test lattice, use t_boundary=-1
+    multigrid=False,
+)  # arbitrary dirac parameters
+perambulator.dirac.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
 
 out_prefix = "tests/"
 out_suffix = ".perambulator.npy"
@@ -45,7 +57,7 @@ def check(cfg, data):
     res = backend.linalg.norm(data_ref[:] - backend.array(data))
     print(f"Test cfg {cfg}, res = {res}")
 
-# save all timeslices in one
+# # save all timeslices in one
 peramb = backend.zeros((Lt * Gt, Lt, Ns, Ns, Ne, Ne), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
@@ -65,7 +77,7 @@ for cfg in ["weak_field"]:
         # check data
         check(cfg, peramb_h)
 
-# save timeslices seprately
+# # save timeslices seprately
 # peramb = backend.zeros((1, Lt, Ns, Ns, Ne, Ne), "<c16")
 # for cfg in ["weak_field"]:
 #     print(cfg)
@@ -76,9 +88,9 @@ for cfg in ["weak_field"]:
 #         peramb[0] = perambulator.calc(t)
 #         # mpi gather lattice data and save
 #         # Note: For perambulator, mpi gather always gather timeslices and reduce space!
-#         peramb_h = gatherLattice(peramb.get(), axes = [1, -1, -1, -1], reduce_op="sum", root=0)
+#         peramb_h = gatherLattice(peramb[0].get(), axes = [0, -1, -1, -1], reduce_op="sum", root=0)
 #         if getMPIRank() == 0:
 #             peramb_h[0] = numpy.roll(peramb_h[0], -t, 0)
 #             numpy.save(f"{out_prefix}{cfg}.t{t:03d}.{out_suffix}", peramb_h[0])
 
-# perambulator.dslash.destroy()
+perambulator.dirac.destroy()
