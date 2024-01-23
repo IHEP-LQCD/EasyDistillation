@@ -2,7 +2,6 @@ import os
 import sys
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
-print(test_dir)
 sys.path.insert(0, os.path.join(test_dir, ".."))
 
 from lattice import set_backend, get_backend, check_QUDA
@@ -50,17 +49,17 @@ out_suffix = ".perambulator.npy"
 
 def check(cfg, data):
     data_ref = PerambulatorNpy(out_prefix, out_suffix, [Lt, Lt, Ns, Ns, Ne, Ne], Ne).load(cfg)[:]
-    res = backend.linalg.norm(data_ref - data)
+    res = backend.linalg.norm(data_ref.get() - data)
     print(f"Test cfg {cfg}, res = {res}")
 
-
-peramb = backend.zeros((Lt, Lt, Ns, Ns, Ne, Ne), "<c16")
+import numpy
+peramb = numpy.zeros((Lt, Lt, Ns, Ns, Ne, Ne), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
     perambulator.load(cfg)
     perambulator.stout_smear(20, 0.1)
     for t in range(Lt):
-        peramb[t] = backend.roll(perambulator.calc(t), -t, 0)
+        peramb[t] = numpy.roll(perambulator.calc(t).get(), -t, 0)
     # backend.save(f"{out_prefix}{cfg}{out_suffix}", peramb)
     check(cfg, peramb)
 
