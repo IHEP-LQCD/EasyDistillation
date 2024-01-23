@@ -33,15 +33,13 @@ def set_backend(backend: Literal["numpy", "cupy"]):
         raise ValueError(R'backend must be "numpy", "cupy" or "torch"')
 
 
-def check_QUDA(grid_size: List[int] = None):
+def check_QUDA(grid_size: List[int] = None, backend: Literal["cupy", "torch"] = "cupy", resource_path: str = None):
     global PYQUDA
     if PYQUDA is None:
         try:
-            # import os
-            # os.environ["QUDA_RESOURCE_PATH"] = ".cache" # set your QUDA_RESOURCE_PATH before init()
             import pyquda
 
-            pyquda.init(grid_size)
+            pyquda.init(grid_size, backend, resource_path)
             print(pyquda.__file__)
             if pyquda.__version__ < "0.5.2":
                 raise ImportError(f"PyQuda version {pyquda.__version__} < Required 0.5.0")
