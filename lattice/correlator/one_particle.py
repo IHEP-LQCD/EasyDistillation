@@ -16,7 +16,32 @@ def twopoint(
     timeslices: Iterable[int],
     Lt: int,
     usedNe: int = None,
+    perambulator_bw = None,
 ):
+    '''
+    Calculate the two-point correlation function C(t) for a given set of operators.
+
+    Parameters:
+    - operators: List of Operator objects defining the interpolating fields.
+    - elemental: FileData object containing the elemental vectors.
+    - perambulator: FileData object containing the perambulator (quark propagator) data.
+    - timeslices: Iterable of time slices at which the correlation function is to be evaluated.
+    - Lt: Temporal extent of the lattice.
+    - usedNe: Number of eigenvectors used in the calculation (None uses all available).
+    - perambulator_bw: Optional FileData object for a different backward quark propagator.
+
+    If 'perambulator_bw' is not None, it is used for the backward quark propagator,
+    allowing for calculations involving different quark flavors or configurations.
+
+    Returns:
+    - A NumPy array of shape (Nop, Lt) containing the two-point correlation function
+      values for each operator and timeslice.
+
+    Note:
+    - The backend for tensor operations is determined by the 'get_backend' function.
+    - The function prints the data throughput rate for the perambulator at each timeslice.
+    - The returned correlation function values are multiplied by -1 as per convention.
+    '''
     backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
@@ -26,7 +51,11 @@ def twopoint(
     for t in timeslices:
         tau = perambulator[t, :, :, :, :usedNe, :usedNe]
         # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
-        tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
+        if perambulator_bw is None:
+            tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
+        else:
+            tmp = perambulator_bw[t, :, :, :, :usedNe, :usedNe]
+            tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tmp.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
             ret[idx] += contract(
@@ -38,7 +67,7 @@ def twopoint(
                 phi[0],
                 phi[1][:, t].conj(),
             )
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+        # print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
     ret /= Nt
 
     return -ret

@@ -128,7 +128,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
 
         print(f"load lexico timer = {perf_counter() -s:.2f}")
 
-        _V = LatticeFermion(latt_size)
+        _V = LatticeFermion(self.latt_info)
         V = _V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
         SV_i = self._SV_i
         SV_f = self._SV_f
@@ -173,15 +173,16 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
             for eigen_f in range(Ne):
                 SV_f.set(h_SV_f[eigen_f])
                 stream_i.synchronize()
-                for gamma_idx, gamma_i in enumerate(gamma_list):
-                    for momentum_idx, momentum in enumerate(momentum_list):
-                        VSSV_fi[gamma_idx, momentum_idx] = contract(
-                            "etzyx,etzyxijc,jk,etzyxklc->til",
-                            momentum_phase.get_cb2(momentum),
-                            SV_f,
-                            gamma(gamma_i),
-                            SV_i,
-                        )
+                gamma_current = backend.asarray([gamma(i) for i in gamma_list])
+                for momentum_idx, momentum in enumerate(momentum_list):
+                    VSSV_fi[:, momentum_idx] = contract(
+                        "etzyx,etzyxijc,gjk,etzyxklc->gtil",
+                        momentum_phase.get_cb2(momentum),
+                        SV_f,
+                        gamma_current,
+                        SV_i,
+                        optimize=True,
+                    )
                 VSSV_fi.get(stream_i, out=VSSV[eigen_f, eigen_i])
 
         return VSSV.transpose(2, 3, 4, 5, 6, 0, 1)
