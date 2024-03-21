@@ -96,7 +96,7 @@ class PerambulatorGenerator:  # TODO: Add parameters to do smearing before the i
             raise ValueError("Gauge not loaded, please use .load() before .stout_smear().")
 
         # core.smear(gauge.latt_info.size, gauge, nstep, rho)
-        gauge.smearSTOUT(nstep, rho, dir=3)
+        gauge.smearSTOUT(nstep, rho, dir_ignore=3)
         self.gauge_field_smear = gauge
 
     def stout_smear(self, nstep, rho):

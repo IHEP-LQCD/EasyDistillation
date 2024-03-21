@@ -196,7 +196,7 @@ class DisplacementElementalGenerator:
         latt_size = gauge.latt_size
         Lx, Ly, Lz, Lt = latt_size
 
-        gauge.smearSTOUT(nstep, rho, dir=3)
+        gauge.smearSTOUT(nstep, rho, dir_ignore=3)
 
         self._U = backend.asarray(gauge.lexico()[: Nd - 1])
 

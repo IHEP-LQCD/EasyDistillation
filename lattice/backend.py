@@ -39,7 +39,7 @@ def check_QUDA(grid_size: List[int] = None, backend: Literal["cupy", "torch"] = 
         try:
             import pyquda
 
-            pyquda.init(grid_size, backend, resource_path)
+            pyquda.init(grid_size, backend=backend, resource_path=resource_path)
             print(pyquda.__file__)
             if pyquda.__version__ < "0.5.2":
                 raise ImportError(f"PyQuda version {pyquda.__version__} < Required 0.5.0")
