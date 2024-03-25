@@ -3,6 +3,7 @@ import os
 import random
 from time import sleep
 from typing import Iterator
+from mpi4py import MPI
 
 if os.name == "nt":
     import msvcrt
@@ -62,6 +63,8 @@ class Dispatch:
     def __init__(self, filename: str, suffix: str = None) -> None:
         tmp = f"{filename}.{rand(suffix=suffix)}.tmp"
         self.tmp = tmp
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
         try:
             with AtomicOpen(tmp, "x+") as f:
                 with open(filename, "r") as fi:
@@ -70,17 +73,26 @@ class Dispatch:
             pass
 
     def __iter__(self) -> Iterator[str]:
+        comm = self.comm
+        rank = self.rank
         while True:
-            with AtomicOpen(self.tmp, "r+") as f:
-                lines = f.readlines()
-                f.seek(0)
-                if lines == []:
-                    line = None
-                else:
-                    line = lines.pop(0).strip()
-                    f.writelines(lines)
-                    f.truncate()
+            if rank == 0:
+                with AtomicOpen(self.tmp, "r+") as f:
+                    lines = f.readlines()
+                    f.seek(0)
+                    if lines == []:
+                        line = None
+                    else:
+                        line = lines.pop(0).strip()
+                        f.writelines(lines)
+                        f.truncate()
+            else:
+                line = "dummy"
+            line = comm.bcast(line, root=0)
+            if line is "dummy":
+                raise ValueError(f"MPI broadcast error at rank {rank}!")
             if line is None:
+                print("Dispatch: finish all!")
                 break
             elif line == "":
                 continue
