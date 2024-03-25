@@ -39,6 +39,7 @@ perambulator = PerambulatorGenerator(
     clover_coeff_r=2.32582045,
     t_boundary=-1,  # for this test lattice, use t_boundary=-1
     multigrid=False,
+    contract_prec="<c16"
 )  # arbitrary dirac parameters
 
 perambulator.dirac.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
