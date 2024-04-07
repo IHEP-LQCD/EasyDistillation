@@ -53,6 +53,43 @@ class Operator:
         self.name = name
         self.parts = parts
 
+    def __str__(self) -> str:
+        ret = ""
+        ret += f"============== operator {self.name}, components: ===============\n"
+        for irow in range(len(self.parts) // 2):
+            ret += f"   gamma idx = {str(self.parts[2*irow])}, \n"
+            for iterm in self.parts[2 * irow + 1]:
+                coeff, derivative_idx, momentum = iterm
+                ret += f"       > coeff = {coeff}, derivative_idx = {derivative_idx}, momentum = {momentum}\n"
+        ret += f"================================================================\n"
+        return ret
+
+    def set_gamma(self, i_row, gamma_idx):
+        """
+        Set gamma indix for irow-th InsertionRow.
+        """
+        self.parts[2 * i_row] = gamma_idx
+
+    def set_derivative(self, i_row, i_term, deriv_idx):
+        """
+        Set derivative indix for i-th term of  i-th InsertionRow.
+        """
+        self.parts[2 * i_row + 1][i_term][1] = deriv_idx
+
+
+class OperatorDisplacement(Operator):
+    def __init__(
+        self, name: str, insertion_rows: List[InsertionRowMom], coefficients: List[float], distance: int
+    ) -> None:
+        super().__init__(name, insertion_rows, coefficients)
+        for irow in range(len(self.parts) // 2):
+            for iterm, term in enumerate(self.parts[2 * irow + 1]):
+                coeff, derivative_idx, momentum = term
+                assert (
+                    derivative_idx == 0
+                ), f"displacement operator cannot define at derivative_idx = {derivative_idx}, not 0"
+                self.set_derivative(i_row=irow, i_term=iterm, deriv_idx=distance)
+
 
 class InsertionRow:
     def __init__(self, row, momentum_dict) -> None:
