@@ -17,6 +17,7 @@ def twopoint(
     Lt: int,
     usedNe: int = None,
     perambulator_bw = None,
+    is_sum_over_source_t = True,
 ):
     '''
     Calculate the two-point correlation function C(t) for a given set of operators.
@@ -29,6 +30,7 @@ def twopoint(
     - Lt: Temporal extent of the lattice.
     - usedNe: Number of eigenvectors used in the calculation (None uses all available).
     - perambulator_bw: Optional FileData object for a different backward quark propagator.
+    - is_sum_over_source_t: return all t source correlator at axis = 0, default is True.
 
     If 'perambulator_bw' is not None, it is used for the backward quark propagator,
     allowing for calculations involving different quark flavors or configurations.
@@ -46,31 +48,32 @@ def twopoint(
     Nop = len(operators)
     Nt = len(timeslices)
 
-    ret = backend.zeros((Nop, Lt), "<c16")
+    ret = backend.zeros((Nop, Nt, Lt), "<c16") 
     phis = get_elemental_data(operators, elemental, usedNe)
-    for t in timeslices:
-        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+    for it, t_src in enumerate(timeslices):
+        tau = perambulator[t_src, :, :, :, :usedNe, :usedNe]
         # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         if perambulator_bw is None:
             tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         else:
-            tmp = perambulator_bw[t, :, :, :, :usedNe, :usedNe]
+            tmp = perambulator_bw[t_src, :, :, :, :usedNe, :usedNe]
             tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tmp.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
-            ret[idx] += contract(
+            ret[idx, it] = contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
                 tau_bw,
                 phi[0],
-                backend.roll(phi[1], -t, 1),
+                backend.roll(phi[1], -t_src, 1),
                 tau,
                 phi[0],
-                phi[1][:, t].conj(),
+                phi[1][:, t_src].conj(),
             )
         # print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
-    ret /= Nt
-
-    return -ret
+    if is_sum_over_source_t:
+        return -ret.mean(1)
+    else:
+        return -ret
 
 
 def twopoint_matrix(
@@ -80,15 +83,16 @@ def twopoint_matrix(
     timeslices: Iterable[int],
     Lt: int,
     usedNe: int = None,
+    is_sum_over_source_t = True,
 ):
     backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
 
-    ret = backend.zeros((Nop, Nop, Lt), "<c16")
+    ret = backend.zeros((Nop, Nop, Nt, Lt), "<c16")
     phis = get_elemental_data(operators, elemental, usedNe)
-    for t in timeslices:
-        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+    for it, t_src in enumerate(timeslices):
+        tau = perambulator[t_src, :, :, :, :usedNe, :usedNe]
         # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for isrc in range(Nop):
@@ -96,18 +100,21 @@ def twopoint_matrix(
                 phi_src = phis[isrc]
                 gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
                 phi_snk = phis[isnk]
-                ret[isrc, isnk] += contract(
+                ret[isrc, isnk, it] = contract(
                     "tijab,xjk,xtbc,tklcd,yli,yad->t",
                     tau_bw,
                     phi_snk[0],
-                    backend.roll(phi_snk[1], -t, 1),
+                    backend.roll(phi_snk[1], -t_src, 1),
                     tau,
                     gamma_src,
-                    phi_src[1][:, t].conj(),
+                    phi_src[1][:, t_src].conj(),
                 )
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
-    ret /= Nt
-    return -ret
+        print(f"t{t_src}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+    
+    if is_sum_over_source_t:
+        return -ret.mean(2)
+    else:
+        return -ret
 
 
 def twopoint_isoscalar(
@@ -118,6 +125,7 @@ def twopoint_isoscalar(
     Lt: int,
     usedNe: int = None,
     Nf: int = 2,
+    is_sum_over_source_t = True,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -125,37 +133,40 @@ def twopoint_isoscalar(
     if Lt != Nt:
         raise ValueError("Disconnect must compute full timeslices!")
 
-    connected = backend.zeros((Nop, Lt), "<c16")
+    connected = backend.zeros((Nop, Nt, Lt), "<c16")
     loop_src = backend.zeros((Nop, Lt), "<c16")
     loop_snk = backend.zeros((Nop, Lt), "<c16")
     phis = get_elemental_data(operators, elemental, usedNe)
 
-    for t in timeslices:
-        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+    # for t_src in timeslices:
+    for it, t_src in enumerate(timeslices):
+        tau = perambulator[t_src, :, :, :, :usedNe, :usedNe]
         # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
             gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi[0].conj(), gamma(8))
-            connected[idx] += contract(
+            connected[idx, it] = contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
                 tau_bw,
                 phi[0],
-                backend.roll(phi[1], -t, 1),
+                backend.roll(phi[1], -t_src, 1),
                 tau,
                 gamma_src,
-                phi[1][:, t].conj(),
+                phi[1][:, t_src].conj(),
             )
-            loop_src[idx, t] = contract("ijab,yji,yab", tau[0], gamma_src, phi[1][:, t].conj())
-            loop_snk[idx, t] = contract("ijab,xji,xba", tau[0], phi[0], phi[1][:, t])
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
-    connected /= Nt
+            loop_src[idx, t_src] = contract("ijab,yji,yab", tau[0], gamma_src, phi[1][:, t_src].conj())
+            loop_snk[idx, t_src] = contract("ijab,xji,xba", tau[0], phi[0], phi[1][:, t_src])
+        print(f"t{t_src}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
 
     disconnected = contract("xi, xj -> xij", loop_src, loop_snk)
-    for t in timeslices:
-        disconnected[:, t, :] = backend.roll(disconnected[:, t, :], -t, axis=1)
-    disconnected = disconnected.mean(1)
-    return -connected + Nf * disconnected
+    for t_src in timeslices:
+        disconnected[:, t_src, :] = backend.roll(disconnected[:, t_src, :], -t_src, axis=1)
+
+    if is_sum_over_source_t:
+        return (-connected + Nf * disconnected).mean(1)
+    else:
+        return (-connected + Nf * disconnected)
 
 
 def twopoint_isoscalar_matrix(
@@ -166,42 +177,47 @@ def twopoint_isoscalar_matrix(
     Lt: int,
     usedNe: int = None,
     Nf: int = 2,
+    is_sum_over_source_t = True,
 ):
     backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
+    if Lt != Nt:
+        raise ValueError("Disconnect must compute full timeslices!")
 
-    connected = backend.zeros((Nop, Nop, Lt), "<c16")
+    connected = backend.zeros((Nop, Nop, Nt, Lt), "<c16")
     loop_src = backend.zeros((Nop, Lt), "<c16")
     loop_snk = backend.zeros((Nop, Lt), "<c16")
     phis = get_elemental_data(operators, elemental, usedNe)
-    for t in timeslices:
-        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+    for it, t_src in enumerate(timeslices):
+        tau = perambulator[t_src, :, :, :, :usedNe, :usedNe]
         # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for isrc in range(Nop):
             phi_src = phis[isrc]
             gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
-            loop_src[isrc, t] = contract("ijab,yji,yab", tau[0], gamma_src, phi_src[1][:, t].conj())
-            loop_snk[isrc, t] = contract("ijab,xji,xba", tau[0], phi_src[0], phi_src[1][:, t])
+            loop_src[isrc, t_src] = contract("ijab,yji,yab", tau[0], gamma_src, phi_src[1][:, t_src].conj())
+            loop_snk[isrc, t_src] = contract("ijab,xji,xba", tau[0], phi_src[0], phi_src[1][:, t_src])
             for isnk in range(Nop):
                 phi_snk = phis[isnk]
-                connected[isrc, isnk] += contract(
+                connected[isrc, isnk, it] = contract(
                     "tijab,xjk,xtbc,tklcd,yli,yad->t",
                     tau_bw,
                     phi_snk[0],
-                    backend.roll(phi_snk[1], -t, 1),
+                    backend.roll(phi_snk[1], -t_src, 1),
                     tau,
                     gamma_src,
-                    phi_src[1][:, t].conj(),
+                    phi_src[1][:, t_src].conj(),
                 )
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
-    connected /= Nt
+        print(f"t{t_src}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+
     disconnected = contract("xi, yj -> xyij", loop_src, loop_snk)
-    for t in timeslices:
-        disconnected[:, :, t, :] = backend.roll(disconnected[:, :, t, :], -t, axis=2)
-    disconnected = disconnected.mean(2)
-    return -connected + Nf * disconnected
+    for t_src in timeslices:
+        disconnected[:, :, t_src, :] = backend.roll(disconnected[:, :, t_src, :], -t_src, axis=2)
+    if is_sum_over_source_t:
+        return (-connected + Nf * disconnected).mean(2)
+    else:
+        return (-connected + Nf * disconnected)
 
 
 def twopoint_matrix_multi_mom(
@@ -213,6 +229,7 @@ def twopoint_matrix_multi_mom(
     Lt: int,
     usedNe: int = None,
     insertions_coeff_list: List = None,
+    is_sum_over_source_t = True,
 ):
     backend = get_backend()
     Nmom = len(mom_list)
@@ -231,27 +248,30 @@ def twopoint_matrix_multi_mom(
                 op_snk_list.append(Operator("", [insertions[isnk](px, py, pz)], [insertions_coeff_list[isnk]]))
     Nterm = Nmom * Nop * Nop
 
-    ret = backend.zeros((Nterm, Lt), "<c16")
+    ret = backend.zeros((Nterm, Nt, Lt), "<c16")
     phis_src = get_elemental_data(op_src_list, elemental, usedNe)
     phis_snk = get_elemental_data(op_snk_list, elemental, usedNe)
-    for t in timeslices:
-        tau = perambulator[t, :, :, :, :usedNe, :usedNe]
+    for it, t_src in enumerate(timeslices):
+        tau = perambulator[t_src, :, :, :, :usedNe, :usedNe]
         # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
         tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
         for item in range(Nterm):
             phi_src = phis_src[item]
             gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi_src[0].conj(), gamma(8))
             phi_snk = phis_snk[item]
-            ret[item] += contract(
+            ret[item, it] = contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
                 tau_bw,
                 phi_snk[0],
-                backend.roll(phi_snk[1], -t, 1),
+                backend.roll(phi_snk[1], -t_src, 1),
                 tau,
                 gamma_src,
-                phi_src[1][:, t].conj(),
+                phi_src[1][:, t_src].conj(),
             )
-        print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
-    ret /= Nt
-    ret = ret.reshape((Nmom, Nop, Nop, Lt))
-    return -ret
+        print(f"t{t_src}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+    # ret /= Nt
+    ret = ret.reshape((Nmom, Nop, Nop, Nt, Lt))
+    if is_sum_over_source_t:
+        return -ret.mean(3)
+    else:
+        return -ret
