@@ -160,7 +160,7 @@ class PerambulatorGenerator:
             invert_time = perf_counter() - s
             s = perf_counter()
             VSV[:, :, :, :, eigen] = contract(
-                "ketzyxa,etzyxija->tijk", eigenvector[:, :, :, :, :, :, :].conj(), SV, optimize=True
+                "ketzyxa,etzyxija->tijk", backend.asarray(eigenvector[:, :, :, :, :, :, :]).conj(), backend.asarray(SV), optimize=True
             )
             contraction_time = perf_counter() - s
 
