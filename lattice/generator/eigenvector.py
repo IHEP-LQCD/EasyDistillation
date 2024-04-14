@@ -3,7 +3,7 @@ import functools
 from opt_einsum import contract
 
 from ..constant import Nc, Nd
-from ..backend import get_backend
+from ..backend import get_backend, check_QUDA
 
 
 def _Laplacian(F, U, U_dag, latt_size):
@@ -208,6 +208,7 @@ class EigenvectorGenerator:
 
         gauge.smearSTOUT(nstep, rho, dir_ignore=3)
 
+        self.gauge_quda = gauge
         self._U = backend.asarray(gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc)[: Nd - 1])
 
     def stout_smear(self, nstep, rho):
@@ -229,7 +230,7 @@ class EigenvectorGenerator:
                 self._stout_smear_ndarray(nstep, rho)
                 # self._stout_smear_ndarray_naive(nstep, rho)
 
-    def calc(self, t: int, apply_renorm_phase=True):
+    def laplacian_cupy_numpy(self, t: int, apply_renorm_phase: bool):
         backend = get_backend()
         if backend.__name__ == "numpy":
             from scipy.sparse import linalg
@@ -249,3 +250,68 @@ class EigenvectorGenerator:
             renorm_phase = backend.angle(evecs[:, 0])
             evecs *= backend.exp(-1.0j * renorm_phase)[:, None]
         return evecs.reshape(self.Ne, Lz, Ly, Lx, Nc), evals
+
+    def laplacian_quda(self, t: int, apply_renorm_phase: bool):
+        from pyquda import core, enum_quda, quda
+        from pyquda.pointer import ndarrayPointer
+        from pyquda.dirac import general
+
+        general.link_recon = 18
+        general.link_recon_sloppy = 18
+        from pyquda.field import LatticeGauge, LatticeInfo, LatticeStaggeredFermion, Nc
+        from pyquda.utils import io
+
+        import numpy as np
+
+        Lx, Ly, Lz, Lt = self.latt_size
+        Ne = self.Ne
+        tol = self.tol
+        n_kr = min(max(2 * Ne, Ne + 32), Lz * Ly * Lx * Nc - 1)
+        max_restarts = 10 * Lz * Ly * Lx * Nc // (n_kr - Ne)
+        gauge_lexico = np.zeros((Nd, 1, Lz, Ly, Lx, Nc, Nc), "<c16")
+        gauge_lexico[: Nd - 1] = self._U[:, t : t + 1].get()
+        gauge_tmp = LatticeGauge(LatticeInfo([Lx, Ly, Lz, 1], 1, 1), core.cb2(gauge_lexico, [1, 2, 3, 4]))
+        gauge_tmp.loadLaplace(3)
+        eig_param = quda.QudaEigParam()
+        gauge_tmp.pure_gauge.invert_param.verbosity = 0
+        eig_param.invert_param = gauge_tmp.pure_gauge.invert_param
+        # eig_param.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SILENT
+        eig_param.eig_type = enum_quda.QudaEigType.QUDA_EIG_TR_LANCZOS
+        eig_param.use_dagger = enum_quda.QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.use_norm_op = enum_quda.QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.use_pc = enum_quda.QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.compute_gamma5 = enum_quda.QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.spectrum = enum_quda.QudaEigSpectrumType.QUDA_SPECTRUM_SR_EIG
+        eig_param.n_ev = Ne
+        eig_param.n_kr = n_kr
+        eig_param.n_conv = Ne
+        eig_param.tol = tol
+        eig_param.vec_infile = b""
+        eig_param.vec_outfile = b""
+        eig_param.max_restarts = max_restarts
+
+        backend = get_backend()
+        evecs = backend.zeros((Ne, Lz * Ly * Lx * Nc), "<c16")
+        evals = np.zeros((Ne), "<c16")
+        quda.eigensolveQuda(ndarrayPointer(evecs, True), ndarrayPointer(evals), eig_param)
+        evecs = backend.asarray(core.lexico(evecs.reshape(Ne, 2, 1, Lz, Ly, Lx // 2, Nc).get(), [1, 2, 3, 4, 5], "<c16"))
+        evals = backend.asarray(evals) * 6  # times 6 for QUDA results
+
+        # [Ne, Lz * Ly * Lx, Nc]
+        # evecs = evecs.transpose(1, 0).reshape(self.Ne, -1)
+        if apply_renorm_phase:
+            renorm_phase = backend.angle(evecs[:, 0])
+            evecs *= backend.exp(-1.0j * renorm_phase)[:, None]
+        return evecs.reshape(self.Ne, Lz, Ly, Lx, Nc), evals.real
+
+    def calc(self, t: int, apply_renorm_phase: bool = True):
+        backend = get_backend()
+        # if False: #backend.__name__ == "cupy" and check_QUDA():
+        if backend.__name__ == "cupy" and check_QUDA():
+            print("Using QUDA Laplacian solver.")
+            return self.laplacian_quda(t, apply_renorm_phase)
+        elif backend.__name__ == "cupy" or backend.__name__ == "numpy":
+            print(f"Using {backend.__name__} Laplacian solver.")
+            return self.laplacian_cupy_numpy(t, apply_renorm_phase)
+        else:
+            raise NotImplementedError(f"Unsupport backend = {backend.__name__}.")
