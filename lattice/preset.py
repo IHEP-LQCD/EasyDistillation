@@ -129,6 +129,16 @@ class GaugeFieldIldg(IldgFile, GaugeField):
         return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
+class GaugeFieldBinary(BinaryFile, GaugeField):
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 16**3, 4, 3, 3]) -> None:
+        super().__init__()
+        GaugeField.__init__(self, FileMetaData(shape, "<c16", 0))
+        self.prefix = prefix
+        self.suffix = ".dat" if suffix is None else suffix
+
+    def load(self, key: str):
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
+
 class ElementalNpy(NdarrayFile, Elemental):
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [4, 123, 128, 70, 70], totNe: int = 70) -> None:
         super().__init__()
