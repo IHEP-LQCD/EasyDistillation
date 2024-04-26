@@ -73,6 +73,7 @@ class PerambulatorGenerator:
 
         self.gauge_field = gauge_field
         self.gauge_field_smear = None
+        self.gauge_field_new = None
         self.eigenvector = eigenvector
         self.dirac = core.getDirac(
             self.latt_info,
@@ -98,6 +99,7 @@ class PerambulatorGenerator:
         gx, gy, gz, gt = self.latt_info.grid_coord
         Ne = self.eigenvector.Ne
         self.gauge_field_smear = io.readQIOGauge(self.gauge_field.load(key).file)
+        self.gauge_field_new = True
 
         eigenvector_data = self.eigenvector.load(key)
         eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), self.contract_prec)
@@ -111,28 +113,30 @@ class PerambulatorGenerator:
         self._eigenvector_data = eigenvector_data_cb2
         set_backend(backend)
 
-    def _stout_smear_quda(self, nstep, rho):
+    def _stout_smear_quda(self, nstep: int, rho: float, dir_ignore: int):
         gauge = self.gauge_field_smear
         if self.gauge_field_smear is None:
             raise ValueError("Gauge not loaded, please use .load() before .stout_smear().")
 
-        gauge.smearSTOUT(nstep, rho, dir_ignore=3)
+        gauge.smearSTOUT(nstep, rho, dir_ignore)
         self.gauge_field_smear = gauge
 
-    def stout_smear(self, nstep, rho):
+    def stout_smear(self, nstep: int, rho: float, dir_ignore: int = 3):
         backend = get_backend()
         if backend.__name__ == "numpy":
             raise NotImplementedError("Ndarray stout smear not implement in PerambulatorGenerator.")
         elif backend.__name__ == "cupy":
             # __init__() has check_QUDA() before !
-            self._stout_smear_quda(nstep, rho)
+            self._stout_smear_quda(nstep, rho, dir_ignore)
 
     def calc(self, t: int):
         import cupy as cp
         backend = get_backend()
         from pyquda.field import LatticeFermion
 
-        self.dirac.loadGauge(self.gauge_field_smear)  # loadGauge after
+        if self.gauge_field_new:
+            self.dirac.loadGauge(self.gauge_field_smear)  # loadGauge after
+            self.gauge_field_new = False
 
         latt_info = self.latt_info
         Lx, Ly, Lz, Lt = latt_info.size
@@ -160,7 +164,7 @@ class PerambulatorGenerator:
             invert_time = perf_counter() - s
             s = perf_counter()
             VSV[:, :, :, :, eigen] = contract(
-                "ketzyxa,etzyxija->tijk", backend.asarray(eigenvector[:, :, :, :, :, :, :]).conj(), backend.asarray(SV), optimize=True
+                "ketzyxa,etzyxija->tijk", backend.asarray(eigenvector).conj(), backend.asarray(SV), optimize=True
             )
             contraction_time = perf_counter() - s
 

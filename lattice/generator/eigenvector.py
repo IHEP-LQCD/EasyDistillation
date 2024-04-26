@@ -253,13 +253,7 @@ class EigenvectorGenerator:
 
     def laplacian_quda(self, t: int, apply_renorm_phase: bool):
         from pyquda import core, enum_quda, quda
-        from pyquda.pointer import ndarrayPointer
-        from pyquda.dirac import general
-
-        general.link_recon = 18
-        general.link_recon_sloppy = 18
-        from pyquda.field import LatticeGauge, LatticeInfo, LatticeStaggeredFermion, Nc
-        from pyquda.utils import io
+        from pyquda.field import LatticeGauge, LatticeInfo, MultiLatticeStaggeredFermion, Nc
 
         import numpy as np
 
@@ -270,7 +264,8 @@ class EigenvectorGenerator:
         max_restarts = 10 * Lz * Ly * Lx * Nc // (n_kr - Ne)
         gauge_lexico = np.zeros((Nd, 1, Lz, Ly, Lx, Nc, Nc), "<c16")
         gauge_lexico[: Nd - 1] = self._U[:, t : t + 1].get()
-        gauge_tmp = LatticeGauge(LatticeInfo([Lx, Ly, Lz, 1], 1, 1), core.cb2(gauge_lexico, [1, 2, 3, 4]))
+        latt_info = LatticeInfo([Lx, Ly, Lz, 1], 1, 1)
+        gauge_tmp = LatticeGauge(latt_info, core.cb2(gauge_lexico, [1, 2, 3, 4]))
         gauge_tmp.loadLaplace(3)
         eig_param = quda.QudaEigParam()
         gauge_tmp.pure_gauge.invert_param.verbosity = 0
@@ -291,10 +286,10 @@ class EigenvectorGenerator:
         eig_param.max_restarts = max_restarts
 
         backend = get_backend()
-        evecs = backend.zeros((Ne, Lz * Ly * Lx * Nc), "<c16")
+        evecs = MultiLatticeStaggeredFermion(latt_info, Ne)
         evals = np.zeros((Ne), "<c16")
-        quda.eigensolveQuda(ndarrayPointer(evecs, True), ndarrayPointer(evals), eig_param)
-        evecs = backend.asarray(core.lexico(evecs.reshape(Ne, 2, 1, Lz, Ly, Lx // 2, Nc).get(), [1, 2, 3, 4, 5], "<c16"))
+        quda.eigensolveQuda(evecs.data_ptrs, evals, eig_param)
+        evecs = backend.asarray(evecs.lexico())
         evals = backend.asarray(evals) * 6  # times 6 for QUDA results
 
         # [Ne, Lz * Ly * Lx, Nc]
@@ -306,11 +301,11 @@ class EigenvectorGenerator:
 
     def calc(self, t: int, apply_renorm_phase: bool = True):
         backend = get_backend()
-        # if False: #backend.__name__ == "cupy" and check_QUDA():
-        if backend.__name__ == "cupy" and check_QUDA():
-            print("Using QUDA Laplacian solver.")
-            return self.laplacian_quda(t, apply_renorm_phase)
-        elif backend.__name__ == "cupy" or backend.__name__ == "numpy":
+        # Don't use QUDA's eigensolver because of some performance regression.
+        # if backend.__name__ == "cupy" and check_QUDA():
+        #     print("Using QUDA Laplacian solver.")
+        #     return self.laplacian_quda(t, apply_renorm_phase)
+        if backend.__name__ == "cupy" or backend.__name__ == "numpy":
             print(f"Using {backend.__name__} Laplacian solver.")
             return self.laplacian_cupy_numpy(t, apply_renorm_phase)
         else:
