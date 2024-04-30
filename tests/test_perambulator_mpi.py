@@ -30,7 +30,7 @@ from lattice import GaugeFieldIldg, EigenvectorNpy, Nc, Nd
 
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", ".lime", [Gt * Lt, Gz * Lz, Gy * Ly, Gx * Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(f"{test_dir}/", ".eigenvector.npy", [Gt * Lt, Gz * Lz, Gy * Ly, Gx * Lx, Nc], Ne)
+eigenvector = EigenvectorNpy(f"{test_dir}/", ".eigenvector.input.npy", [Gt * Lt, Gz * Lz, Gy * Ly, Gx * Lx, Nc], Ne)
 
 perambulator = PerambulatorGenerator(
     latt_size=latt_size,

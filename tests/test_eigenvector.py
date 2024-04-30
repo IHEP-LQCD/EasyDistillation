@@ -23,7 +23,7 @@ out_suffix = ".eigenvector.npy"
 
 
 def check(cfg, evecs, evals):
-    data_evecs_ref = EigenvectorNpy(out_prefix, out_suffix, [Lt, Ne, Lz, Ly, Lx, Nc], Ne).load(cfg)[:]
+    data_evecs_ref = EigenvectorNpy(out_prefix, ".eigenvector.ref.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne).load(cfg)[:]
     data_evals_ref = backend.load(F"{out_prefix}{cfg}.eigenvalue.npy")
     res = 0
     for t in range(Lt):

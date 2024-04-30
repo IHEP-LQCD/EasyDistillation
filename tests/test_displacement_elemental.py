@@ -18,7 +18,7 @@ Ne = 20
 distance = 8
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", R".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(f"{test_dir}/", R".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
+eigenvector = EigenvectorNpy(f"{test_dir}/", R".eigenvector.input.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
 
 mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 1, 2), (1, 1, 2)]
 num_mom = len(mom_list)

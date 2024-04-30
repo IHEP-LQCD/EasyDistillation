@@ -18,7 +18,7 @@ Ne = 20
 Nnabla = 2
 
 gauge_field = GaugeFieldIldg(f"{test_dir}/", R".lime", [Lt, Lz, Ly, Lx, Nd, Nc, Nc])
-eigenvector = EigenvectorNpy(f"{test_dir}/", R".eigenvector.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
+eigenvector = EigenvectorNpy(f"{test_dir}/", R".eigenvector.input.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne)
 
 num_deriv = (3 ** (Nnabla + 1) - 1) // 2
 mom_list = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (0, 0, 2), (0, 1, 2), (1, 1, 2)]
