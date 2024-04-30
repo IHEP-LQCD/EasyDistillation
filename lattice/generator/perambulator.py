@@ -155,6 +155,7 @@ class PerambulatorGenerator:
         from time import perf_counter
 
         for eigen in range(Ne):
+            cp.cuda.runtime.deviceSynchronize()
             s = perf_counter()
             for spin in range(Ns):
                 V = LatticeFermion(latt_info)  # V.data is double prec.
@@ -164,12 +165,15 @@ class PerambulatorGenerator:
                         eigenvector_dagger[eigen, :, t % Lt, :, :, :, :].conj()
                     )  # [Ne, etzyx, Nc]
                 SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dirac.invert(V).data.reshape(Vol, Ns, Nc)  # .get()
-
+            cp.cuda.runtime.deviceSynchronize()
             invert_time = perf_counter() - s
+
+            cp.cuda.runtime.deviceSynchronize()
             s = perf_counter()
             VSV[:, :, :, :, eigen] = contract(
                 "ketzyxa,etzyxija->tijk", backend.asarray(eigenvector_dagger), backend.asarray(SV), optimize=True
             )
+            cp.cuda.runtime.deviceSynchronize()
             contraction_time = perf_counter() - s
 
             # print for check device mem
