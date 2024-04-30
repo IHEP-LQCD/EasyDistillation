@@ -6,9 +6,10 @@ from ..constant import Nc, Ns, Nd
 from ..backend import set_backend, get_backend, check_QUDA
 from ..preset import GaugeField, Eigenvector
 
+
 class PerambulatorGenerator:
     """
-     Generate perambulators in distillation, 
+     Generate perambulators in distillation,
         based on PyQUDA + QUDA for GPU-accelerated computations.
 
     Parameters:
@@ -41,7 +42,7 @@ class PerambulatorGenerator:
     ------
     - This class requires PyQUDA + QUDA for GPU-accelerated computations.
     """
-        
+
     def __init__(
         self,
         latt_size: List[int],
@@ -89,12 +90,12 @@ class PerambulatorGenerator:
         self._VSV = backend.zeros((Lt, Ns, Ns, Ne, Ne), self.contract_prec)
 
     def load(self, key: str):
-        import numpy as np
+        # import numpy as np
         from pyquda import core
         from pyquda.utils import io
 
         backend = get_backend()
-        set_backend("numpy")
+        # set_backend("numpy")
         Lx, Ly, Lz, Lt = self.latt_info.size
         gx, gy, gz, gt = self.latt_info.grid_coord
         Ne = self.eigenvector.Ne
@@ -102,14 +103,21 @@ class PerambulatorGenerator:
         self.gauge_field_new = True
 
         eigenvector_data = self.eigenvector.load(key)
-        eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), self.contract_prec)
+        # eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), self.contract_prec)
+        eigenvector_data_cb2 = backend.zeros((Ne, Lt, Lz, Ly, Lx, Nc), self.contract_prec)
         for e in range(Ne):
             for t in range(Lt):
                 eigenvector_data_cb2[e, t] = eigenvector_data[
                     gt * Lt + t, e, gz * Lz : (gz + 1) * Lz, gy * Ly : (gy + 1) * Ly, gx * Lx : (gx + 1) * Lx
                 ]
-        # set eigenvector_data_cb2 on cpu mem
-        eigenvector_data_cb2 = np.asarray(core.cb2(eigenvector_data_cb2.reshape(Ne, Lt, Lz, Ly, Lx, Nc), [1, 2, 3, 4]))
+        # # set eigenvector_data_cb2 on host mem
+        # eigenvector_data_cb2 = np.asarray(core.cb2(eigenvector_data_cb2.reshape(Ne, Lt, Lz, Ly, Lx, Nc), [1, 2, 3, 4]))
+
+        # set eigenvector_data_cb2 on device mem
+        eigenvector_data_cb2 = backend.asarray(
+            core.cb2(eigenvector_data_cb2.reshape(Ne, Lt, Lz, Ly, Lx, Nc).get(), [1, 2, 3, 4])
+        )
+
         self._eigenvector_data = eigenvector_data_cb2
         set_backend(backend)
 
@@ -131,6 +139,7 @@ class PerambulatorGenerator:
 
     def calc(self, t: int):
         import cupy as cp
+
         backend = get_backend()
         from pyquda.field import LatticeFermion
 
@@ -150,6 +159,7 @@ class PerambulatorGenerator:
         VSV = self._VSV
 
         from time import perf_counter
+
         for eigen in range(Ne):
             s = perf_counter()
             for spin in range(Ns):
