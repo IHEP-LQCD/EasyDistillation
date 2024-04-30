@@ -90,12 +90,11 @@ class PerambulatorGenerator:
         self._VSV = backend.zeros((Lt, Ns, Ns, Ne, Ne), self.contract_prec)
 
     def load(self, key: str):
-        # import numpy as np
+        import numpy as np
         from pyquda import core
         from pyquda.utils import io
 
         backend = get_backend()
-        # set_backend("numpy")
         Lx, Ly, Lz, Lt = self.latt_info.size
         gx, gy, gz, gt = self.latt_info.grid_coord
         Ne = self.eigenvector.Ne
@@ -103,23 +102,18 @@ class PerambulatorGenerator:
         self.gauge_field_new = True
 
         eigenvector_data = self.eigenvector.load(key)
-        # eigenvector_data_cb2 = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), self.contract_prec)
-        eigenvector_data_cb2 = backend.zeros((Ne, Lt, Lz, Ly, Lx, Nc), self.contract_prec)
+        eigenvector_data_dagger = np.zeros((Ne, Lt, Lz, Ly, Lx, Nc), self.contract_prec)
+        # read data into host memory
+        # save V^\dag here to save device memory
+        set_backend("numpy")
         for e in range(Ne):
             for t in range(Lt):
-                eigenvector_data_cb2[e, t] = eigenvector_data[
+                eigenvector_data_dagger[e, t] = eigenvector_data[
                     gt * Lt + t, e, gz * Lz : (gz + 1) * Lz, gy * Ly : (gy + 1) * Ly, gx * Lx : (gx + 1) * Lx
-                ]
-        # # set eigenvector_data_cb2 on host mem
-        # eigenvector_data_cb2 = np.asarray(core.cb2(eigenvector_data_cb2.reshape(Ne, Lt, Lz, Ly, Lx, Nc), [1, 2, 3, 4]))
-
-        # set eigenvector_data_cb2 on device mem
-        eigenvector_data_cb2 = backend.asarray(
-            core.cb2(eigenvector_data_cb2.reshape(Ne, Lt, Lz, Ly, Lx, Nc).get(), [1, 2, 3, 4])
-        )
-
-        self._eigenvector_data = eigenvector_data_cb2
+                ].conj()
         set_backend(backend)
+        # set eigenvector_data_cb2 on device mem
+        self._eigenvector_data_dagger = backend.asarray(core.cb2(eigenvector_data_dagger, [1, 2, 3, 4]))
 
     def _stout_smear_quda(self, nstep: int, rho: float, dir_ignore: int):
         gauge = self.gauge_field_smear
@@ -151,7 +145,7 @@ class PerambulatorGenerator:
         Lx, Ly, Lz, Lt = latt_info.size
         Vol = Lx * Ly * Lz * Lt
         Ne = self.eigenvector.Ne
-        eigenvector = self._eigenvector_data
+        eigenvector_dagger = self._eigenvector_data_dagger
         dirac = self.dirac
         gx, gy, gz, gt = self.latt_info.grid_coord
 
@@ -167,14 +161,14 @@ class PerambulatorGenerator:
                 data = V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
                 if gt * Lt <= t and (gt + 1) * Lt > t:
                     data[:, t % Lt, :, :, :, spin, :] = backend.asarray(
-                        eigenvector[eigen, :, t % Lt, :, :, :, :]
+                        eigenvector_dagger[eigen, :, t % Lt, :, :, :, :].conj()
                     )  # [Ne, etzyx, Nc]
                 SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dirac.invert(V).data.reshape(Vol, Ns, Nc)  # .get()
 
             invert_time = perf_counter() - s
             s = perf_counter()
             VSV[:, :, :, :, eigen] = contract(
-                "ketzyxa,etzyxija->tijk", backend.asarray(eigenvector).conj(), backend.asarray(SV), optimize=True
+                "ketzyxa,etzyxija->tijk", backend.asarray(eigenvector_dagger), backend.asarray(SV), optimize=True
             )
             contraction_time = perf_counter() - s
 
