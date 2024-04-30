@@ -1,0 +1,9 @@
+tests/weak_field.perambulator.npy filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.elemental.npy filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.displacement_elemental.npy filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.eigenvalue.npy filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.eigenvector.input.npy filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.eigenvector.ref.npy filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.npy filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.bin filter=lfs diff=lfs merge=lfs -text
+tests/weak_field.lime filter=lfs diff=lfs merge=lfs -text
