@@ -1,4 +1,5 @@
 from io import SEEK_CUR, BufferedReader
+import mmap
 import re
 import struct
 from time import time
@@ -52,11 +53,21 @@ class IldgFileData(FileData):
         if isinstance(key, int):
             key = (key,)
         s = time()
-        ret = backend.asarray(
-            numpy.memmap(self.file, dtype=self.dtype, mode="r", offset=self.offset, shape=tuple(self.shape))[key]
-            .copy()
-            .astype("<c16")
-        )
+        # ret = backend.asarray(
+        #     numpy.memmap(self.file, dtype=self.dtype, mode="r", offset=self.offset, shape=tuple(self.shape))[key]
+        #     .copy()
+        #     .astype("<c16")
+        # )
+        start = self.offset - self.offset % mmap.ALLOCATIONGRANULARITY
+        offset = self.offset - start
+        with open(self.file, "rb") as f:
+            with mmap.mmap(
+                f.fileno(), offset + int(numpy.prod(self.shape)) * self.bytes, access=mmap.ACCESS_READ, offset=start
+            ) as mm:
+                file = numpy.ndarray.__new__(
+                    numpy.memmap, shape=tuple(self.shape), dtype=self.dtype, buffer=mm, offset=offset
+                )
+                ret = backend.asarray(file[key].copy().astype("<c16"))
         self.timeInSec += time() - s
         self.sizeInByte += ret.nbytes
         return ret

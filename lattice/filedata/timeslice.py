@@ -1,4 +1,5 @@
 from io import BufferedReader
+import mmap
 import re
 import struct
 from time import time
@@ -71,17 +72,28 @@ class QDPLazyDiskMapObjFileData(FileData):
             raise IndexError(f"index {key} is out of bounds for axes")
         else:
             s = time()
-            ret = backend.asarray(
-                numpy.memmap(
-                    self.file,
-                    dtype=self.dtype,
-                    mode="r",
-                    offset=self.offsets[key[: self.extra]],
-                    shape=tuple(self.shape),
-                )[key[self.extra :]]
-                .copy()
-                .astype("<c8")
-            )
+            # ret = backend.asarray(
+            #     numpy.memmap(
+            #         self.file,
+            #         dtype=self.dtype,
+            #         mode="r",
+            #         offset=self.offsets[key[: self.extra]],
+            #         shape=tuple(self.shape),
+            #     )[key[self.extra :]]
+            #     .copy()
+            #     .astype("<c8")
+            # )
+            self_offset = self.offsets[key[: self.extra]]
+            start = self_offset - self_offset % mmap.ALLOCATIONGRANULARITY
+            offset = self_offset - start
+            with open(self.file, "rb") as f:
+                with mmap.mmap(
+                    f.fileno(), offset + int(numpy.prod(self.shape)) * self.bytes, access=mmap.ACCESS_READ, offset=start
+                ) as mm:
+                    file = numpy.ndarray.__new__(
+                        numpy.memmap, shape=tuple(self.shape), dtype=self.dtype, buffer=mm, offset=offset
+                    )
+                    ret = backend.asarray(file[key[self.extra :]].copy().astype("<c8"))
             self.time_in_sec += time() - s
             self.size_in_byte += ret.nbytes
             return ret

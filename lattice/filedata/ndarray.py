@@ -1,3 +1,4 @@
+import mmap
 from time import time
 from typing import Tuple
 
@@ -23,7 +24,26 @@ class NdarrayFileData(FileData):
         #         self.file,
         #     )[key]
         # )
-        ret = backend.asarray(numpy.load(self.file, mmap_mode="r")[key].copy())
+        # ret = backend.asarray(numpy.load(self.file, mmap_mode="r")[key].copy())
+        with open(self.file, "rb") as f:
+            N = len(numpy.lib.format.MAGIC_PREFIX) + 2
+            magic = f.read(N)
+            assert magic[:-2] == numpy.lib.format.MAGIC_PREFIX
+            major, minor = magic[-2:]
+            version = (major, minor)
+            assert version in [(1, 0), (2, 0)]
+            shape, fortran_order, dtype = numpy.lib.format._read_array_header(f, version)
+            assert not fortran_order
+            self_offset = f.tell()
+            start = self_offset - self_offset % mmap.ALLOCATIONGRANULARITY
+            offset = self_offset - start
+            with mmap.mmap(
+                f.fileno(), offset + int(numpy.prod(shape)) * dtype.itemsize, access=mmap.ACCESS_READ, offset=start
+            ) as mm:
+                file = numpy.ndarray.__new__(
+                    numpy.memmap, shape=tuple(shape), dtype=dtype, buffer=mm, offset=offset
+                )
+                ret = backend.asarray(file[key].copy())
         self.time_in_sec += time() - s
         self.size_in_byte += ret.nbytes
         return ret

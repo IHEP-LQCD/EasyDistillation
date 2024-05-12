@@ -1,3 +1,4 @@
+import mmap
 import re
 from time import time
 from typing import Tuple
@@ -45,9 +46,17 @@ class BinaryFileData(FileData):
         #         offset=0,
         #     )[key]
         # )
-        ret = backend.asarray(
-            numpy.memmap(self.file, dtype=self.dtype, mode="r", offset=0, shape=tuple(self.shape))[key].copy()
-        )
+        # ret = backend.asarray(
+        #     numpy.memmap(self.file, dtype=self.dtype, mode="r", offset=0, shape=tuple(self.shape))[key].copy()
+        # )
+        with open(self.file, "rb") as f:
+            with mmap.mmap(
+                f.fileno(), int(numpy.prod(self.shape)) * self.bytes, access=mmap.ACCESS_READ, offset=0
+            ) as mm:
+                file = numpy.ndarray.__new__(
+                    numpy.memmap, shape=tuple(self.shape), dtype=self.dtype, buffer=mm, offset=0
+                )
+                ret = backend.asarray(file[key].copy())
         self.time_in_sec += time() - s
         self.size_in_byte += ret.nbytes
         return ret
