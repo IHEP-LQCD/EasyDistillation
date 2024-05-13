@@ -34,7 +34,7 @@ Ne = 20
 Ns = 4
 
 elemental = preset.ElementalNpy(f"{test_dir}/", ".elemental.npy", [13, 6, Lt, Ne, Ne], Ne)
-perambulator = preset.PerambulatorNpy(f"{test_dir}/", ".perambulators.npy", [Lt, Lt, Ns, Ns, Ne, Ne], Ne)
+perambulator = preset.PerambulatorNpy(f"{test_dir}/", ".perambulator.npy", [Lt, Lt, Ns, Ns, Ne, Ne], Ne)
 
 cfg = "weak_field"
 e = elemental.load(cfg)
