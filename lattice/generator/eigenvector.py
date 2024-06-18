@@ -243,9 +243,13 @@ class EigenvectorGenerator:
         Laplacian = functools.partial(_Laplacian, U=U, U_dag=U_dag, latt_size=self.latt_size)
         A = linalg.LinearOperator((Lz * Ly * Lx * Nc, Lz * Ly * Lx * Nc), matvec=Laplacian, matmat=Laplacian)
         evals, evecs = linalg.eigsh(A, self.Ne, which="SA", tol=self.tol)
+        evecs = evecs.transpose(1, 0).reshape(self.Ne, -1)
+        
+        # sort eigenvalues additionally
+        argsort = backend.argsort(evals)
+        evals, evecs =evals[argsort], evecs[argsort]
 
         # [Ne, Lz * Ly * Lx, Nc]
-        evecs = evecs.transpose(1, 0).reshape(self.Ne, -1)
         if apply_renorm_phase:
             renorm_phase = backend.angle(evecs[:, 0])
             evecs *= backend.exp(-1.0j * renorm_phase)[:, None]
