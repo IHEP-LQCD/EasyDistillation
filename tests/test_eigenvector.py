@@ -24,14 +24,14 @@ out_suffix = ".eigenvector.npy"
 
 def check(cfg, evecs, evals):
     data_evecs_ref = EigenvectorNpy(out_prefix, ".eigenvector.ref.npy", [Lt, Ne, Lz, Ly, Lx, Nc], Ne).load(cfg)[:]
-    data_evals_ref = backend.load(F"{out_prefix}{cfg}.eigenvalue.npy")
+    data_evals_ref = backend.load(f"{out_prefix}{cfg}.eigenvalue.npy")
     res = 0
     for t in range(Lt):
         for e in range(Ne):
             phase = data_evecs_ref[t, e].reshape(-1)[0] / evecs[t, e].reshape(-1)[0]
             res += backend.linalg.norm(data_evecs_ref[t, e] / evecs[t, e] / phase - 1)
         print(f"Test cfg {cfg}, t = {t}, res = {res}")
-    
+
     print(f"Test cfg {cfg}, eigen values, res = {backend.linalg.norm(data_evals_ref - evals)}")
 
 
