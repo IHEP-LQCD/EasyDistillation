@@ -262,20 +262,24 @@ class EigenvectorGenerator:
         latt_info = LaplaceLatticeInfo([Lx, Ly, Lz, 1])
         Lx, Ly, Lz, Lt = latt_info.size
         gauge_tmp = LatticeGauge(latt_info, backend.asarray(cb2(self._U[:, t : t + 1].get(), [1, 2, 3, 4])))
-        gauge_tmp.loadLaplace(3)
-        gauge_tmp.pure_gauge.invert_param.verbosity = 0
+        gauge_tmp.ensurePureGauge()
+        gauge_tmp.pure_gauge.loadGauge(gauge_tmp)
 
         def Laplacian(x):
             x = x.reshape(Lz * Ly * Lx * Nc, -1)
             b = backend.zeros_like(x, "<c16")
             for i in range(x.shape[1]):
-                b[:, i] = gauge_tmp.laplace(LatticeStaggeredFermion(latt_info, x[:, i])).data.reshape(Lz * Ly * Lx * Nc)
+                b[:, i] = gauge_tmp.pure_gauge.laplace(LatticeStaggeredFermion(latt_info, x[:, i]), 3).data.reshape(
+                    Lz * Ly * Lx * Nc
+                )
             return b
 
         A = linalg.LinearOperator((Lz * Ly * Lx * Nc, Lz * Ly * Lx * Nc), matvec=Laplacian, matmat=Laplacian)
         evals, evecs = linalg.eigsh(A, self.Ne, which="SA", tol=self.tol)
         evals *= 2 * (Nd - 1)
         evecs = evecs.transpose(1, 0).reshape(self.Ne, -1)
+
+        gauge_tmp.pure_gauge.freeGauge()
 
         # sort eigenvalues additionally
         argsort = backend.argsort(evals)
