@@ -26,6 +26,7 @@ def twopoint_mom2(
     Lt: int,
     usedNe: int = None,
     func = twopoint,
+    **kwargs,
 ):
     operators = get_mom2_oprator(insertion_row, mom2)
-    return func([operators], elemental, perambulator, timeslices, Lt, usedNe)
+    return func([operators], elemental, perambulator, timeslices, Lt, usedNe, **kwargs)
