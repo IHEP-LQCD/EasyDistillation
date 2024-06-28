@@ -31,15 +31,15 @@ momlist = [
 ]
 
 elemental = preset.ElementalNpy(
-    "/dg_hpc/LQCD/jiangxiangyu/chkDeriv/DATA/light.20200720.b20.16_128/04.meson/",
+    "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/04.meson.deriv1.mom9/",
     ".stout.n20.f0.12.nev70.meson.npy",
-    [128, 13, 123, 70, 70],
+    [4, 123, 128, 70, 70],
     70,
 )
 
-perambulator_charm = preset.PerambulatorBinary(
+perambulator_charm = preset.PerambulatorNpy(
     "/dg_hpc/LQCD/DATA/light.20200720.b20.16_128/03.perambulator.charm/",
-    ".stout.n20.f0.12.nev70.charm.peram",
+    ".stout.n20.f0.12.nev70.charm.peram.npy",
     [128, 128, 4, 4, 70, 70],
     70,
 )
