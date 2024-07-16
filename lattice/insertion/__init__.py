@@ -79,8 +79,9 @@ class Operator:
 
 class OperatorDisplacement(Operator):
     def __init__(
-        self, name: str, insertion_rows: List[InsertionRowMom], coefficients: List[float], distance: int
+        self, name: str, insertion_rows: List[InsertionRowMom], coefficients: List[float], distances: List[int]
     ) -> None:
+        assert len(insertion_rows) == len(distances)
         super().__init__(name, insertion_rows, coefficients)
         for irow in range(len(self.parts) // 2):
             for iterm, term in enumerate(self.parts[2 * irow + 1]):
@@ -88,7 +89,7 @@ class OperatorDisplacement(Operator):
                 assert (
                     derivative_idx == 0
                 ), f"displacement operator cannot define at derivative_idx = {derivative_idx}, not 0"
-                self.set_derivative(i_row=irow, i_term=iterm, deriv_idx=distance)
+                self.set_derivative(i_row=irow, i_term=iterm, deriv_idx=distances[irow])
 
 
 class InsertionRow:
