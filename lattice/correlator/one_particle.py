@@ -2,7 +2,7 @@ from typing import Iterable, List
 
 from opt_einsum import contract
 
-from ..insertion import Operator, InsertionRow
+from ..insertion import Operator, OperatorDisplacement, InsertionRow
 from ..insertion.gamma import gamma
 from ..data import get_elemental_data
 from ..filedata.abstract import FileData
@@ -230,6 +230,7 @@ def twopoint_matrix_multi_mom(
     usedNe: int = None,
     insertions_coeff_list: List = None,
     is_sum_over_source_t = True,
+    distance_list:List = None,
 ):
     backend = get_backend()
     Nmom = len(mom_list)
@@ -240,12 +241,18 @@ def twopoint_matrix_multi_mom(
     if insertions_coeff_list is None:
         insertions_coeff_list = [1] * len(insertions)
     assert len(insertions) == len(insertions_coeff_list)
+    if distance_list is not None:
+        assert len(distance_list) == len(insertions_coeff_list)
     for imom in range(Nmom):
         px, py, pz = mom_list[imom]
         for isrc in range(Nop):
             for isnk in range(Nop):
-                op_src_list.append(Operator("", [insertions[isrc](px, py, pz)], [insertions_coeff_list[isrc]]))
-                op_snk_list.append(Operator("", [insertions[isnk](px, py, pz)], [insertions_coeff_list[isnk]]))
+                if distance_list is not None:
+                    op_src_list.append(OperatorDisplacement("", [insertions[isrc](px, py, pz)], [insertions_coeff_list[isrc]], distances=[distance_list[isrc]]))
+                    op_snk_list.append(OperatorDisplacement("", [insertions[isnk](px, py, pz)], [insertions_coeff_list[isnk]], distances=[distance_list[isnk]]))
+                else:
+                    op_src_list.append(Operator("", [insertions[isrc](px, py, pz)], [insertions_coeff_list[isrc]]))
+                    op_snk_list.append(Operator("", [insertions[isnk](px, py, pz)], [insertions_coeff_list[isnk]]))
     Nterm = Nmom * Nop * Nop
 
     ret = backend.zeros((Nterm, Nt, Lt), "<c16")
