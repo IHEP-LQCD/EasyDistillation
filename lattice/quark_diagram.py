@@ -80,11 +80,6 @@ class Particle:
 
 
 class Meson(Particle):
-    # cache is defined as a class variable of the Meson class. 
-    # cache is shared among all instances of Meson.
-    backend = get_backend()
-    cache: Dict[int, backend.ndarray] = {}
-
     def __init__(self, elemental, operator, source) -> None:
         self.elemental = elemental
         self.elemental_data = None
@@ -93,12 +88,24 @@ class Meson(Particle):
         self.dagger = source
         self.outward = 1
         self.inward = 1
+        # cache is defined as a class variable of the Meson class. 
+        # cache is shared among all instances of Meson.
+        backend = get_backend()
+        self.cache: Dict[int, backend.ndarray] = {}
+        
+
+    def __str__(self) -> str:
+        str = "### Meson ###\n"
+        str += FR"\n key = {self.key} \n"
+        str += self.operator.__str__()
+        str += FR"\n dagger = {self.dagger} \n"
+        return str
 
     def load(self, key, usedNe: int = None):
+        self.usedNe = usedNe
         if self.key != key:
             self.key = key
             self.elemental_data = self.elemental.load(key)
-            self.usedNe = usedNe
             self._make_cache()
 
     def _make_cache(self):
