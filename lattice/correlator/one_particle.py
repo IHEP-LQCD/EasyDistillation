@@ -60,13 +60,14 @@ def twopoint(
             tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tmp.conj(), gamma(15))
         for idx in range(Nop):
             phi = phis[idx]
+            gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi[0].conj(), gamma(8))
             ret[idx, it] = contract(
                 "tijab,xjk,xtbc,tklcd,yli,yad->t",
                 tau_bw,
                 phi[0],
                 backend.roll(phi[1], -t_src, 1),
                 tau,
-                phi[0],
+                gamma_src,
                 phi[1][:, t_src].conj(),
             )
         # print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
