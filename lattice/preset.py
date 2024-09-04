@@ -5,7 +5,7 @@ from .filedata.abstract import FileData, FileMetaData
 from .filedata.binary import BinaryFile
 from .filedata.ildg import IldgFile
 from .filedata.timeslice import QDPLazyDiskMapObjFile
-from .filedata.ndarray import NdarrayFile
+from .filedata.ndarray import NdarrayFile, NdarrayTimeslicesFile
 
 
 class GaugeField:
@@ -86,6 +86,19 @@ class PerambulatorBinary(BinaryFile, Perambulator):
 
 
 class PerambulatorNpy(NdarrayFile, Perambulator):
+    def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
+        super().__init__()
+        Perambulator.__init__(self, FileMetaData(shape, "<c8", 0), totNe)
+        self.prefix = prefix
+        self.suffix = ".stout.n20.f0.12.nev70.peram" if suffix is None else suffix
+
+    def load(self, key: str):
+        return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
+    
+class PerambulatorTimeslicesNpy(NdarrayTimeslicesFile, Perambulator):
+    ''' 
+        this Perambulator data class is modified for timeslide solely saved  data.
+    '''
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Perambulator.__init__(self, FileMetaData(shape, "<c8", 0), totNe)
