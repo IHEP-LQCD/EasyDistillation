@@ -18,6 +18,8 @@ class PerambulatorGenerator:
         dimensions of the lattice, order as [Lx, Ly, Lz, Lt].
     gauge_field : GaugeField.
     eigenvector : Eigenvector.
+    usedNe : int
+        The used eigenvectors number.
     mass : float
         The mass parameter for the Dirac operator.
     tol : float
@@ -51,6 +53,7 @@ class PerambulatorGenerator:
         mass: float,
         tol: float,
         maxiter: int,
+        usedNe: int = None,
         xi_0: float = 1.0,
         nu: float = 1.0,
         clover_coeff_t: float = 0.0,
@@ -70,7 +73,12 @@ class PerambulatorGenerator:
         backend = get_backend()
         assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
         Lx, Ly, Lz, Lt = self.latt_info.size
-        Ne = eigenvector.Ne
+        if usedNe is None:
+            usedNe = eigenvector.Ne
+        elif eigenvector.Ne != usedNe:
+            print(f"Warning: used Ne = {usedNe}, data maximum Ne = {eigenvector.Ne}")
+        self.usedNe = usedNe
+        Ne = usedNe
 
         self.gauge_field = gauge_field
         self.gauge_field_smear = None
@@ -97,7 +105,7 @@ class PerambulatorGenerator:
         backend = get_backend()
         Lx, Ly, Lz, Lt = self.latt_info.size
         gx, gy, gz, gt = self.latt_info.grid_coord
-        Ne = self.eigenvector.Ne
+        Ne = self.usedNe
         self.gauge_field_smear = io.readQIOGauge(self.gauge_field.load(key).file)
         self.gauge_field_new = True
 
@@ -144,7 +152,7 @@ class PerambulatorGenerator:
         latt_info = self.latt_info
         Lx, Ly, Lz, Lt = latt_info.size
         Vol = Lx * Ly * Lz * Lt
-        Ne = self.eigenvector.Ne
+        Ne = self.usedNe
         eigenvector_dagger = self._eigenvector_data_dagger
         dirac = self.dirac
         gx, gy, gz, gt = self.latt_info.grid_coord
