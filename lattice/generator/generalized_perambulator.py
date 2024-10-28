@@ -45,9 +45,6 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self.latt_size = latt_size
         self.gauge_field = gauge_field
         self.eigenvector = eigenvector
-        # self.dslash = core.getDslash(
-        #     latt_size, mass, tol, maxiter, xi_0, nu, clover_coeff_t, clover_coeff_r, anti_periodic_t, multigrid
-        # ) # deprecated
         self.dirac = core.getDirac(
             self.latt_info,
             mass,

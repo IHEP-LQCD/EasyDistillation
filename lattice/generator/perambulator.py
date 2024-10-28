@@ -18,8 +18,6 @@ class PerambulatorGenerator:
         dimensions of the lattice, order as [Lx, Ly, Lz, Lt].
     gauge_field : GaugeField.
     eigenvector : Eigenvector.
-    usedNe : int
-        The used eigenvectors number.
     mass : float
         The mass parameter for the Dirac operator.
     tol : float
@@ -39,6 +37,11 @@ class PerambulatorGenerator:
         The multigrid levels for the solver, defaults to None.
     contract_prec : str, optional
         The precision for the contraction operations, defaults to '<c16'.
+    usedNe : int, optianal
+        The used eigenvectors number, defaults to None, usedNe is eigenvector.Ne .
+    MRHS : bool, optional:
+        Use MRHS methods to solve perambulators, defaults to False.
+        This option requires more device memory.
 
     Notes:
     ------
@@ -53,7 +56,6 @@ class PerambulatorGenerator:
         mass: float,
         tol: float,
         maxiter: int,
-        usedNe: int = None,
         xi_0: float = 1.0,
         nu: float = 1.0,
         clover_coeff_t: float = 0.0,
@@ -61,6 +63,8 @@ class PerambulatorGenerator:
         t_boundary: Literal[1, -1] = 1,
         multigrid: List[List[int]] = None,
         contract_prec: str = "<c16",
+        usedNe: int = None,
+        MRHS: bool = False,
     ) -> None:
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
@@ -84,6 +88,7 @@ class PerambulatorGenerator:
         self.gauge_field_smear = None
         self.gauge_field_new = None
         self.eigenvector = eigenvector
+        self.MRHS = MRHS
         self.dirac = core.getDirac(
             self.latt_info,
             mass,
@@ -165,14 +170,28 @@ class PerambulatorGenerator:
         for eigen in range(Ne):
             cp.cuda.runtime.deviceSynchronize()
             s = perf_counter()
-            for spin in range(Ns):
-                V = LatticeFermion(latt_info)  # V.data is double prec.
-                data = V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
-                if gt * Lt <= t and (gt + 1) * Lt > t:
-                    data[:, t % Lt, :, :, :, spin, :] = backend.asarray(
-                        eigenvector_dagger[eigen, :, t % Lt, :, :, :, :].conj()
-                    )  # [Ne, etzyx, Nc]
-                SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dirac.invert(V).data.reshape(Vol, Ns, Nc)  # .get()
+            if self.MRHS:
+                print("Warning: use MRHS.")
+                from pyquda.core import MultiLatticeFermion
+                V_MRHS = MultiLatticeFermion(latt_info, Ns)
+                for spin in range(Ns):
+                    data = V_MRHS[spin].data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                    if gt * Lt <= t and (gt + 1) * Lt > t:
+                        data[:, t % Lt, :, :, :, spin, :] = backend.asarray(
+                            eigenvector_dagger[eigen, :, t % Lt, :, :, :, :].conj()
+                        )
+                SV_MRHS = dirac.invertMultiSrc(V_MRHS)
+                for spin in range(Ns):
+                    SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = SV_MRHS[spin].data.reshape(Vol, Ns, Nc)
+            else:
+                for spin in range(Ns):
+                    V = LatticeFermion(latt_info)  # V.data is double prec.
+                    data = V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
+                    if gt * Lt <= t and (gt + 1) * Lt > t:
+                        data[:, t % Lt, :, :, :, spin, :] = backend.asarray(
+                            eigenvector_dagger[eigen, :, t % Lt, :, :, :, :].conj()
+                        )  # [Ne, etzyx, Nc]
+                    SV.reshape(Vol, Ns, Ns, Nc)[:, :, spin, :] = dirac.invert(V).data.reshape(Vol, Ns, Nc)  # .get()
             cp.cuda.runtime.deviceSynchronize()
             invert_time = perf_counter() - s
 
