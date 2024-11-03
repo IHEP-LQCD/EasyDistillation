@@ -106,6 +106,8 @@ class Meson(Particle):
         if self.key != key:
             self.key = key
             self.elemental_data = self.elemental.load(key)
+            backend = get_backend()
+            self.cache: Dict[int, backend.ndarray] = {}
             self._make_cache()
 
     def _make_cache(self):
