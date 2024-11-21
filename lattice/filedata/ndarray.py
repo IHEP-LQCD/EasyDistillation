@@ -78,9 +78,9 @@ class NdarrayTimeslicesFileData(FileData):
         key = tuple(rest)
         import re
 
-        self.file = re.sub(r"\.t\?\?\?\.", f".t{tsrc_idx:03d}.", self.file)
+        t_file = re.sub(r"\.t\?\?\?\.", f".t{tsrc_idx:03d}.", self.file)
 
-        with open(self.file, "rb") as f:
+        with open(t_file, "rb") as f:
             N = len(numpy.lib.format.MAGIC_PREFIX) + 2
             magic = f.read(N)
             assert magic[:-2] == numpy.lib.format.MAGIC_PREFIX
