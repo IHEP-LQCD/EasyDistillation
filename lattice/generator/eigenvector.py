@@ -198,7 +198,7 @@ class EigenvectorGenerator:
         self._U[: Nd - 1] = U
 
     def _stout_smear_quda(self, nstep, rho):
-        from pyquda.utils import io
+        from pyquda_utils import io
 
         gauge = io.readQIOGauge(self._gauge_field_path)
         Lx, Ly, Lz, Lt = gauge.latt_info.size

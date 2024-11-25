@@ -30,7 +30,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
     ) -> None:
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
-        from pyquda import core
+        from pyquda_utils import core
         from pyquda.field import LatticeInfo
 
         self.latt_info = LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
@@ -70,7 +70,7 @@ class GeneralizedPerambulatorGenerator:  # TODO: Add parameters to do smearing b
         self._tf = None
 
     def load(self, key: str):
-        from pyquda.utils import io
+        from pyquda_utils import io
 
         self.dirac.loadGauge(io.readQIOGauge(self.gauge_field.load(key).file))
         self._eigenvector_data = self.eigenvector.load(key)

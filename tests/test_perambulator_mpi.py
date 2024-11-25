@@ -21,7 +21,7 @@ Ns = 4
 
 from lattice import PerambulatorGenerator, PerambulatorNpy
 from pyquda import enum_quda, getMPIRank
-from pyquda.core import gatherLattice
+from pyquda_utils.core import gatherLattice
 
 set_backend("cupy")
 backend = get_backend()

@@ -209,8 +209,7 @@ class ElementalGenerator:
 
     def _stout_smear_quda(self, nstep, rho):
         backend = get_backend()
-        from pyquda import core
-        from pyquda.utils import io
+        from pyquda_utils import io
 
         gauge = io.readQIOGauge(self._gauge_field_path)
         gauge.smearSTOUT(nstep, rho, dir_ignore=3)
