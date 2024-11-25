@@ -21,6 +21,8 @@ class ElementalGenerator:
         eigenvector: Eigenvector,
         num_nabla: int = 0,
         momentum_list: List[Tuple[int]] = [(0, 0, 0)],
+        stochastic: Tuple = None,
+        blending: bool = False,
     ) -> None:
         from ..insertion.derivative import derivative
 
@@ -30,10 +32,16 @@ class ElementalGenerator:
         if backend.__name__ == "cupy":
             import os
 
-            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu")) as f:
+            with open(
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu"
+                )
+            ) as f:
                 code = f.read()
             self.kernel = backend.RawModule(
-                code=code, options=("--std=c++11",), name_expressions=("stout_smear<double>",)
+                code=code,
+                options=("--std=c++11",),
+                name_expressions=("stout_smear<double>",),
             ).get_function(
                 "stout_smear<double>"
             )  # TODO: More template instance.
@@ -49,10 +57,57 @@ class ElementalGenerator:
         self.Ne = eigenvector.Ne
         self._U = None
         self._V = backend.zeros((Ne, Lz, Ly, Lx, Nc), "<c8")
-        self._VPV = backend.zeros((self.num_derivative, self.num_momentum, Ne, Ne), "<c16")
+        self._VPV = backend.zeros(
+            (self.num_derivative, self.num_momentum, Ne, Ne), "<c16"
+        )
         self._gauge_field_data = None
         self._eigenvector_data = None
         self._momentum_phase = MomentumPhase(latt_size)
+
+        if stochastic is not None:
+            totNe_list = stochastic[0]
+            if isinstance(stochastic[1], int):
+                usedNe_list = [stochastic[1]] * len(stochastic[0])
+            else:
+                usedNe_list = stochastic[1]
+            assert len(usedNe_list) == len(totNe_list)
+            assert (backend.array(usedNe_list) <= backend.array(totNe_list)).all()
+            assert sum(usedNe_list) == Ne
+            self.stocastic_coeff = backend.zeros((Ne, Ne))
+            start1 = 0
+            for nv1 in range(len(usedNe_list)):
+                usedNe1 = usedNe_list[nv1]
+                totNe1 = totNe_list[nv1]
+                start2 = 0
+                for nv2 in range(len(usedNe_list)):
+                    usedNe2 = usedNe_list[nv2]
+                    totNe2 = totNe_list[nv2]
+                    if blending:
+                        if nv1 != nv2:
+                            coeff = totNe1 * totNe2 / usedNe1 / usedNe2
+                            self.stocastic_coeff[
+                                start1 : start1 + usedNe1, start2 : start2 + usedNe2
+                            ] = backend.full((usedNe1, usedNe2), coeff)
+                        else:
+                            coeff1 = totNe1 / usedNe1
+                            coeff2 = coeff1 * (totNe1 - 1) / (usedNe1 - 1)
+                            matrix = self.stocastic_coeff[
+                                start1 : start1 + usedNe1, start2 : start2 + usedNe2
+                            ] = backend.full((usedNe1, usedNe2), coeff2)
+                            backend.fill_diagonal(matrix, coeff1)
+                            self.stocastic_coeff[
+                                start1 : start1 + usedNe1, start2 : start2 + usedNe2
+                            ] = matrix
+                    else:
+                        coeff = totNe1 * totNe2 / usedNe1 / usedNe2
+                        self.stocastic_coeff[
+                            start1 : start1 + usedNe1, start2 : start2 + usedNe2
+                        ] = backend.full((usedNe1, usedNe2), coeff)
+                    start2+=usedNe2
+                start1+=usedNe1
+        else:
+            self.stocastic_coeff = None
+        print(self.stocastic_coeff)
 
     def load(self, key: str):
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[: Nd - 1]
@@ -65,7 +120,10 @@ class ElementalGenerator:
         Uinv = backend.linalg.inv(U)
         while (
             backend.max(backend.abs(U - contract("...ab->...ba", Uinv.conj()))) > 1e-15
-            or backend.max(backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))) > 1e-15
+            or backend.max(
+                backend.abs(contract("...ab,...cb", U, U.conj()) - backend.identity(Nc))
+            )
+            > 1e-15
         ):
             U = 0.5 * (U + contract("...ab->...ba", Uinv.conj()))
             Uinv = backend.linalg.inv(U)
@@ -114,8 +172,13 @@ class ElementalGenerator:
             w_large = w[large]
             sinc_w[large] = backend.sin(w_large) / w_large
             f_denom = 1 / (9 * u_sq - w_sq)
-            f0 = ((u_sq - w_sq) * e_2iu + e_iu * (8 * u_sq * cos_w + 2j * u * (3 * u_sq + w_sq) * sinc_w)) * f_denom
-            f1 = (2 * u * e_2iu - e_iu * (2 * u * cos_w - 1j * (3 * u_sq - w_sq) * sinc_w)) * f_denom
+            f0 = (
+                (u_sq - w_sq) * e_2iu
+                + e_iu * (8 * u_sq * cos_w + 2j * u * (3 * u_sq + w_sq) * sinc_w)
+            ) * f_denom
+            f1 = (
+                2 * u * e_2iu - e_iu * (2 * u * cos_w - 1j * (3 * u_sq - w_sq) * sinc_w)
+            ) * f_denom
             f2 = (e_2iu - e_iu * (cos_w + 3j * u * sinc_w)) * f_denom
             f0[parity] = f0[parity].conj()
             f1[parity] = -f1[parity].conj()
@@ -137,7 +200,11 @@ class ElementalGenerator:
             for mu in range(Nd - 1):
                 for nu in range(Nd - 1):
                     if mu != nu:
-                        Q[mu] += U[nu] @ backend.roll(U[mu], -1, 3 - nu) @ backend.roll(U_dag[nu], -1, 3 - mu)
+                        Q[mu] += (
+                            U[nu]
+                            @ backend.roll(U[mu], -1, 3 - nu)
+                            @ backend.roll(U_dag[nu], -1, 3 - mu)
+                        )
                         Q[mu] += (
                             backend.roll(U_dag[nu], +1, 3 - nu)
                             @ backend.roll(U[mu], +1, 3 - nu)
@@ -146,7 +213,9 @@ class ElementalGenerator:
 
             Q = rho * Q @ U_dag
             Q = 0.5j * (Q.transpose(0, 1, 2, 3, 4, 6, 5).conj() - Q)
-            contract("...aa->...a", Q)[:] -= 1 / Nc * contract("...aa->...", Q)[..., None]
+            contract("...aa->...a", Q)[:] -= (
+                1 / Nc * contract("...aa->...", Q)[..., None]
+            )
             Q_sq = Q @ Q
             c0 = contract("...aa->...", Q @ Q_sq).real / 3
             c1 = contract("...aa->...", Q_sq).real / 2
@@ -179,13 +248,21 @@ class ElementalGenerator:
                 + e_iu_real * 2 * u * (3 * u_sq + w_sq) * sinc_w
             ) * f_denom
             f1_real = (
-                2 * u * e_2iu_real - e_iu_real * 2 * u * cos_w + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_real
+                - e_iu_real * 2 * u * cos_w
+                + e_iu_imag * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
             f1_imag = (
-                2 * u * e_2iu_imag + e_iu_imag * 2 * u * cos_w + e_iu_real * (3 * u_sq - w_sq) * sinc_w
+                2 * u * e_2iu_imag
+                + e_iu_imag * 2 * u * cos_w
+                + e_iu_real * (3 * u_sq - w_sq) * sinc_w
             ) * f_denom
-            f2_real = (e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w) * f_denom
-            f2_imag = (e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w) * f_denom
+            f2_real = (
+                e_2iu_real - e_iu_real * cos_w - e_iu_imag * 3 * u * sinc_w
+            ) * f_denom
+            f2_imag = (
+                e_2iu_imag + e_iu_imag * cos_w - e_iu_real * 3 * u * sinc_w
+            ) * f_denom
             f0_imag[parity] *= -1
             f1_real[parity] *= -1
             f2_imag[parity] *= -1
@@ -203,7 +280,9 @@ class ElementalGenerator:
 
         for _ in range(nstep):
             U_in = U.copy()
-            self.kernel((Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt))
+            self.kernel(
+                (Lx * Ly * Lz, Nd - 1, 1), (Lt, 1, 1), (U, U_in, rho, Lx, Ly, Lz, Lt)
+            )
 
         self._U = U
 
@@ -275,7 +354,19 @@ class ElementalGenerator:
                 right = self._nD(V, U[:, t], pick_right)
                 left = self._nD(V, U[:, t], pick_left[::-1])
                 for momentum_idx, momentum in enumerate(self.momentum_list):
-                    VPV[derivative_idx, momentum_idx] += contract(
-                        "zyx,ezyxc,fzyxc->ef", coeff * momentum_phase.get(momentum), left.conj(), right
-                    )
+                    if self.stocastic_coeff is None:
+                        VPV[derivative_idx, momentum_idx] += contract(
+                            "zyx,ezyxc,fzyxc->ef",
+                            coeff * momentum_phase.get(momentum),
+                            left.conj(),
+                            right,
+                        )
+                    else:
+                        VPV[derivative_idx, momentum_idx] += contract(
+                            "zyx,ezyxc,fzyxc,ef->ef",
+                            coeff * momentum_phase.get(momentum),
+                            left.conj(),
+                            right,
+                            self.stocastic_coeff,
+                        )
         return VPV
