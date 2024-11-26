@@ -16,10 +16,10 @@ def twopoint(
     timeslices: Iterable[int],
     Lt: int,
     usedNe: int = None,
-    perambulator_bw = None,
-    is_sum_over_source_t = True,
+    perambulator_bw=None,
+    is_sum_over_source_t=True,
 ):
-    '''
+    """
     Calculate the two-point correlation function C(t) for a given set of operators.
 
     Parameters:
@@ -43,12 +43,12 @@ def twopoint(
     - The backend for tensor operations is determined by the 'get_backend' function.
     - The function prints the data throughput rate for the perambulator at each timeslice.
     - The returned correlation function values are multiplied by -1 as per convention.
-    '''
+    """
     backend = get_backend()
     Nop = len(operators)
     Nt = len(timeslices)
 
-    ret = backend.zeros((Nop, Nt, Lt), "<c16") 
+    ret = backend.zeros((Nop, Nt, Lt), "<c16")
     phis = get_elemental_data(operators, elemental, usedNe)
     for it, t_src in enumerate(timeslices):
         tau = perambulator[t_src, :, :, :, :usedNe, :usedNe]
@@ -77,6 +77,64 @@ def twopoint(
         return -ret
 
 
+def twopoint_profile(
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    delta_t_slices: Iterable[int],
+    usedNe: int = None,
+    perambulator_bw=None,
+    is_sum_over_source_t: bool = True,
+    is_diagonal: bool = False,
+):
+    backend = get_backend()
+    Nop = len(operators)
+    Nt = len(timeslices)
+    Lt = len(delta_t_slices)
+    if is_diagonal:
+        ret = backend.zeros((Nop, Nt, Lt, usedNe), "<c16")
+    else:
+        ret = backend.zeros((Nop, Nt, Lt, usedNe, usedNe), "<c16")
+    phis = get_elemental_data(operators, elemental, usedNe)
+    for it, t_src in enumerate(timeslices):
+        tau = perambulator[t_src, delta_t_slices, :, :, :usedNe, :usedNe]
+        # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
+        if perambulator_bw is None:
+            tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
+        else:
+            tmp = perambulator_bw[t_src, :, :, :, :usedNe, :usedNe]
+            tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tmp.conj(), gamma(15))
+        for idx in range(Nop):
+            phi = phis[idx]
+            gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi[0].conj(), gamma(8))
+            if is_diagonal:
+                ret[idx, it] = contract(
+                    "tijab,xjk,xtbb,tklba,yli,yaa->ta",
+                    tau_bw,
+                    phi[0],
+                    backend.roll(phi[1], -t_src, 1)[:, delta_t_slices],
+                    tau,
+                    gamma_src,
+                    phi[1][:, t_src].conj(),
+                )
+            else:
+                ret[idx, it] = contract(
+                    "tijab,xjk,xtbc,tklcd,yli,yad->tad",
+                    tau_bw,
+                    phi[0],
+                    backend.roll(phi[1], -t_src, 1)[:, delta_t_slices],
+                    tau,
+                    gamma_src,
+                    phi[1][:, t_src].conj(),
+                )
+        # print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+    if is_sum_over_source_t:
+        return -ret.mean(1)
+    else:
+        return -ret
+
+
 def twopoint_matrix(
     operators: List[Operator],
     elemental: FileData,
@@ -84,7 +142,7 @@ def twopoint_matrix(
     timeslices: Iterable[int],
     Lt: int,
     usedNe: int = None,
-    is_sum_over_source_t = True,
+    is_sum_over_source_t=True,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -111,7 +169,7 @@ def twopoint_matrix(
                     phi_src[1][:, t_src].conj(),
                 )
         print(f"t{t_src}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
-    
+
     if is_sum_over_source_t:
         return -ret.mean(2)
     else:
@@ -126,7 +184,7 @@ def twopoint_isoscalar(
     Lt: int,
     usedNe: int = None,
     Nf: int = 2,
-    is_sum_over_source_t = True,
+    is_sum_over_source_t=True,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -167,7 +225,7 @@ def twopoint_isoscalar(
     if is_sum_over_source_t:
         return (-connected + Nf * disconnected).mean(1)
     else:
-        return (-connected + Nf * disconnected)
+        return -connected + Nf * disconnected
 
 
 def twopoint_isoscalar_matrix(
@@ -178,7 +236,7 @@ def twopoint_isoscalar_matrix(
     Lt: int,
     usedNe: int = None,
     Nf: int = 2,
-    is_sum_over_source_t = True,
+    is_sum_over_source_t=True,
 ):
     backend = get_backend()
     Nop = len(operators)
@@ -218,7 +276,7 @@ def twopoint_isoscalar_matrix(
     if is_sum_over_source_t:
         return (-connected + Nf * disconnected).mean(2)
     else:
-        return (-connected + Nf * disconnected)
+        return -connected + Nf * disconnected
 
 
 def twopoint_matrix_multi_mom(
@@ -230,8 +288,8 @@ def twopoint_matrix_multi_mom(
     Lt: int,
     usedNe: int = None,
     insertions_coeff_list: List = None,
-    is_sum_over_source_t = True,
-    distance_list:List = None,
+    is_sum_over_source_t=True,
+    distance_list: List = None,
 ):
     backend = get_backend()
     Nmom = len(mom_list)
@@ -249,11 +307,37 @@ def twopoint_matrix_multi_mom(
         for isrc in range(Nop):
             for isnk in range(Nop):
                 if distance_list is not None:
-                    op_src_list.append(OperatorDisplacement("", [insertions[isrc](px, py, pz)], [insertions_coeff_list[isrc]], distances=[distance_list[isrc]]))
-                    op_snk_list.append(OperatorDisplacement("", [insertions[isnk](px, py, pz)], [insertions_coeff_list[isnk]], distances=[distance_list[isnk]]))
+                    op_src_list.append(
+                        OperatorDisplacement(
+                            "",
+                            [insertions[isrc](px, py, pz)],
+                            [insertions_coeff_list[isrc]],
+                            distances=[distance_list[isrc]],
+                        )
+                    )
+                    op_snk_list.append(
+                        OperatorDisplacement(
+                            "",
+                            [insertions[isnk](px, py, pz)],
+                            [insertions_coeff_list[isnk]],
+                            distances=[distance_list[isnk]],
+                        )
+                    )
                 else:
-                    op_src_list.append(Operator("", [insertions[isrc](px, py, pz)], [insertions_coeff_list[isrc]]))
-                    op_snk_list.append(Operator("", [insertions[isnk](px, py, pz)], [insertions_coeff_list[isnk]]))
+                    op_src_list.append(
+                        Operator(
+                            "",
+                            [insertions[isrc](px, py, pz)],
+                            [insertions_coeff_list[isrc]],
+                        )
+                    )
+                    op_snk_list.append(
+                        Operator(
+                            "",
+                            [insertions[isnk](px, py, pz)],
+                            [insertions_coeff_list[isnk]],
+                        )
+                    )
     Nterm = Nmom * Nop * Nop
 
     ret = backend.zeros((Nterm, Nt, Lt), "<c16")

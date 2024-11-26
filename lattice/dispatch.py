@@ -99,6 +99,10 @@ class Dispatch:
             else:
                 yield line
 
+    def clear(self):
+        os.remove(self.tmp)
+        
+
 
 def combine(output: str, line: str):
     with AtomicOpen(output, "a") as f:
