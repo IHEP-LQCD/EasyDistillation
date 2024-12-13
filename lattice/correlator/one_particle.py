@@ -134,6 +134,48 @@ def twopoint_profile(
     else:
         return -ret
 
+def twopoint_indice(
+    operators: List[Operator],
+    elemental: FileData,
+    perambulator: FileData,
+    timeslices: Iterable[int],
+    delta_t_slices: Iterable[int],
+    usedNe: int = None,
+    perambulator_bw=None,
+    is_sum_over_source_t: bool = True,
+    is_diagonal: bool = False,
+):
+    backend = get_backend()
+    Nop = len(operators)
+    Nt = len(timeslices)
+    Lt = len(delta_t_slices)
+    ret = backend.zeros((Nop, Nt, usedNe, usedNe, Lt), "<c16")
+    phis = get_elemental_data(operators, elemental, usedNe)
+    for it, t_src in enumerate(timeslices):
+        tau = perambulator[t_src, delta_t_slices, :, :, :usedNe, :usedNe]
+        # tau = backend.roll(perambulator[t, :, :, :, :usedNe, :usedNe], -t, 0)
+        if perambulator_bw is None:
+            tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tau.conj(), gamma(15))
+        else:
+            tmp = perambulator_bw[t_src, :, :, :, :usedNe, :usedNe]
+            tau_bw = contract("ii,tjiba,jj->tijab", gamma(15), tmp.conj(), gamma(15))
+        for idx in range(Nop):
+            phi = phis[idx]
+            gamma_src = contract("ij,xkj,kl->xil", gamma(8), phi[0].conj(), gamma(8))
+            ret[idx, it] = contract(
+                "tijab,xjk,xtbb,tklba,yli,yaa->abt",
+                tau_bw,
+                phi[0],
+                backend.roll(phi[1], -t_src, 1)[:, delta_t_slices],
+                tau,
+                gamma_src,
+                phi[1][:, t_src].conj(),
+            )
+        # print(f"t{t}: {perambulator.size_in_byte/perambulator.time_in_sec/1024**2:.5f} MB/s")
+    if is_sum_over_source_t:
+        return -ret.mean(1)
+    else:
+        return -ret
 
 def twopoint_matrix(
     operators: List[Operator],
@@ -225,7 +267,7 @@ def twopoint_isoscalar(
     if is_sum_over_source_t:
         return (-connected + Nf * disconnected).mean(1)
     else:
-        return -connected + Nf * disconnected
+        return -connected+Nf * disconnected
 
 
 def twopoint_isoscalar_matrix(

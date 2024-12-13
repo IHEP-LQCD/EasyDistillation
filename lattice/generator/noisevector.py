@@ -21,6 +21,7 @@ class NoisevectorGenerator:
         self.highmode = highmode
         self.full_noisev = full_noisev
         self.eigv_list = dilution[0]
+        self.transfer_matrix=None
         if isinstance(dilution[1], int):
             self.noisev_list = [dilution[1]] * len(dilution[0])
         else:
@@ -34,7 +35,7 @@ class NoisevectorGenerator:
     def calc(self, seed=None):
         backend = get_backend()
         backend.random.seed(seed)
-        eigenvector = self._eigenvector_data[:, : sum(self.eigv_list)]
+        eigenvector = self._eigenvector_data
         Lt, Ne, Lz, Ly, Lx, Nc = eigenvector.shape
         noisev_shape = list(eigenvector.shape)
         if self.full_noisev:
@@ -55,9 +56,7 @@ class NoisevectorGenerator:
                 ]
             else:
                 if noisev_lenth == 1:
-                    random_array = backend.random.uniform(
-                        0, 2 * backend.pi, (Lt, eigv_lenth)
-                    )
+                    random_array = backend.random.uniform(0, 2 * backend.pi, (Lt, eigv_lenth))
                     transfer_matrix = backend.exp(1j * random_array)
                     noisev[:, noisev_start] = contract(
                         "tizyxa,ti->tzyxa",
@@ -67,22 +66,18 @@ class NoisevectorGenerator:
                 else:
                     if self.full_noisev:
                         noisev_lenth = eigv_lenth
-                    transfer_matrix = backend.zeros(
-                        (Lt, eigv_lenth, noisev_lenth), dtype="<c16"
-                    )
+                    transfer_matrix = backend.zeros((Lt, eigv_lenth, noisev_lenth), dtype="<c16")
                     for t in range(Lt):
-                        random_array = backend.random.randn(
+                        random_array = backend.random.randn(eigv_lenth, eigv_lenth) + 1j * backend.random.randn(
                             eigv_lenth, eigv_lenth
-                        ) + 1j * backend.random.randn(eigv_lenth, eigv_lenth)
+                        )
                         Q, R = backend.linalg.qr(random_array)
                         transfer_matrix[t] = Q[:, :noisev_lenth]
                     for t in range(Lt):
-                        noisev[t, noisev_start : noisev_start + noisev_lenth] = (
-                            contract(
-                                "izyxa,ij->jzyxa",
-                                eigenvector[t, eigv_start : eigv_start + eigv_lenth],
-                                transfer_matrix[t],
-                            )
+                        noisev[t, noisev_start : noisev_start + noisev_lenth] = contract(
+                            "izyxa,ij->jzyxa",
+                            eigenvector[t, eigv_start : eigv_start + eigv_lenth],
+                            transfer_matrix[t],
                         )
             noisev_start += noisev_lenth
             eigv_start += eigv_lenth
@@ -90,9 +85,7 @@ class NoisevectorGenerator:
         if self.highmode:
             noisev_eigensys = noisev_start
             while noisev_start < sum(self.noisev_list) + self.highmode:
-                random_vector = backend.random.randn(
-                    Lt, Lz, Ly, Lx, Nc
-                ) + 1j * backend.random.randn(Lt, Lz, Ly, Lx, Nc)
+                random_vector = backend.random.randn(Lt, Lz, Ly, Lx, Nc) + 1j * backend.random.randn(Lt, Lz, Ly, Lx, Nc)
                 for t in range(Lt):
                     random_vector[t] -= contract(
                         "zyxa,izyxa,iuvwb->uvwb",
@@ -107,9 +100,7 @@ class NoisevectorGenerator:
                         noisev[t, noisev_eigensys:noisev_start],
                     )
                 if backend.linalg.norm(random_vector) > 1e-10:
-                    noisev[:, noisev_start] = random_vector / backend.linalg.norm(
-                        random_vector
-                    )
+                    noisev[:, noisev_start] = random_vector / backend.linalg.norm(random_vector)
                     # print(eigenvector.shape, noisev.shape)
                     # eigenvector = backend.concatenate(
                     #     (eigenvector, noisev[:, noisev_start : noisev_start + 1]),
