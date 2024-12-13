@@ -134,6 +134,7 @@ def twopoint_profile(
     else:
         return -ret
 
+
 def twopoint_indice(
     operators: List[Operator],
     elemental: FileData,
@@ -176,6 +177,7 @@ def twopoint_indice(
         return -ret.mean(1)
     else:
         return -ret
+
 
 def twopoint_matrix(
     operators: List[Operator],
@@ -267,7 +269,7 @@ def twopoint_isoscalar(
     if is_sum_over_source_t:
         return (-connected + Nf * disconnected).mean(1)
     else:
-        return -connected+Nf * disconnected
+        return -connected + Nf * disconnected
 
 
 def twopoint_isoscalar_matrix(

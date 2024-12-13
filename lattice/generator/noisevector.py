@@ -101,7 +101,6 @@ class NoisevectorGenerator:
                     )
                 if backend.linalg.norm(random_vector) > 1e-10:
                     noisev[:, noisev_start] = random_vector / backend.linalg.norm(random_vector)
-                    # print(eigenvector.shape, noisev.shape)
                     # eigenvector = backend.concatenate(
                     #     (eigenvector, noisev[:, noisev_start : noisev_start + 1]),
                     #     axis=1,

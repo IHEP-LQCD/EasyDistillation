@@ -22,7 +22,7 @@ class ElementalGenerator:
         num_nabla: int = 0,
         momentum_list: List[Tuple[int]] = [(0, 0, 0)],
         dilution: Tuple = None,
-        blending: bool = True,
+        is_blending: bool = False,
     ) -> None:
         from ..insertion.derivative import derivative
 
@@ -58,7 +58,8 @@ class ElementalGenerator:
         self._eigenvector_data = None
         self._momentum_phase = MomentumPhase(latt_size)
 
-        if blending and dilution is not None:
+        if is_blending and (dilution is not None):
+            print("Using blending stochastic methods.")
             totNe_list = dilution[0]
             if isinstance(dilution[1], int):
                 usedNe_list = [dilution[1]] * len(dilution[0])
@@ -92,6 +93,9 @@ class ElementalGenerator:
                     start2 += usedNe2
                 start1 += usedNe1
             print(self.stocastic_coeff)
+        elif is_blending:
+            # TODO
+            raise ValueError("Dilution tuple is not defined.")
         else:
             self.stocastic_coeff = None
 
