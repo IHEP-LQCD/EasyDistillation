@@ -18,6 +18,7 @@ from .generator import (
     PerambulatorGenerator,
     GeneralizedPerambulatorGenerator,
     DensityPerambulatorGenerator,
+    NoisevectorGenerator,
 )
 from .quark_diagram import (
     QuarkDiagram,

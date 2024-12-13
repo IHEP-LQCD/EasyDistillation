@@ -89,7 +89,7 @@ class Dispatch:
             else:
                 line = "dummy"
             line = comm.bcast(line, root=0)
-            if line is "dummy":
+            if line == "dummy":
                 raise ValueError(f"MPI broadcast error at rank {rank}!")
             if line is None:
                 print("Dispatch: finish all!")
@@ -98,6 +98,9 @@ class Dispatch:
                 continue
             else:
                 yield line
+
+    def clear(self):
+        os.remove(self.tmp)
 
 
 def combine(output: str, line: str):

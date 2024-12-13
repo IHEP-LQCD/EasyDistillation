@@ -1,4 +1,5 @@
 from .eigenvector import EigenvectorGenerator
+from .noisevector import NoisevectorGenerator
 from .elemental import ElementalGenerator
 from .displacement_elemental import DisplacementElementalGenerator
 from .perambulator import PerambulatorGenerator

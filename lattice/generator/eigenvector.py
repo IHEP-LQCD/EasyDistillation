@@ -255,11 +255,18 @@ class EigenvectorGenerator:
 
     def laplacian_quda(self, t: int, apply_renorm_phase: bool):
         from cupyx.scipy.sparse import linalg
-        from pyquda.field import Nc, LatticeGauge, LaplaceLatticeInfo, LatticeStaggeredFermion, cb2, lexico
+        from pyquda.field import (
+            Nc,
+            LatticeGauge,
+            LatticeInfo,
+            LatticeStaggeredFermion,
+            cb2,
+            lexico,
+        )
 
         backend = get_backend()
         Lx, Ly, Lz, Lt = self.latt_size
-        latt_info = LaplaceLatticeInfo([Lx, Ly, Lz, 1])
+        latt_info = LatticeInfo([Lx, Ly, Lz, 1])
         Lx, Ly, Lz, Lt = latt_info.size
         gauge_tmp = LatticeGauge(latt_info, backend.asarray(cb2(self._U[:, t : t + 1].get(), [1, 2, 3, 4])))
         gauge_tmp.ensurePureGauge()

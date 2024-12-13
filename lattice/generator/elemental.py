@@ -21,6 +21,8 @@ class ElementalGenerator:
         eigenvector: Eigenvector,
         num_nabla: int = 0,
         momentum_list: List[Tuple[int]] = [(0, 0, 0)],
+        dilution: Tuple = None,
+        blending: bool = True,
     ) -> None:
         from ..insertion.derivative import derivative
 
@@ -33,7 +35,9 @@ class ElementalGenerator:
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "stout_smear.cu")) as f:
                 code = f.read()
             self.kernel = backend.RawModule(
-                code=code, options=("--std=c++11",), name_expressions=("stout_smear<double>",)
+                code=code,
+                options=("--std=c++11",),
+                name_expressions=("stout_smear<double>",),
             ).get_function(
                 "stout_smear<double>"
             )  # TODO: More template instance.
@@ -53,6 +57,43 @@ class ElementalGenerator:
         self._gauge_field_data = None
         self._eigenvector_data = None
         self._momentum_phase = MomentumPhase(latt_size)
+
+        if blending and dilution is not None:
+            totNe_list = dilution[0]
+            if isinstance(dilution[1], int):
+                usedNe_list = [dilution[1]] * len(dilution[0])
+            else:
+                usedNe_list = dilution[1]
+            assert len(usedNe_list) == len(totNe_list)
+            assert (backend.array(usedNe_list) <= backend.array(totNe_list)).all()
+            assert sum(usedNe_list) == Ne
+            self.stocastic_coeff = backend.zeros((Ne, Ne))
+            start1 = 0
+            for nv1 in range(len(usedNe_list)):
+                usedNe1 = usedNe_list[nv1]
+                totNe1 = totNe_list[nv1]
+                start2 = 0
+                for nv2 in range(len(usedNe_list)):
+                    usedNe2 = usedNe_list[nv2]
+                    totNe2 = totNe_list[nv2]
+                    if nv1 != nv2:
+                        coeff = totNe1 * totNe2 / usedNe1 / usedNe2
+                        self.stocastic_coeff[start1 : start1 + usedNe1, start2 : start2 + usedNe2] = backend.full(
+                            (usedNe1, usedNe2), coeff
+                        )
+                    else:
+                        coeff1 = totNe1 / usedNe1
+                        coeff2 = coeff1 * (totNe1 - 1) / (usedNe1 - 1)
+                        matrix = self.stocastic_coeff[start1 : start1 + usedNe1, start2 : start2 + usedNe2] = (
+                            backend.full((usedNe1, usedNe2), coeff2)
+                        )
+                        backend.fill_diagonal(matrix, coeff1)
+                        self.stocastic_coeff[start1 : start1 + usedNe1, start2 : start2 + usedNe2] = matrix
+                    start2 += usedNe2
+                start1 += usedNe1
+            print(self.stocastic_coeff)
+        else:
+            self.stocastic_coeff = None
 
     def load(self, key: str):
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6)[: Nd - 1]
@@ -275,7 +316,19 @@ class ElementalGenerator:
                 right = self._nD(V, U[:, t], pick_right)
                 left = self._nD(V, U[:, t], pick_left[::-1])
                 for momentum_idx, momentum in enumerate(self.momentum_list):
-                    VPV[derivative_idx, momentum_idx] += contract(
-                        "zyx,ezyxc,fzyxc->ef", coeff * momentum_phase.get(momentum), left.conj(), right
-                    )
+                    if self.stocastic_coeff is None:
+                        VPV[derivative_idx, momentum_idx] += contract(
+                            "zyx,ezyxc,fzyxc->ef",
+                            coeff * momentum_phase.get(momentum),
+                            left.conj(),
+                            right,
+                        )
+                    else:
+                        VPV[derivative_idx, momentum_idx] += contract(
+                            "zyx,ezyxc,fzyxc,ef->ef",
+                            coeff * momentum_phase.get(momentum),
+                            left.conj(),
+                            right,
+                            self.stocastic_coeff,
+                        )
         return VPV
