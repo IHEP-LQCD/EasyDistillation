@@ -48,8 +48,6 @@ for cfg in ["weak_field"]:
         eigne_vecs[t], eigen_vals[t] = eigenvector.calc(t)
         print(Rf"EASYDISTILLATION: {perf_counter()-s:.3f} sec to solve the lowest {Ne} eigensystem at t={t}.")
 
-    print(eigen_vals)
-
     for t in range(Lt):
         s = perf_counter()
         eigne_vecs[t], eigen_vals[t] = eigenvector.calc(t, True, 10, eigen_vals[t, -1].real * 1.1)

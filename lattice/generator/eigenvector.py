@@ -253,7 +253,7 @@ class EigenvectorGenerator:
             evecs *= backend.exp(-1.0j * renorm_phase)[:, None]
         return evecs.reshape(self.Ne, Lz, Ly, Lx, Nc), evals
 
-    def laplacian_quda(self, t: int, apply_renorm_phase: bool, poly_deg: int, lambda_cut: float):
+    def laplacian_quda(self, t: int, apply_renorm_phase: bool, polynomial_degree: int, lambda_cut: float):
         import numpy
         from pyquda.pyquda import QudaEigParam, eigensolveQuda
         from pyquda.enum_quda import QudaDslashType, QudaEigType, QudaBoolean, QudaEigSpectrumType
@@ -270,7 +270,6 @@ class EigenvectorGenerator:
         gauge_tmp.gauge_dirac.invert_param.laplace3D = 3
 
         Lx, Ly, Lz, _ = latt_info.size
-        Nc = latt_info.Nc
         n_ev = self.Ne
         n_kr = min(max(2 * n_ev, n_ev + 32), Lz * Ly * Lx * Nc - 1)
         max_restarts = 10 * Lz * Ly * Lx * Nc // (n_kr - n_ev)
@@ -290,9 +289,9 @@ class EigenvectorGenerator:
         eig_param.max_restarts = max_restarts
         eig_param.vec_infile = b""
         eig_param.vec_outfile = b""
-        if poly_deg > 0 and lambda_cut > 0:
+        if polynomial_degree > 0 and lambda_cut > 0:
             eig_param.use_poly_acc = QudaBoolean.QUDA_BOOLEAN_TRUE
-            eig_param.poly_deg = poly_deg
+            eig_param.poly_deg = polynomial_degree
             eig_param.a_min = lambda_cut / (2 * (Nd - 1))
             eig_param.a_max = 2
 
@@ -311,19 +310,12 @@ class EigenvectorGenerator:
 
     def laplacian_quda_scipy(self, t: int, apply_renorm_phase: bool):
         from cupyx.scipy.sparse import linalg
-        from pyquda.field import (
-            Nc,
-            LatticeGauge,
-            LatticeInfo,
-            LatticeStaggeredFermion,
-            cb2,
-            lexico,
-        )
+        from pyquda_utils.core import LatticeInfo, LatticeGauge, LatticeStaggeredFermion, cb2, lexico
 
         backend = get_backend()
-        Lx, Ly, Lz, Lt = self.latt_size
+        Lx, Ly, Lz, _ = self.latt_size
         latt_info = LatticeInfo([Lx, Ly, Lz, 1])
-        Lx, Ly, Lz, Lt = latt_info.size
+        Lx, Ly, Lz, _ = latt_info.size
         gauge_tmp = LatticeGauge(latt_info, backend.asarray(cb2(self._U[:, t : t + 1].get(), [1, 2, 3, 4])))
         gauge_tmp.ensurePureGauge()
         gauge_tmp.pure_gauge.loadGauge(gauge_tmp)
@@ -355,16 +347,16 @@ class EigenvectorGenerator:
         evecs = evecs.get()
         for i in range(self.Ne):
             evecs[i] = lexico(evecs[i].reshape(2, 1, Lz, Ly, Lx // 2, Nc), [0, 1, 2, 3, 4]).reshape(-1)
-        evecs = backend.asarray(evecs)
-        return evecs.reshape(self.Ne, Lz, Ly, Lx, Nc), evals
+        evecs = evecs.reshape(self.Ne, Lz, Ly, Lx, Nc)
+        return backend.asarray(evecs), evals
 
-    def calc(self, t: int, apply_renorm_phase: bool = True, poly_deg: int = 0, lambda_cut: float = 0.0):
+    def calc(self, t: int, apply_renorm_phase: bool = True, polynomial_degree: int = 0, lambda_cut: float = 0.0):
         backend = get_backend()
         # Don't use QUDA's eigensolver because of some performance regression.
         if backend.__name__ == "cupy" and check_QUDA():
-            if poly_deg > 0 and lambda_cut > 0:
-                print("Using quda Laplacian and quda solver with poly_acc.")
-                return self.laplacian_quda(t, apply_renorm_phase, poly_deg, lambda_cut)
+            if polynomial_degree > 0 and lambda_cut > 0:
+                print("Using quda Laplacian and quda solver with Chebyshev polynomial acceleration.")
+                return self.laplacian_quda(t, apply_renorm_phase, polynomial_degree, lambda_cut)
             else:
                 print(f"Using quda Laplacian and {backend.__name__} solver.")
                 return self.laplacian_quda_scipy(t, apply_renorm_phase)
