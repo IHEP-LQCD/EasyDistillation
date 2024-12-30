@@ -29,9 +29,10 @@ def check(cfg, evecs, evals):
     for t in range(Lt):
         for e in range(Ne):
             phase = data_evecs_ref[t, e].reshape(-1)[0] / evecs[t, e].reshape(-1)[0]
-            res += backend.linalg.norm(data_evecs_ref[t, e] / evecs[t, e] / phase - 1)
+            res += backend.linalg.norm(data_evecs_ref[t, e] - evecs[t, e] * phase)
+            if not backend.allclose(data_evecs_ref[t, e] - evecs[t, e] * phase, 0, rtol=1e-7):
+                raise ValueError("Test NOT PASS, relative residual > 1e-7.")
         print(f"Test cfg {cfg}, t = {t}, res = {res}")
-
     print(f"Test cfg {cfg}, eigen values, res = {backend.linalg.norm(data_evals_ref - evals)}")
 
 
