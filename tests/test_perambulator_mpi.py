@@ -44,8 +44,9 @@ perambulator = PerambulatorGenerator(
     clover_coeff_t=0.8549165664,
     clover_coeff_r=2.32582045,
     t_boundary=-1,  # for this test lattice, use t_boundary=-1
-    multigrid=False,
+    multigrid=False, # set List[int] to enable multigrid. multigrid layer set.
     contract_prec="<c16",
+    MRHS=False, # set True to enable quda mrhs support.
 )  # arbitrary dirac parameters
 perambulator.dirac.setVerbosity(enum_quda.QudaVerbosity.QUDA_SUMMARIZE)
 

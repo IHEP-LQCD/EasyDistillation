@@ -4,6 +4,8 @@ from opt_einsum import contract
 
 from ..constant import Nc, Nd
 from ..backend import get_backend, check_QUDA
+from typing import List
+from ..preset import GaugeField
 
 
 def _Laplacian(F, U, U_dag, latt_size):
@@ -25,7 +27,7 @@ def _Laplacian(F, U, U_dag, latt_size):
 
 
 class EigenvectorGenerator:
-    def __init__(self, latt_size, gauge_field, Ne, tol) -> None:
+    def __init__(self, latt_size: List[int], gauge_field: GaugeField, Ne: int, tol: float) -> None:
         backend = get_backend()
         self.kernel = None
         if backend.__name__ == "cupy":
@@ -48,6 +50,7 @@ class EigenvectorGenerator:
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6).copy()
         print(f"{self.gauge_field.load(key).sizeInByte/1024**2/self.gauge_field.load(key).timeInSec:.3f} MB/s")
         self._gauge_field_path = self.gauge_field.load(key).file
+        self.gauge_field.data = None  # after gauge_field.data load to self._U, free it.
 
     def project_SU3(self):
         backend = get_backend()
@@ -61,7 +64,7 @@ class EigenvectorGenerator:
             Uinv = backend.linalg.inv(U)
         self._U[: Nd - 1] = U
 
-    def _stout_smear_ndarray_naive(self, nstep, rho):
+    def _stout_smear_ndarray_naive(self, nstep: int, rho: float):
         backend = get_backend()
         U = backend.ascontiguousarray(self._U[: Nd - 1])
 
@@ -197,7 +200,7 @@ class EigenvectorGenerator:
 
         self._U[: Nd - 1] = U
 
-    def _stout_smear_quda(self, nstep, rho):
+    def _stout_smear_quda(self, nstep: int, rho: float):
         from pyquda_utils import io
 
         gauge = io.readQIOGauge(self._gauge_field_path)
@@ -209,7 +212,7 @@ class EigenvectorGenerator:
         backend = get_backend()
         self._U = backend.asarray(gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc))
 
-    def stout_smear(self, nstep, rho):
+    def stout_smear(self, nstep:int, rho:float):
         from ..backend import check_QUDA
 
         backend = get_backend()
