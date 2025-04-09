@@ -1,6 +1,10 @@
-from typing import Dict, List
+from itertools import product
+from typing import Callable, Dict, List, Union, Any
 
+import numpy as np
 from opt_einsum import contract
+import sympy as sp
+import hashlib
 
 from .backend import get_backend
 
@@ -88,17 +92,16 @@ class Meson(Particle):
         self.dagger = source
         self.outward = 1
         self.inward = 1
-        # cache is defined as a class variable of the Meson class. 
+        # cache is defined as a class variable of the Meson class.
         # cache is shared among all instances of Meson.
         backend = get_backend()
         self.cache: Dict[int, backend.ndarray] = {}
-        
 
     def __str__(self) -> str:
         str = "### Meson ###\n"
-        str += FR"\n key = {self.key} \n"
+        str += Rf"\n key = {self.key} \n"
         str += self.operator.__str__()
-        str += FR"\n dagger = {self.dagger} \n"
+        str += Rf"\n dagger = {self.dagger} \n"
         return str
 
     def load(self, key, usedNe: int = None):
@@ -268,3 +271,853 @@ def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propa
                 operands_data.append(vertex_list[item].get(time_list[item]))
             diagram_value[-1] *= contract(subscripts, *operands_data)
     return backend.asarray(diagram_value)
+
+
+from typing import Union, List, Dict, Tuple, Any
+from sympy import S, Expr, Symbol, Mul
+import hashlib
+
+
+class Diagram(Symbol):
+    def __new__(cls, diagram: QuarkDiagram, time_list, vertex_list, propagator_list) -> None:
+        obj = super().__new__(cls, f"{diagram.adjacency_matrix},{time_list},{vertex_list},{propagator_list}")
+        return obj
+
+    def __init__(self, diagram: QuarkDiagram, time_list, vertex_list, propagator_list) -> None:
+        """
+        Initialize a Diagram object.
+
+        Args:
+            diagram: The QuarkDiagram object
+            time_list: List of time values
+            vertex_list: List of vertices
+            propagator_list: List of propagators
+        """
+        self.diagram = diagram
+        self.time_list = time_list
+        self.vertex_list = vertex_list
+        self.propagator_list = propagator_list
+        self.value = None
+        self.value_pointer = None
+
+    def calc(self):
+        if self.value is None:
+            self.value = self.__hash__()
+            self.value = compute_diagrams_multitime(
+                [self.diagram], self.time_list, self.vertex_list, self.propagator_list
+            )
+        return self.value
+
+    def __str__(self):
+        return f"{self.diagram.adjacency_matrix},{self.time_list},{self.vertex_list},{self.propagator_list}"
+
+    def __repr__(self):
+        return f"{self.diagram.adjacency_matrix},{self.time_list},{self.vertex_list},{self.propagator_list}"
+
+    def __eq__(self, other):
+        if not isinstance(other, Diagram):
+            return False
+        return (
+            self.diagram.adjacency_matrix == other.diagram.adjacency_matrix
+            and self.time_list == other.time_list
+            and self.vertex_list == other.vertex_list
+            and self.propagator_list == other.propagator_list
+        )
+
+    def __hash__(self):
+        return int(hashlib.sha256(str(self).encode()).hexdigest(), 16) % (2**31)
+
+    def remove_redundant(self):
+        """
+        Remove redundant vertices that are not connected to any other vertices
+        Return a new Diagram instance without redundant vertices
+        Also remove unused propagators from propagator_list
+        """
+        # Check if each vertex has connections
+        connected_vertices = set()
+        adjacency_matrix = self.diagram.adjacency_matrix
+        num_vertices = len(adjacency_matrix)
+
+        # Track used propagator indices
+        used_propagators = set([0])
+
+        # Find all vertices with connections and used propagators
+        for i in range(num_vertices):
+            for j in range(num_vertices):
+                value = adjacency_matrix[i][j]
+                if value != 0:
+                    connected_vertices.add(i)
+                    connected_vertices.add(j)
+                    # Record used propagator indices
+                    if isinstance(value, int):
+                        used_propagators.add(value)
+                    elif isinstance(value, list):
+                        for prop_idx in value:
+                            if prop_idx != 0:
+                                used_propagators.add(prop_idx)
+
+        # Find redundant vertices (vertices with no connections)
+        redundant_vertices = [i for i in range(num_vertices) if i not in connected_vertices]
+
+        # If None is not used as a placeholder, check if it needs to be added to used_propagators
+        # If there are no connected vertices, return an empty graph
+        if not connected_vertices:
+            # Return a new graph with the original format but without connections
+            empty_adjacency = [[0 for _ in range(1)] for _ in range(1)]
+            empty_quark_diagram = QuarkDiagram(empty_adjacency)
+            return Diagram(
+                empty_quark_diagram,
+                [0],
+                [self.vertex_list[0] if self.vertex_list else None],
+                [None] if len(self.propagator_list) > 0 and self.propagator_list[0] is None else [],
+            )
+
+        # If there are no redundant vertices and all propagators are used, return self
+        if not redundant_vertices and len(used_propagators) == len(self.propagator_list):
+            return self
+
+        # Create vertex mapping table to reindex non-redundant vertices
+        vertex_map = {}
+        new_vertex_idx = 0
+        for i in range(num_vertices):
+            if i not in redundant_vertices:
+                vertex_map[i] = new_vertex_idx
+                new_vertex_idx += 1
+
+        # Create propagator mapping table and new propagator_list
+        sorted_used_propagators = sorted(list(used_propagators))
+        propagator_map = {old_idx: new_idx for new_idx, old_idx in enumerate(sorted_used_propagators)}
+        new_propagator_list = [self.propagator_list[i] for i in sorted_used_propagators]
+
+        # Create new time_list and vertex_list
+        new_time_list = [self.time_list[i] for i in range(num_vertices) if i not in redundant_vertices]
+        new_vertex_list = [self.vertex_list[i] for i in range(num_vertices) if i not in redundant_vertices]
+
+        # Create new adjacency matrix, removing redundant vertices
+        new_size = len(new_time_list)
+        new_adjacency_matrix = [[0 for _ in range(new_size)] for _ in range(new_size)]
+
+        for i in range(num_vertices):
+            if i in redundant_vertices:
+                continue
+            for j in range(num_vertices):
+                if j in redundant_vertices:
+                    continue
+
+                value = adjacency_matrix[i][j]
+                if value != 0:
+                    new_i = vertex_map[i]
+                    new_j = vertex_map[j]
+                    if isinstance(value, int):
+                        # Update propagator indices
+                        new_adjacency_matrix[new_i][new_j] = propagator_map[value]
+                    elif isinstance(value, list):
+                        # Handle list case
+                        new_value = [propagator_map[v] for v in value if v != 0]
+                        new_adjacency_matrix[new_i][new_j] = new_value if new_value else 0
+
+        # Create new QuarkDiagram instance
+        new_quark_diagram = QuarkDiagram(new_adjacency_matrix)
+
+        # Return new Diagram instance
+        return Diagram(new_quark_diagram, new_time_list, new_vertex_list, new_propagator_list)
+
+    def sort_vertex_and_propagator(self):
+        """
+        Sort vertices and propagators, in ascending order
+        Also update propagator indices in adjacency matrix
+        Note: None is always kept in the propagator list at index 0
+        """
+        # Get current graph information
+        num_vertices = len(self.vertex_list)
+        adjacency_matrix = self.diagram.adjacency_matrix
+
+        # Create time-vertex pairs list, time in front
+        time_vertex_pairs = [(self.time_list[i], self.vertex_list[i]) for i in range(num_vertices)]
+
+        # Sort by time-vertex pairs
+        sorted_pairs = sorted(time_vertex_pairs)
+
+        # Create vertex sorting mapping
+        vertex_map = {}
+        for new_idx, pair in enumerate(sorted_pairs):
+            for old_idx, old_pair in enumerate(time_vertex_pairs):
+                if pair == old_pair and old_idx not in vertex_map.values():
+                    vertex_map[old_idx] = new_idx
+                    break
+
+        # Re-sort vertex list and time list
+        new_vertex_list = [self.vertex_list[i] for i in sorted(vertex_map.keys(), key=lambda k: vertex_map[k])]
+        new_time_list = [self.time_list[i] for i in sorted(vertex_map.keys(), key=lambda k: vertex_map[k])]
+
+        # Create new adjacency matrix
+        new_adjacency_matrix = [[0 for _ in range(num_vertices)] for _ in range(num_vertices)]
+        for old_i in range(num_vertices):
+            for old_j in range(num_vertices):
+                new_i = vertex_map[old_i]
+                new_j = vertex_map[old_j]
+                new_adjacency_matrix[new_i][new_j] = adjacency_matrix[old_i][old_j]
+
+        # Collect all used propagators
+        used_propagators = set()
+        for i in range(num_vertices):
+            for j in range(num_vertices):
+                value = new_adjacency_matrix[i][j]
+                if isinstance(value, int) and value != 0:
+                    used_propagators.add(value)
+                elif isinstance(value, list):
+                    for v in value:
+                        if v != 0:
+                            used_propagators.add(v)
+
+        # Create propagator sorting mapping
+        # Ensure None is kept at index 0 (if exists)
+        has_none = False
+        new_propagator_list = []
+
+        # Check if None is at index 0
+        if len(self.propagator_list) > 0 and self.propagator_list[0] is None:
+            has_none = True
+            new_propagator_list.append(None)
+
+        # Sort non-0 indices propagators
+        sorted_used_propagators = sorted(list(used_propagators - {0}))
+
+        # Create propagator mapping, ensure 0 index reserved for None
+        if has_none:
+            # 0 already reserved for None, other propagators start from 1
+            propagator_map = {0: 0}  # Keep 0->0 mapping
+            for idx, old_idx in enumerate(sorted_used_propagators):
+                propagator_map[old_idx] = idx + 1
+
+            # Add sorted propagators to list
+            for idx in sorted_used_propagators:
+                new_propagator_list.append(self.propagator_list[idx])
+        else:
+            # No None, directly map from 0
+            propagator_map = {old_idx: idx for idx, old_idx in enumerate(sorted_used_propagators)}
+
+            # Add sorted propagators to list
+            for idx in sorted_used_propagators:
+                new_propagator_list.append(self.propagator_list[idx])
+
+        # Update propagator indices in adjacency matrix
+        for i in range(num_vertices):
+            for j in range(num_vertices):
+                value = new_adjacency_matrix[i][j]
+                if isinstance(value, int) and value != 0:
+                    new_adjacency_matrix[i][j] = propagator_map[value]
+                elif isinstance(value, list):
+                    new_value = []
+                    for v in value:
+                        if v != 0:
+                            new_value.append(propagator_map[v])
+                        else:
+                            new_value.append(0)
+                    new_adjacency_matrix[i][j] = new_value
+
+        # Create new QuarkDiagram instance
+        new_quark_diagram = QuarkDiagram(new_adjacency_matrix)
+
+        # Return new Diagram instance
+        return Diagram(new_quark_diagram, new_time_list, new_vertex_list, new_propagator_list)
+
+    def simplify(self):
+        """
+        Simplify Diagram object, perform the following operations:
+        1. Remove redundant vertices (equivalent to remove_redundant functionality)
+        2. Sort vertices and propagators (equivalent to sort_vertex_and_propagator functionality)
+        3. Split graph into product of different subgraphs
+
+        Integrates the functionality of the original separate remove_redundant and sort_vertex_and_propagator methods,
+        and further splits the graph into connected components, ultimately returning the optimized Diagram or Diagram product expression.
+
+        Returns:
+            sympy.Expr or Diagram: Simplified Diagram object or expression representing product of different subgraphs
+        """
+        from sympy import Mul
+        from copy import deepcopy
+
+        # Get graph information
+        adjacency_matrix = deepcopy(self.diagram.adjacency_matrix)
+        num_vertex = len(adjacency_matrix)
+        # Record each vertex's connected component
+        component_ids = [-1] * num_vertex
+        next_component_id = 0
+
+        # Use BFS to find all connected components
+        for start_vertex in range(num_vertex):
+            # If already assigned connected component, skip
+            if component_ids[start_vertex] != -1:
+                continue
+
+            # Check if any edge involves this vertex
+            has_connection = False
+            for i in range(num_vertex):
+                if (
+                    isinstance(adjacency_matrix[start_vertex][i], np.ndarray)
+                    and (adjacency_matrix[start_vertex][i] != 0).any()
+                ):
+                    has_connection = True
+                elif (
+                    isinstance(adjacency_matrix[i][start_vertex], np.ndarray)
+                    and (adjacency_matrix[i][start_vertex] != 0).any()
+                ):
+                    has_connection = True
+                elif adjacency_matrix[start_vertex][i] != 0:
+                    has_connection = True
+                elif adjacency_matrix[i][start_vertex] != 0:
+                    has_connection = True
+                if has_connection:
+                    break
+            if not has_connection:
+                continue
+            # Use BFS to find all connected vertices
+            component_ids[start_vertex] = next_component_id
+            queue = [start_vertex]
+            while queue:
+                vertex = queue.pop(0)
+
+                # Check all possible connections
+                for next_vertex in range(num_vertex):
+                    # Check connection from vertex to next_vertex
+                    if component_ids[next_vertex] == -1:
+                        is_in_queue = False
+                        if (
+                            isinstance(adjacency_matrix[vertex][next_vertex], np.ndarray)
+                            and (adjacency_matrix[vertex][next_vertex] != 0).any()
+                        ):
+                            is_in_queue = True
+                        elif (
+                            isinstance(adjacency_matrix[next_vertex][vertex], np.ndarray)
+                            and (adjacency_matrix[next_vertex][vertex] != 0).any()
+                        ):
+                            is_in_queue = True
+                        elif adjacency_matrix[vertex][next_vertex] != 0:
+                            is_in_queue = True
+                        elif adjacency_matrix[next_vertex][vertex] != 0:
+                            is_in_queue = True
+                        if is_in_queue:
+                            component_ids[next_vertex] = next_component_id
+                            queue.append(next_vertex)
+            # Start a new connected component
+            next_component_id += 1
+        # Create a new Diagram object for each connected component
+        result_diagrams = []
+        for component_id in range(next_component_id):
+            # Find vertices belonging to this connected component
+            vertices = []
+            for i in range(num_vertex):
+                if component_ids[i] == component_id:
+                    vertices.append(i)
+            # Sort vertices based on self.vertex_list
+            # When vertices are equal, consider all possible orders
+            # First, sort based on time and vertex type
+            vertices.sort(key=lambda v: (self.time_list[v], self.vertex_list[v]))
+
+            # Check if there are same vertices
+            has_same_vertices = False
+            for i in range(len(vertices) - 1):
+                if (
+                    self.time_list[vertices[i]] == self.time_list[vertices[i + 1]]
+                    and self.vertex_list[vertices[i]] == self.vertex_list[vertices[i + 1]]
+                ):
+                    has_same_vertices = True
+                    break
+
+            # If there are same vertices, consider all possible orders
+            if has_same_vertices:
+                # Group by time and vertex type
+                from itertools import groupby
+                from itertools import permutations
+
+                # Group by time and vertex type
+                groups = []
+                for k, g in groupby(vertices, key=lambda v: (self.time_list[v], self.vertex_list[v])):
+                    groups.append(list(g))
+
+                # Only sort vertices in each group, keeping group order
+                all_possible_orders = []
+                for g in groups:
+                    perms = [list(p) for p in permutations(g)]
+                    all_possible_orders.append(perms)
+
+                # Use itertools.product to get all combinations
+                from itertools import product
+
+                all_permutations = list(product(*all_possible_orders))
+
+                # Flatten nested list to match vertices format
+                all_possible_vertices = []
+                for perm_combination in all_permutations:
+                    flattened_vertices = []
+                    for group_perm in perm_combination:
+                        flattened_vertices.extend(group_perm)
+                    all_possible_vertices.append(flattened_vertices)
+            else:
+                all_possible_vertices = [vertices]
+            # Create adjacency matrix for this connected component, size of connected component
+            min_hash = float("inf")
+            for vertices in all_possible_vertices:
+                component_size = len(vertices)
+                component_matrix = [
+                    [adjacency_matrix[vertices[j]][vertices[i]] for i in range(component_size)]
+                    for j in range(component_size)
+                ]
+                new_quark_diagram = QuarkDiagram(component_matrix)
+                new_time_list = [self.time_list[i] for i in vertices]
+                new_vertex_list = [self.vertex_list[i] for i in vertices]
+                # Create new propagator_list, only retain used propagators
+                used_propagators = set([])  # 0 is default value, always retained
+
+                # Traverse component_matrix to find all used propagators
+                for i in range(component_size):
+                    for j in range(component_size):
+                        value = component_matrix[i][j]
+                        if isinstance(value, int):
+                            if value != 0:
+                                used_propagators.add(value)
+                        elif isinstance(value, np.ndarray):
+                            # For array type, add propagator indices of all non-zero elements
+                            for prop_idx in value.flatten():
+                                if prop_idx != 0:
+                                    used_propagators.add(int(prop_idx))
+                        elif isinstance(value, list):
+                            # For list type, add all non-zero elements
+                            # Handle nested lists, similar to ndarray's flatten operation
+                            flat_values = []
+
+                            def flatten_list(lst):
+                                for item in lst:
+                                    if isinstance(item, list):
+                                        flatten_list(item)
+                                    else:
+                                        flat_values.append(item)
+
+                            flatten_list(value)
+                            for prop_idx in flat_values:
+                                if prop_idx != 0:
+                                    used_propagators.add(prop_idx)
+
+                # Sort used propagator indices in original order
+                used_propagators = sorted(list(used_propagators), key=lambda x: self.propagator_list[x])
+                used_propagators = [0] + used_propagators
+                new_propagator_list = [self.propagator_list[i] for i in used_propagators]
+
+                # Update propagator indices in component_matrix
+                old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(used_propagators)}
+                for i in range(component_size):
+                    for j in range(component_size):
+                        value = component_matrix[i][j]
+                        if isinstance(value, int):
+                            if value != 0:
+                                component_matrix[i][j] = old_to_new[value]
+                        elif isinstance(value, np.ndarray):
+                            # For array type, update all non-zero elements
+                            new_array = np.zeros_like(value)
+                            for idx in np.ndindex(value.shape):
+                                if value[idx] != 0:
+                                    new_array[idx] = old_to_new[int(value[idx])]
+                            component_matrix[i][j] = new_array
+                        elif isinstance(value, list):
+                            # For list type, update all non-zero elements
+                            # Handle nested list case
+                            def update_nested_list(lst):
+                                result = []
+                                for item in lst:
+                                    if isinstance(item, list):
+                                        result.append(update_nested_list(item))
+                                    else:
+                                        result.append(old_to_new[item] if item != 0 else 0)
+                                return result
+
+                            component_matrix[i][j] = update_nested_list(value)
+
+                # Use stable hash algorithm to calculate graph hash
+                current_hash = int(hashlib.sha256(str(new_quark_diagram.adjacency_matrix).encode()).hexdigest(), 16)
+                if min_hash > current_hash:
+                    min_hash = current_hash
+                    new_diagram = Diagram(new_quark_diagram, new_time_list, new_vertex_list, new_propagator_list)
+
+            result_diagrams.append(new_diagram)
+
+        # Convert results to product expression
+        result = S(1)
+        for diagram in result_diagrams:
+            result = Mul(result, diagram, evaluate=False)
+        return sp.simplify(result)
+
+    def replace_propagator(self, propagator_map: Dict):
+        """
+        Replace propagators in Diagram
+        """
+        for i, propagator in enumerate(self.propagator_list):
+            if propagator in propagator_map:
+                self.propagator_list[i] = propagator_map[propagator]
+
+    def replace_vertex(self, vertex_map: Callable):
+        """
+        Replace vertices in Diagram
+        """
+        for i, vertex in enumerate(self.vertex_list):
+            result = vertex_map(vertex)
+            if result is not None:
+                self.vertex_list[i] = result
+
+    def replace_time(self, time_map: Dict):
+        """
+        Replace time in Diagram
+        """
+        for i, time in enumerate(self.time_list):
+            if time in time_map:
+                self.time_list[i] = time_map[time]
+
+
+def diagram_simplify(expr: Union[Expr, List, Any]) -> Union[Expr, List, Any]:
+    """
+    Recursively simplify expressions containing Diagram objects
+
+    Call each Diagram object's simplify method, which integrates the following functionalities:
+    1. Remove redundant vertices
+    2. Sort vertices and propagators
+    3. Split graph into connected components
+
+    Supports processing various data structures, including:
+    - Single Diagram object
+    - sympy expressions (e.g., Add, Mul, Pow, etc.)
+    - Nested lists, tuples, dictionaries
+    - NumPy arrays
+
+    Args:
+        expr: Expression or data structure containing Diagram objects
+
+    Returns:
+        Simplified expression or data structure, original expression unchanged
+    """
+    from sympy import Add, Mul, Pow, Number, Symbol
+    import numpy as np
+
+    # Handle None or unsupported types
+    if expr is None:
+        return expr
+
+    # Base case: process single Diagram object
+    if isinstance(expr, Diagram):
+        try:
+            # Apply simplification operations
+            # expr = expr.remove_redundant()
+            # expr = expr.sort_vertex_and_propagator()
+            splited_expr = expr.simplify()
+            result = sp.simplify(splited_expr)
+            return result
+
+        except Exception as e:
+            # If an exception occurs, return original expression and print error
+            print(f"Warning: Simplification of Diagram failed: {e}")
+            import traceback
+
+            traceback.print_exc()
+            return expr
+
+    # Process general list - recursively process each element in the list
+    elif isinstance(expr, list):
+        return [diagram_simplify(item) for item in expr]
+
+    # Process numpy ndarray
+    elif hasattr(expr, "__array__") and hasattr(expr, "shape"):  # Detect ndarray
+        # Get original shape
+        original_shape = expr.shape
+
+        # Flatten ndarray to 1D array, process each element, then restore original shape
+        flattened = expr.flatten() if hasattr(expr, "flatten") else expr.ravel()
+        result = np.array([diagram_simplify(item) for item in flattened], dtype=object)
+
+        # Restore original shape
+        return result.reshape(original_shape)
+
+    # Recursively process addition expression
+    elif isinstance(expr, Add):
+        terms = []
+        for term in expr.args:
+            simplified_term = diagram_simplify(term)
+            terms.append(simplified_term)
+        return Add(*terms)
+
+    # Recursively process multiplication expression
+    elif isinstance(expr, Mul):
+        factors = []
+        for factor in expr.args:
+            simplified_factor = diagram_simplify(factor)
+            # Handle multiplication nested cases
+            if isinstance(simplified_factor, Mul):
+                factors.extend(simplified_factor.args)
+            else:
+                factors.append(simplified_factor)
+        return Mul(*factors)
+
+    # Recursively process power expression
+    elif isinstance(expr, Pow):
+        base = diagram_simplify(expr.args[0])
+        # Keep exponent unchanged
+        exponent = expr.args[1]
+        return Pow(base, exponent)
+
+    # Recursively process dictionary - process value part
+    elif isinstance(expr, dict):
+        return {key: diagram_simplify(value) for key, value in expr.items()}
+
+    # Recursively process tuple - similar to list but returns tuple
+    elif isinstance(expr, tuple):
+        return tuple(diagram_simplify(item) for item in expr)
+
+    # Other types of expressions remain unchanged
+    else:
+        return sp.simplify(expr)
+
+
+def remove_unexpected_diagram(expr: Union[Expr, List, Any], propagator_list: List[Propagator]):
+    """
+    Recursively find all Diagram objects and replace those with propagators meeting certain conditions with S(0).
+
+    This function traverses through expressions, lists, dictionaries, or other nested structures to find
+    Diagram objects. If a Diagram contains any propagator from the provided propagator_list, it will be
+    replaced with a symbolic zero (S(0)).
+
+    Args:
+        expr: The expression or structure to process, can be a sympy expression, list, dictionary, etc.
+        propagator_list: List of Propagator objects to check against
+
+    Returns:
+        The processed expression with redundant diagrams replaced by zeros
+    """
+    from sympy import Add, Mul, Pow, S
+    import numpy as np
+
+    # Handle None or unsupported types
+    if expr is None:
+        return expr
+
+    # Process Diagram object
+    if isinstance(expr, Diagram):
+        # Check if this Diagram contains any propagator from the provided propagator_list
+        for prop in expr.propagator_list:
+            if prop in propagator_list:
+                return S(0)  # If contains, return symbolic 0
+        return expr  # If not contains, remain unchanged
+
+    # Process list
+    elif isinstance(expr, list):
+        return [remove_unexpected_diagram(item, propagator_list) for item in expr]
+
+    # Process numpy array
+    elif hasattr(expr, "__array__") and hasattr(expr, "shape"):
+        original_shape = expr.shape
+        flattened = expr.flatten() if hasattr(expr, "flatten") else expr.ravel()
+        result = np.array([remove_unexpected_diagram(item, propagator_list) for item in flattened], dtype=object)
+        return result.reshape(original_shape)
+
+    # Process addition expression
+    elif isinstance(expr, Add):
+        terms = [remove_unexpected_diagram(term, propagator_list) for term in expr.args]
+        return Add(*terms)
+
+    # Process multiplication expression
+    elif isinstance(expr, Mul):
+        factors = [remove_unexpected_diagram(factor, propagator_list) for factor in expr.args]
+        return Mul(*factors)
+
+    # Process power expression
+    elif isinstance(expr, Pow):
+        base = remove_unexpected_diagram(expr.args[0], propagator_list)
+        exponent = expr.args[1]  # Keep exponent unchanged
+        return Pow(base, exponent)
+
+    # Process dictionary
+    elif isinstance(expr, dict):
+        return {key: remove_unexpected_diagram(value, propagator_list) for key, value in expr.items()}
+
+    # Process tuple
+    elif isinstance(expr, tuple):
+        return tuple(remove_unexpected_diagram(item, propagator_list) for item in expr)
+
+    # Other types of expressions remain unchanged
+    else:
+        return expr
+
+
+def calc_diagram(
+    expr: Union[Expr, List, Any], time_map: Dict = None, propagator_map: Dict = None, vertex_map: Callable = None
+):
+    """
+    Find all Diagram objects in the expression and calculate their values. If expr is a multi-level list, dictionary, or tuple, it will be recursively processed.
+    During calculation, collect all unequal Diagram objects, and set diagram_list. Then let diagram_list in the expression point to the corresponding element index in diagram_list, and integrate diagram_list to calculate the values of all Diagram objects, then replace all Diagram objects in the expression with diagram.value_pointer pointing to Diagram.value, complete the calculation, and output the result
+    """
+    from sympy import Add, Mul, Pow, Number, Symbol
+    import numpy as np
+
+    # Handle None or unsupported types
+    if expr is None:
+        return expr
+
+    # Collect all unequal Diagram objects
+    diagram_list = []
+
+    def collect_diagrams(e):
+        """Recursively collect all unequal Diagram objects in the expression and set value_pointer to point to equal objects"""
+        if isinstance(e, Diagram):
+            # Check if an equal Diagram object already exists
+            found_idx = None
+            for idx, existing_diagram in enumerate(diagram_list):
+                if e == existing_diagram:  # Use __eq__ method to compare
+                    found_idx = idx
+                    break
+
+            if found_idx is not None:
+                # If an equal object exists, set current object's value_pointer to point to that object
+                e.value_pointer = found_idx
+            else:
+                # If no equal object exists, add to list and set value_pointer
+                e.value_pointer = len(diagram_list)
+                diagram_list.append(e)
+        elif isinstance(e, list):
+            for item in e:
+                collect_diagrams(item)
+        elif isinstance(e, tuple):
+            for item in e:
+                collect_diagrams(item)
+        elif isinstance(e, dict):
+            for value in e.values():
+                collect_diagrams(value)
+        elif isinstance(e, Add):
+            for term in e.args:
+                collect_diagrams(term)
+        elif isinstance(e, Mul):
+            for factor in e.args:
+                collect_diagrams(factor)
+        elif isinstance(e, Pow):
+            collect_diagrams(e.base)
+        elif hasattr(e, "__array__") and hasattr(e, "shape"):  # Process numpy array
+            flattened = e.flatten() if hasattr(e, "flatten") else e.ravel()
+            for item in flattened:
+                collect_diagrams(item)
+
+    # Collect all Diagram objects
+    collect_diagrams(expr)
+
+    # Calculate values of all unequal Diagram objects, calculate before finding their propagator_list and vertex_list union, expand all Diagram objects to propagator_list and vertex_list union
+    if diagram_list:
+        # Collect all propagator_list and vertex-time pairs
+        all_propagators = []
+        all_time_vertex_pairs = []  # Store (time, vertex) pairs, time in front
+
+        # Count time-vertex pairs and propagators in all graphs
+        for diagram in diagram_list:
+            # Collect all time-vertex pairs
+            for i, (vertex, time) in enumerate(zip(diagram.vertex_list, diagram.time_list)):
+                pair = (time, vertex)  # Time in front
+                if pair not in all_time_vertex_pairs:
+                    all_time_vertex_pairs.append(pair)
+
+            # Collect all propagators
+            for p in diagram.propagator_list:
+                if p not in all_propagators:
+                    all_propagators.append(p)
+
+        # Create new QuarkDiagram object to integrate all graphs
+        combined_diagrams = []
+        original_to_new_time_vertex = {}  # Map original index to new time-vertex pair index
+        original_to_new_propagator = {}
+        # Create time-vertex pair and propagator mapping for each graph
+        for diagram in diagram_list:
+            # Create time-vertex pair mapping
+            original_to_new_time_vertex[id(diagram)] = {}
+            for i, (vertex, time) in enumerate(zip(diagram.vertex_list, diagram.time_list)):
+                pair = (time, vertex)  # Time in front
+                original_to_new_time_vertex[id(diagram)][i] = all_time_vertex_pairs.index(pair)
+
+            # Create propagator mapping
+            original_to_new_propagator[id(diagram)] = {}
+            for i, p in enumerate(diagram.propagator_list):
+                original_to_new_propagator[id(diagram)][i] = all_propagators.index(p)
+
+            # Create new adjacency matrix
+            n_vertices = len(all_time_vertex_pairs)
+            new_adjacency = [[0 for _ in range(n_vertices)] for _ in range(n_vertices)]
+
+            # Fill new adjacency matrix
+            old_adjacency = diagram.diagram.adjacency_matrix
+            for i in range(len(diagram.time_list)):
+                for j in range(len(diagram.time_list)):
+                    value = old_adjacency[i][j]
+                    if value != 0:
+                        new_i = original_to_new_time_vertex[id(diagram)][i]
+                        new_j = original_to_new_time_vertex[id(diagram)][j]
+
+                        # Update propagator indices
+                        if isinstance(value, int):
+                            new_value = original_to_new_propagator[id(diagram)][value]
+                            new_adjacency[new_i][new_j] = new_value
+                        elif isinstance(value, list):
+                            new_value = [original_to_new_propagator[id(diagram)][v] if v != 0 else 0 for v in value]
+                            new_adjacency[new_i][new_j] = new_value
+
+            # Create new QuarkDiagram and add to list
+            combined_diagrams.append(QuarkDiagram(new_adjacency))
+
+        # Extract all vertices and time list
+        all_vertices = [pair[1] for pair in all_time_vertex_pairs]  # Vertex in tuple's second position
+        all_times = [pair[0] for pair in all_time_vertex_pairs]  # Time in tuple's first position
+
+        # Replace all propagators and vertices in graphs
+        if vertex_map is not None:
+            for vertex in all_vertices:
+                new_vertex = vertex_map(vertex)
+                if new_vertex is not None:
+                    vertex = new_vertex
+        if propagator_map is not None:
+            for propagator in all_propagators:
+                if propagator in propagator_map:
+                    propagator = propagator_map[propagator]
+        if time_map is not None:
+            for time in all_times:
+                if time in time_map:
+                    time = time_map[time]
+
+        # Calculate values of all graphs at once
+        backend = get_backend()
+        results = compute_diagrams_multitime(combined_diagrams, all_times, all_vertices, all_propagators)
+
+        # Assign calculated results to each graph
+        for i, diagram in enumerate(diagram_list):
+            diagram.value = results[i]
+
+    # Replace Diagram objects in expression with their values
+    def replace_diagrams(e):
+        if isinstance(e, Diagram):
+            # Use value_pointer pointed value
+            if e.value_pointer is not None:
+                return diagram_list[e.value_pointer].value
+            else:
+                raise ValueError("Diagram has no value_pointer")
+        elif isinstance(e, list):
+            return [replace_diagrams(item) for item in e]
+        elif isinstance(e, tuple):
+            return tuple(replace_diagrams(item) for item in e)
+        elif isinstance(e, dict):
+            return {key: replace_diagrams(value) for key, value in e.items()}
+        elif isinstance(e, Add):
+            return Add(*[replace_diagrams(term) for term in e.args])
+        elif isinstance(e, Mul):
+            return Mul(*[replace_diagrams(factor) for factor in e.args])
+        elif isinstance(e, Pow):
+            return Pow(replace_diagrams(e.base), e.exp)
+        elif hasattr(e, "__array__") and hasattr(e, "shape"):  # Process numpy array
+            original_shape = e.shape
+            flattened = e.flatten() if hasattr(e, "flatten") else e.ravel()
+            result = np.array([replace_diagrams(item) for item in flattened], dtype=object)
+            return result.reshape(original_shape)
+        else:
+            return e
+
+    # Replace and return result
+    return replace_diagrams(expr)

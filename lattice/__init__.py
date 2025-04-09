@@ -25,6 +25,7 @@ from .quark_diagram import (
     Meson,
     Propagator,
     PropagatorLocal,
+    Diagram,
     compute_diagrams,
     compute_diagrams_multitime,
 )
