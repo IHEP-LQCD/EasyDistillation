@@ -9,7 +9,7 @@ from lattice import set_backend, get_backend, check_QUDA
 
 grid_size = [1, 1, 2, 2]
 # check and init PyQuda & MPI
-if not check_QUDA(grid_size=grid_size, backend="cupy", resource_path=None): 
+if not check_QUDA(grid_size=grid_size, backend="cupy", resource_path=None):
     raise ImportError("Please install PyQuda")
 latt_size = [4, 4, 4, 8]
 Lx, Ly, Lz, Lt = latt_size
@@ -20,8 +20,8 @@ Ns = 4
 
 
 from lattice import PerambulatorGenerator, PerambulatorNpy
-from pyquda import enum_quda, getMPIRank
-from pyquda_utils.core import gatherLattice
+from pyquda import enum_quda
+from pyquda_utils.core import getMPIRank, gatherLattice
 
 set_backend("cupy")
 backend = get_backend()
@@ -44,10 +44,11 @@ perambulator = PerambulatorGenerator(
     clover_coeff_t=0.8549165664,
     clover_coeff_r=2.32582045,
     t_boundary=-1,  # for this test lattice, use t_boundary=-1
-    multigrid=False,
-    contract_prec="<c16"
+    multigrid=False, # set List[int] to enable multigrid. multigrid layer set.
+    contract_prec="<c16",
+    MRHS=False, # set True to enable quda mrhs support.
 )  # arbitrary dirac parameters
-perambulator.dirac.invert_param.verbosity = enum_quda.QudaVerbosity.QUDA_SUMMARIZE
+perambulator.dirac.setVerbosity(enum_quda.QudaVerbosity.QUDA_SUMMARIZE)
 
 out_prefix = "tests/"
 out_suffix = ".perambulator.npy"
@@ -58,8 +59,10 @@ def check(cfg, data):
     res = backend.linalg.norm(data_ref[:] - backend.array(data))
     print(f"Test cfg {cfg}, res = {res}")
 
+
 # save all timeslices in one
 import numpy
+
 peramb = numpy.zeros((Lt * Gt, Lt, Ns, Ns, Ne, Ne), "<c16")
 for cfg in ["weak_field"]:
     print(cfg)
@@ -69,7 +72,7 @@ for cfg in ["weak_field"]:
         peramb[t] = perambulator.calc(t).get()
     # mpi gather lattice data and save
     # Note: For perambulator, mpi gather always gather timeslices and reduce space!
-    peramb_h = gatherLattice(peramb, axes = [1, -1, -1, -1], reduce_op="sum", root=0)
+    peramb_h = gatherLattice(peramb, axes=[1, -1, -1, -1], reduce_op="sum", root=0)
     if getMPIRank() == 0:
         for t in range(Lt * Gt):
             peramb_h[t] = numpy.roll(peramb_h[t], -t, 0)

@@ -4,6 +4,8 @@ from opt_einsum import contract
 
 from ..constant import Nc, Nd
 from ..backend import get_backend, check_QUDA
+from typing import List
+from ..preset import GaugeField
 
 
 def _Laplacian(F, U, U_dag, latt_size):
@@ -25,7 +27,7 @@ def _Laplacian(F, U, U_dag, latt_size):
 
 
 class EigenvectorGenerator:
-    def __init__(self, latt_size, gauge_field, Ne, tol) -> None:
+    def __init__(self, latt_size: List[int], gauge_field: GaugeField, Ne: int, tol: float) -> None:
         backend = get_backend()
         self.kernel = None
         if backend.__name__ == "cupy":
@@ -48,6 +50,7 @@ class EigenvectorGenerator:
         self._U = self.gauge_field.load(key)[:].transpose(4, 0, 1, 2, 3, 5, 6).copy()
         print(f"{self.gauge_field.load(key).sizeInByte/1024**2/self.gauge_field.load(key).timeInSec:.3f} MB/s")
         self._gauge_field_path = self.gauge_field.load(key).file
+        self.gauge_field.data = None  # after gauge_field.data load to self._U, free it.
 
     def project_SU3(self):
         backend = get_backend()
@@ -61,7 +64,7 @@ class EigenvectorGenerator:
             Uinv = backend.linalg.inv(U)
         self._U[: Nd - 1] = U
 
-    def _stout_smear_ndarray_naive(self, nstep, rho):
+    def _stout_smear_ndarray_naive(self, nstep: int, rho: float):
         backend = get_backend()
         U = backend.ascontiguousarray(self._U[: Nd - 1])
 
@@ -197,7 +200,7 @@ class EigenvectorGenerator:
 
         self._U[: Nd - 1] = U
 
-    def _stout_smear_quda(self, nstep, rho):
+    def _stout_smear_quda(self, nstep: int, rho: float):
         from pyquda_utils import io
 
         gauge = io.readQIOGauge(self._gauge_field_path)
@@ -209,7 +212,7 @@ class EigenvectorGenerator:
         backend = get_backend()
         self._U = backend.asarray(gauge.lexico().reshape(Nd, Lt, Lz, Ly, Lx, Nc, Nc))
 
-    def stout_smear(self, nstep, rho):
+    def stout_smear(self, nstep:int, rho:float):
         from ..backend import check_QUDA
 
         backend = get_backend()
@@ -253,21 +256,69 @@ class EigenvectorGenerator:
             evecs *= backend.exp(-1.0j * renorm_phase)[:, None]
         return evecs.reshape(self.Ne, Lz, Ly, Lx, Nc), evals
 
-    def laplacian_quda(self, t: int, apply_renorm_phase: bool):
-        from cupyx.scipy.sparse import linalg
-        from pyquda.field import (
-            Nc,
-            LatticeGauge,
-            LatticeInfo,
-            LatticeStaggeredFermion,
-            cb2,
-            lexico,
-        )
+    def laplacian_quda(self, t: int, apply_renorm_phase: bool, polynomial_degree: int, lambda_cut: float):
+        import numpy
+        from pyquda.pyquda import QudaEigParam, eigensolveQuda
+        from pyquda.enum_quda import QudaDslashType, QudaEigType, QudaBoolean, QudaEigSpectrumType
+        from pyquda_utils.core import LatticeGauge, LatticeInfo, MultiLatticeStaggeredFermion, cb2
 
         backend = get_backend()
-        Lx, Ly, Lz, Lt = self.latt_size
+        Lx, Ly, Lz, _ = self.latt_size
         latt_info = LatticeInfo([Lx, Ly, Lz, 1])
-        Lx, Ly, Lz, Lt = latt_info.size
+        gauge_tmp = LatticeGauge(latt_info, backend.asarray(cb2(self._U[:, t : t + 1].get(), [1, 2, 3, 4])))
+        gauge_tmp.gauge_dirac.setVerbosity(0)
+        gauge_tmp.gauge_dirac.invert_param.dslash_type = QudaDslashType.QUDA_LAPLACE_DSLASH
+        gauge_tmp.gauge_dirac.invert_param.mass = -1
+        gauge_tmp.gauge_dirac.invert_param.kappa = 1 / (2 * (Nd - 1))
+        gauge_tmp.gauge_dirac.invert_param.laplace3D = 3
+
+        Lx, Ly, Lz, _ = latt_info.size
+        n_ev = self.Ne
+        n_kr = min(max(2 * n_ev, n_ev + 32), Lz * Ly * Lx * Nc - 1)
+        max_restarts = 10 * Lz * Ly * Lx * Nc // (n_kr - n_ev)
+
+        eig_param = QudaEigParam()
+        eig_param.invert_param = gauge_tmp.gauge_dirac.invert_param
+        eig_param.eig_type = QudaEigType.QUDA_EIG_TR_LANCZOS
+        eig_param.use_dagger = QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.use_norm_op = QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.use_pc = QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.compute_gamma5 = QudaBoolean.QUDA_BOOLEAN_FALSE
+        eig_param.spectrum = QudaEigSpectrumType.QUDA_SPECTRUM_SR_EIG
+        eig_param.n_ev = n_ev
+        eig_param.n_kr = n_kr
+        eig_param.n_conv = n_ev
+        eig_param.tol = self.tol
+        eig_param.max_restarts = max_restarts
+        eig_param.vec_infile = b""
+        eig_param.vec_outfile = b""
+        if polynomial_degree > 0 and lambda_cut > 0:
+            eig_param.use_poly_acc = QudaBoolean.QUDA_BOOLEAN_TRUE
+            eig_param.poly_deg = polynomial_degree
+            eig_param.a_min = lambda_cut / (2 * (Nd - 1))
+            eig_param.a_max = 2
+
+        evecs = MultiLatticeStaggeredFermion(latt_info, n_ev)
+        evals = numpy.zeros((n_ev), "<c16")
+        gauge_tmp.gauge_dirac.loadGauge(gauge_tmp)
+        eigensolveQuda(evecs.data_ptrs, evals, eig_param)
+        gauge_tmp.gauge_dirac.freeGauge()
+
+        evals *= 2 * (Nd - 1)
+        if apply_renorm_phase:
+            renorm_phase = backend.angle(evecs.data[:, 0, 0, 0, 0, 0, 0])
+            evecs.data *= backend.exp(-1.0j * renorm_phase)[:, None, None, None, None, None, None]
+        evecs = evecs.lexico().reshape(n_ev, Lz, Ly, Lx, Nc)
+        return backend.asarray(evecs), backend.asarray(evals)
+
+    def laplacian_quda_scipy(self, t: int, apply_renorm_phase: bool):
+        from cupyx.scipy.sparse import linalg
+        from pyquda_utils.core import LatticeInfo, LatticeGauge, LatticeStaggeredFermion, cb2, lexico
+
+        backend = get_backend()
+        Lx, Ly, Lz, _ = self.latt_size
+        latt_info = LatticeInfo([Lx, Ly, Lz, 1])
+        Lx, Ly, Lz, _ = latt_info.size
         gauge_tmp = LatticeGauge(latt_info, backend.asarray(cb2(self._U[:, t : t + 1].get(), [1, 2, 3, 4])))
         gauge_tmp.ensurePureGauge()
         gauge_tmp.pure_gauge.loadGauge(gauge_tmp)
@@ -299,15 +350,19 @@ class EigenvectorGenerator:
         evecs = evecs.get()
         for i in range(self.Ne):
             evecs[i] = lexico(evecs[i].reshape(2, 1, Lz, Ly, Lx // 2, Nc), [0, 1, 2, 3, 4]).reshape(-1)
-        evecs = backend.asarray(evecs)
-        return evecs.reshape(self.Ne, Lz, Ly, Lx, Nc), evals
+        evecs = evecs.reshape(self.Ne, Lz, Ly, Lx, Nc)
+        return backend.asarray(evecs), evals
 
-    def calc(self, t: int, apply_renorm_phase: bool = True):
+    def calc(self, t: int, apply_renorm_phase: bool = True, polynomial_degree: int = 0, lambda_cut: float = 0.0):
         backend = get_backend()
         # Don't use QUDA's eigensolver because of some performance regression.
         if backend.__name__ == "cupy" and check_QUDA():
-            print(f"Using quda Laplacian and {backend.__name__} solver.")
-            return self.laplacian_quda(t, apply_renorm_phase)
+            if polynomial_degree > 0 and lambda_cut > 0:
+                print("Using quda Laplacian and quda solver with Chebyshev polynomial acceleration.")
+                return self.laplacian_quda(t, apply_renorm_phase, polynomial_degree, lambda_cut)
+            else:
+                print(f"Using quda Laplacian and {backend.__name__} solver.")
+                return self.laplacian_quda_scipy(t, apply_renorm_phase)
         elif backend.__name__ == "cupy" or backend.__name__ == "numpy":
             print(f"Using {backend.__name__} Laplacian and {backend.__name__} solver.")
             return self.laplacian_cupy_numpy(t, apply_renorm_phase)

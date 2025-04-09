@@ -69,9 +69,8 @@ class PerambulatorGenerator:
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
         from pyquda_utils import core
-        from pyquda.field import LatticeInfo
 
-        self.latt_info = LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
+        self.latt_info = core.LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
         self.contract_prec = contract_prec
 
         backend = get_backend()
@@ -148,7 +147,7 @@ class PerambulatorGenerator:
         import cupy as cp
 
         backend = get_backend()
-        from pyquda.field import LatticeFermion
+        from pyquda_utils.core import LatticeFermion, MultiLatticeFermion
 
         if self.gauge_field_new:
             self.dirac.loadGauge(self.gauge_field_smear)  # loadGauge after
@@ -172,7 +171,6 @@ class PerambulatorGenerator:
             s = perf_counter()
             if self.MRHS:
                 print("Warning: use MRHS.")
-                from pyquda_utils.core import MultiLatticeFermion
                 V_MRHS = MultiLatticeFermion(latt_info, Ns)
                 for spin in range(Ns):
                     data = V_MRHS[spin].data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)

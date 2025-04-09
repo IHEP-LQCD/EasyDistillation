@@ -30,9 +30,8 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
         if not check_QUDA():
             raise ImportError("Please install PyQuda to generate the perambulator or check MPI_init again.")
         from pyquda_utils import core
-        from pyquda.field import LatticeInfo
 
-        self.latt_info = LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
+        self.latt_info = core.LatticeInfo(latt_size=latt_size, t_boundary=t_boundary, anisotropy=xi_0 / nu)
 
         backend = get_backend()
         assert backend.__name__ == "cupy", "PyQuda only support cupy as the ndarray implementation"
@@ -78,7 +77,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
 
     def calc(self, ti: int, tf: int, tau: int):
         import numpy as np
-        from pyquda.field import LatticeFermion
+        from pyquda_utils.core import LatticeFermion
 
         backend = get_backend()
         latt_size = self.latt_size
@@ -121,7 +120,7 @@ class DensityPerambulatorGenerator:  # TODO: Add parameters to do smearing befor
                         data_cb2[1, :, 1, z, y, :] = data_lexico[1, :, z, y, 0::2]
         data_cb2 = backend.asarray(data_cb2)
 
-        _V = LatticeFermion(latt_size)
+        _V = LatticeFermion(self.latt_info)
         V = _V.data.reshape(2, Lt, Lz, Ly, Lx // 2, Ns, Nc)
         SV_i = self._SV_i
         SV_f = self._SV_f
