@@ -243,5 +243,3 @@ def reductionToLittleGroup(momentum, OhD_irep_name, parity, little_group_irrep_n
     for i in range(ndim_little_group):
         reduction_matrix[i] = check_and_normalize_arrays(reduction_matrix_colinear[i])
     return reduction_matrix
-
-

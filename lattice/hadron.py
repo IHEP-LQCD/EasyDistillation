@@ -135,5 +135,5 @@ def gen_correlator(hadrons: List[List[Hadron]], time_slice_list=None):
             result += diagram_simplify(quark_contract(flavor_wavefnc, insersion_list, degenerate=True))
 
         # Store hadron_tuple in corresponding position in result
-        result_matrix[indices] = result
+        result_matrix[indices] = sp.simplify(result)
     return result_matrix

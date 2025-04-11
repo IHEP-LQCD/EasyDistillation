@@ -1085,8 +1085,8 @@ def calc_diagram(
 
         # Calculate values of all graphs at once
         backend = get_backend()
-        results = compute_diagrams_multitime(combined_diagrams, all_times, all_vertices, all_propagators)
-
+        # results = compute_diagrams_multitime(combined_diagrams, all_times, all_vertices, all_propagators)
+        results = [Symbol("result_{}".format(i)) for i in range(len(combined_diagrams))]
         # Assign calculated results to each graph
         for i, diagram in enumerate(diagram_list):
             diagram.value = results[i]

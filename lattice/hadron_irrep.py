@@ -18,16 +18,16 @@ from .quark_contract import *
 
 
 class HadronIrrep(Operator):
-    def __new__(cls, name: str, momentum: List[int], irrep_name: str, parity: int, tag: Tag):
+    def __new__(cls, hadron_name: str, momentum: List[int], irrep_name: str, parity: int, tag: Tag):
         if parity is None:
-            obj = super().__new__(cls, f"{name}({irrep_name}({tag.tag}),t={tag.time},{tuple(momentum)})")
+            obj = super().__new__(cls, f"{hadron_name}({irrep_name}({tag.tag}),t={tag.time},{tuple(momentum)})")
         elif parity == -1:
-            obj = super().__new__(cls, f"{name}({irrep_name}u({tag.tag}),t={tag.time},{tuple(momentum)},{parity})")
+            obj = super().__new__(cls, f"{hadron_name}({irrep_name}u({tag.tag}),t={tag.time},{tuple(momentum)},{parity})")
         else:
-            obj = super().__new__(cls, f"{name}({irrep_name}g({tag.tag}),t={tag.time},{tuple(momentum)},{parity})")
+            obj = super().__new__(cls, f"{hadron_name}({irrep_name}g({tag.tag}),t={tag.time},{tuple(momentum)},{parity})")
         return obj
 
-    def __init__(self, name: str, momentum: List[int], irrep_name: str, parity: int, tag: Tag):
+    def __init__(self, hadron_name: str, momentum: List[int], irrep_name: str, parity: int, tag: Tag):
         """
         Initialize a HadronIrrep object.
 
@@ -38,7 +38,7 @@ class HadronIrrep(Operator):
             parity: The parity
             tag: The tag
         """
-        self.name = name
+        self.hadron_name = hadron_name
         self.momentum = momentum
         self.irrep_name = irrep_name
         self.parity = parity
@@ -54,14 +54,14 @@ class HadronIrrep(Operator):
             self.lenth = 1
 
     def __getitem__(self, row_idx):
-        return HadronIrrepRow(self.name, self.momentum, self.irrep_name, row_idx, self.parity, self.tag)
+        return HadronIrrepRow(self.hadron_name, self.momentum, self.irrep_name, row_idx, self.parity, self.tag)
 
     def __eq__(self, other):
         if not isinstance(other, HadronIrrep):
             return False
         else:
             return (
-                self.name == other.name
+                self.hadron_name == other.hadron_name
                 and self.momentum == other.momentum
                 and self.irrep_name == other.irrep_name
                 and self.parity == other.parity
@@ -69,20 +69,20 @@ class HadronIrrep(Operator):
             )
 
     def __hash__(self):
-        return hash((self.name, tuple(self.momentum), self.irrep_name, self.parity, self.tag))
+        return hash((self.hadron_name, tuple(self.momentum), self.irrep_name, self.parity, self.tag))
 
 
-class HadronIrrepRow(Operator):
-    def __new__(cls, name: str, momentum: List[int], irrep_name: str, row_idx: int, parity: int, tag: Tag):
+class HadronIrrepRow(Symbol):
+    def __new__(cls, hadron_name: str, momentum: List[int], irrep_name: str, row_idx: int, parity: int, tag: Tag):
         if parity is None:
-            obj = super().__new__(cls, f"{name}({irrep_name}({tag.tag}),t={tag.time},{tuple(momentum)})[{row_idx}]")
+            obj = super().__new__(cls, f"{hadron_name}({irrep_name},{tuple(momentum)})[{row_idx}]", commutative=False)
         elif parity == -1:
-            obj = super().__new__(cls, f"{name}({irrep_name}u({tag.tag}),t={tag.time},{tuple(momentum)})[{row_idx}]")
+            obj = super().__new__(cls, f"{hadron_name}({irrep_name}u,{tuple(momentum)})[{row_idx}]", commutative=False)
         else:
-            obj = super().__new__(cls, f"{name}({irrep_name}g({tag.tag}),t={tag.time},{tuple(momentum)})[{row_idx}]")
+            obj = super().__new__(cls, f"{hadron_name}({irrep_name}g,{tuple(momentum)})[{row_idx}]", commutative=False)
         return obj
 
-    def __init__(self, name: str, momentum: List[int], irrep_name: str, row_idx: int, parity: int, tag: Tag):
+    def __init__(self, hadron_name: str, momentum: List[int], irrep_name: str, row_idx: int, parity: int, tag: Tag):
         """
         Initialize a HadronIrrepRow object.
 
@@ -94,7 +94,7 @@ class HadronIrrepRow(Operator):
             parity: The parity
             tag: The tag
         """
-        self.name = name
+        self.hadron_name = hadron_name
         self.tag = tag
         self.momentum = momentum
         self.irrep_name = irrep_name
@@ -108,7 +108,7 @@ class HadronIrrepRow(Operator):
             return False
         else:
             return (
-                self.name == other.name
+                self.hadron_name == other.hadron_name
                 and self.momentum == other.momentum
                 and self.irrep_name == other.irrep_name
                 and self.row_idx == other.row_idx
@@ -117,15 +117,15 @@ class HadronIrrepRow(Operator):
             )
 
     def __hash__(self):
-        return hash((self.name, tuple(self.momentum), self.irrep_name, self.row_idx, self.parity, self.tag))
+        return hash((self.hadron_name, tuple(self.momentum), self.irrep_name, self.row_idx, self.parity, self.tag))
 
     def transform(self, group_element):
-        momentum_final = self.rotate[group_element] @ Matrix(self.momentum)
+        momentum_final = list(self.rotate[group_element] @ Matrix(self.momentum))
         transform_matrix = self.little_group_matrix[wignerRotate(self.momentum, group_element)]
         result = S(0)
         for i in range(transform_matrix.shape[0]):
             result += transform_matrix[i, self.row_idx] * HadronIrrepRow(
-                self.name, momentum_final, self.irrep_name, i, self.parity, self.tag
+                self.hadron_name, momentum_final, self.irrep_name, i, self.parity, self.tag
             )
         return result
 
@@ -167,9 +167,12 @@ def transform_expression(expr, group_element):
 
 def expr_little_group_projection(expr, irrep_name, row_idx, parity=None):
 
-    momentum = np.array([0, 0, 0])
-    for had in split_expression(expr):
-        momentum += np.array(had.momentum)
+    momentum = np.array([0, 0, 0], dtype=int)
+    terms = Add.make_args(expr)
+    factors = Mul.make_args(terms[0])
+    for factor in factors:
+        if isinstance(factor, HadronIrrepRow):
+            momentum += np.array(factor.momentum, dtype=int)
 
     matrix_group = genLittleGroupIrrep(momentum, irrep_name, parity)
     len_irrep = matrix_group["iden"].shape[0]
@@ -206,7 +209,6 @@ def hadron_little_group_projection(hadrons, irrep_name, row_idx, parity=None, si
     exprs_mul_rows = []
     for expr in list(product(*hadrons_list)):
         exprs_mul_rows.append(Mul(*expr))
-
     return multi_exprs_little_group_projection(exprs_mul_rows, irrep_name, row_idx, parity, single_result)
 
 
