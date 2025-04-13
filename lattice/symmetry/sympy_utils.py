@@ -2,7 +2,7 @@ import numpy as np
 from itertools import permutations
 import sympy as sp
 from sympy import Matrix, sqrt, Pow
-from sympy import Add, Mul, Expr
+from sympy import Add, Mul, Expr, Symbol
 from sympy.physics.quantum import Operator
 
 
@@ -50,111 +50,60 @@ from sympy.matrices import Matrix
 
 def collect_product_basis(exprs: list[Expr]) -> list[Expr]:
     """Collect all unique product terms as basis vectors"""
-    basis = defaultdict(int)
-    counter = 0
     basis_map = {}  # {frozenset(product_factors): index}
 
     for expr in exprs:
-        terms = expr.args if isinstance(expr, Add) else [expr]
+        terms = Add.make_args(expr)
         for term in terms:
-            coeff, factors = term.as_coeff_mul()
+            factors = Mul.make_args(term)
+            coeff = S(1)
+            product_factors = []
+            for factor in factors:
+                if isinstance(factor, Symbol):
+                    product_factors.append(factor.name)
+                else:
+                    coeff *= factor
+            # coeff, factors = term.as_coeff_mul()
             # Extract Operator product combinations
-            product_factors = tuple(
-                sorted(
-                    [f for f in factors if isinstance(f, Operator)],
-                    key=lambda x: hash(x),
-                )
-            )
+            product_factors = tuple(product_factors)
             # Assign basis vector index to each unique product
-            key = frozenset(product_factors)
+            key = product_factors
             if key not in basis_map:
-                basis_map[key] = counter
-                counter += 1
+                basis_map[key] = None
     return list(basis_map.keys())
 
 
-def build_coefficient_matrix(exprs: list[Expr], basis_map: dict) -> list[list[float]]:
+def build_coefficient_matrix(exprs: list[Expr], basis_map: dict) -> list[list]:
     """Build coefficient matrix (considering product terms)"""
     matrix = []
+
     for expr in exprs:
-        row = [0.0] * len(basis_map)
-        terms = expr.args if isinstance(expr, Add) else [expr]
+        row = [S(0)] * len(basis_map)  # Use SymPy's S(0) instead of 0.0
+        terms = Add.make_args(expr)
+
         for term in terms:
-            try:
-                coeff, factors = term.as_coeff_mul()
-                # Extract and sort Operator type factors
-                product_factors = tuple(
-                    sorted(
-                        [f for f in factors if isinstance(f, Operator)],
-                        key=lambda x: hash(x),
-                    )
-                )
-                key = frozenset(product_factors)
-                if key in basis_map:
-                    try:
-                        row[basis_map[key]] += float(coeff)
-                    except (TypeError, ValueError):
-                        # If cannot convert to float, try using 1.0 as default coefficient
-                        row[basis_map[key]] += 1.0
-            except Exception:
-                # If error occurs when processing term, skip it
-                continue
+            factors = Mul.make_args(term)
+            coeff = S(1)
+            product_factors = []
+
+            for factor in factors:
+                if isinstance(factor, Symbol):
+                    product_factors.append(factor.name)
+                else:
+                    coeff *= factor
+
+            product_factors = tuple(product_factors)
+
+            if product_factors in basis_map:
+                idx = basis_map[product_factors]
+                row[idx] += coeff  # Use SymPy coefficients for exact computation
+
         matrix.append(row)
+
     return matrix
 
 
-def normalize_with_products(expr: Expr, basis_map: dict) -> Expr:
-    """Normalize expression containing product terms, using SymPy symbolic types"""
-    try:
-        terms = expr.args if isinstance(expr, Add) else [expr]
-        coeff_dict = defaultdict(lambda: S.Zero)  # Initialize with SymPy zero
-
-        for term in terms:
-            try:
-                # Decompose term's coefficient and factors
-                coeff, factors = term.as_coeff_mul()
-                # Extract and sort Operator type factors
-                product_factors = tuple(
-                    sorted(
-                        (f for f in factors if isinstance(f, Operator)),
-                        key=lambda x: hash(x),
-                    )
-                )
-                key = frozenset(product_factors)  # Assume using immutable set as key
-                coeff_dict[key] += coeff  # Directly accumulate SymPy coefficients
-            except Exception:
-                # If error occurs when processing term, skip it
-                continue
-
-        # Calculate sum of squares of coefficients
-        sum_squares = S.Zero
-        for c in coeff_dict.values():
-            try:
-                sum_squares += c**2
-            except Exception:
-                # If error in square calculation, try numerical square
-                try:
-                    sum_squares += float(c) ** 2
-                except:
-                    # If cannot convert to numerical, use 1 as contribution
-                    sum_squares += S.One
-
-        try:
-            norm = sqrt(sum_squares)
-
-            # Normalize expression
-            if norm == S.Zero:
-                return S.Zero  # Avoid division by zero
-            return (S.One / norm) * expr
-        except Exception:
-            # If normalization fails, return original expression
-            return expr
-    except Exception:
-        # If error occurs when processing entire expression, return original expression
-        return expr
-
-
-def find_linear_independent_and_normalized_expr(exprs: list[Expr]) -> list[Expr]:
+def find_linear_independent_exprs(exprs: list[Expr]) -> list[Expr]:
     # Filter zero expressions - use safer way to check if zero
     # Use direct comparison instead of is_zero property
     filtered = []
@@ -171,19 +120,30 @@ def find_linear_independent_and_normalized_expr(exprs: list[Expr]) -> list[Expr]
 
     # Collect basis vectors
     basis = collect_product_basis(filtered)
-    basis_map = {frozenset(vec): idx for idx, vec in enumerate(basis)}
+    basis_map = {vec: idx for idx, vec in enumerate(basis)}
 
     # Build coefficient matrix
     coeff_matrix = build_coefficient_matrix(filtered, basis_map)
+    # Convert coefficient matrix to SymPy matrix for Gaussian elimination
+    M = Matrix(coeff_matrix)
 
-    # Perform Gaussian elimination directly on original matrix
-    mat = Matrix(coeff_matrix)
-    _, pivots = mat.rref()
+    # Execute Row Reduced Echelon Form (RREF)
+    rref_matrix, pivots = M.rref()
 
-    # Validate pivot elements
-    valid_pivots = [i for i in pivots if i < len(filtered)]
+    # Find indices of linearly independent expressions
+    independent_indices = []
+    for i, has_pivot in enumerate(pivots):
+        if i < len(filtered):
+            independent_indices.append(i)
 
-    return [normalize_with_products(filtered[i], basis_map) for i in valid_pivots]
+    # Extract linearly independent expressions from the original list
+    independent_exprs = [filtered[i] for i in independent_indices]
+
+    # If no linearly independent expressions found, return empty list
+    if not independent_exprs:
+        return []
+
+    return independent_exprs
 
 
 def convert_pow_to_mul(expr):

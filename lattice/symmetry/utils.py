@@ -203,10 +203,10 @@ def split_mul(expr: Expr):
 
 def split_expression(expr: Expr):
     """
-    按和拆分出第一个元素，然后按乘积拆分。
+    Split expression by sum to get first element, then split by product.
     """
-    # 按和拆分出第一个元素
+    # Split by sum to get first element
     first_term = split_first_term(expr)
-    # 按乘积拆分第一个元素
+    # Split first element by product
     mul_terms = split_mul(first_term)
     return mul_terms

@@ -17,14 +17,24 @@ from .symmetry.sympy_utils import *
 from .quark_contract import *
 
 
-class HadronIrrep(Operator):
+class HadronIrrep(Symbol):
     def __new__(cls, hadron_name: str, momentum: List[int], irrep_name: str, parity: int, tag: Tag):
         if parity is None:
-            obj = super().__new__(cls, f"{hadron_name}({irrep_name}({tag.tag}),t={tag.time},{tuple(momentum)})")
+            obj = super().__new__(
+                cls, f"{hadron_name}({irrep_name}({tag.tag}),t={tag.time},{tuple(momentum)})", commutative=False
+            )
         elif parity == -1:
-            obj = super().__new__(cls, f"{hadron_name}({irrep_name}u({tag.tag}),t={tag.time},{tuple(momentum)},{parity})")
+            obj = super().__new__(
+                cls,
+                f"{hadron_name}({irrep_name}u({tag.tag}),t={tag.time},{tuple(momentum)},{parity})",
+                commutative=False,
+            )
         else:
-            obj = super().__new__(cls, f"{hadron_name}({irrep_name}g({tag.tag}),t={tag.time},{tuple(momentum)},{parity})")
+            obj = super().__new__(
+                cls,
+                f"{hadron_name}({irrep_name}g({tag.tag}),t={tag.time},{tuple(momentum)},{parity})",
+                commutative=False,
+            )
         return obj
 
     def __init__(self, hadron_name: str, momentum: List[int], irrep_name: str, parity: int, tag: Tag):
@@ -152,16 +162,16 @@ from sympy import preorder_traversal
 
 
 def transform_expression(expr, group_element):
-    # 收集原表达式中的所有 HadronIrrepRow 实例
+    # Collect all HadronIrrepRow instances from the original expression
     instances = set()
     for sub_expr in preorder_traversal(expr):
         if isinstance(sub_expr, HadronIrrepRow):
             instances.add(sub_expr)
 
-    # 创建替换映射：每个实例替换为其 transform 后的结果
+    # Create replacement mapping: each instance replaced with its transformed result
     replacements = {inst: inst.transform(group_element) for inst in instances}
 
-    # 应用替换并返回新表达式
+    # Apply replacements and return new expression
     return expr.xreplace(replacements)
 
 
@@ -193,22 +203,46 @@ def multi_exprs_little_group_projection(expr_list, irrep_name, row_idx, parity=N
             if single_result:
                 return projected_expr
             else:
-                result_expr_list.append(projected_expr)
+                result_expr_list.append(projected_expr.expand())
     # return result_expr_list
-    return find_linear_independent_and_normalized_expr(result_expr_list)
+    return find_linear_independent_exprs(result_expr_list)
 
 
-def hadron_little_group_projection(hadrons, irrep_name, row_idx, parity=None, single_result=False):
+def hadron_little_group_projection(
+    hadron_irreps: List[HadronIrrep], irrep_name, row_idx, parity=None, single_result=False
+):
     from itertools import product
+    from .symmetry.gen_hardcoded_rep import littleGroup
 
-    hadrons_list = []
-    for i in range(len(hadrons)):
-        hadron = hadrons[i]
-        hadrons_list.append([hadron[j] for j in range(hadron.lenth)])
+    momentum_structure = tuple(hadron_irreps[i].momentum for i in range(len(hadron_irreps)))
+    momentum_total = [
+        sum([momentum_structure[i][j] for i in range(len(momentum_structure))])
+        for j in range(len(momentum_structure[0]))
+    ]
+    little_group = littleGroup(momentum_total)
 
+    momentum_structure_dict = {}
+    rotation = genLittleGroupIrrep([0, 0, 0], "T_1", -1)
+    for key in little_group.keys():
+        new_momentum_structure = [
+            tuple(rotation[key] @ Matrix(momentum_structure[i])) for i in range(len(momentum_structure))
+        ]
+        momentum_structure_dict[tuple(new_momentum_structure)] = None
     exprs_mul_rows = []
-    for expr in list(product(*hadrons_list)):
-        exprs_mul_rows.append(Mul(*expr))
+    for momentum_structure in momentum_structure_dict.keys():
+        hadrons_list = []
+        for idx in range(len(hadron_irreps)):
+            hadron_irrep = hadron_irreps[idx]
+            new_hadron_irrep = HadronIrrep(
+                hadron_irrep.hadron_name,
+                list(momentum_structure[idx]),
+                hadron_irrep.irrep_name,
+                hadron_irrep.parity,
+                hadron_irrep.tag,
+            )
+            hadrons_list.append([new_hadron_irrep[j] for j in range(new_hadron_irrep.lenth)])
+        for expr in list(product(*hadrons_list)):
+            exprs_mul_rows.append(Mul(*expr))
     return multi_exprs_little_group_projection(exprs_mul_rows, irrep_name, row_idx, parity, single_result)
 
 

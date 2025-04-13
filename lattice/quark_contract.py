@@ -64,7 +64,7 @@ class Propagator(Symbol):
 class HadronFlavorStructure(Operator):
     def __new__(cls, flavor_str: str, time: int = 0) -> None:
         if "bar" in flavor_str:
-            # 处理形如 bar{uds} 的情况
+            # Handle cases like bar{uds}
             obj = super().__new__(cls, rf"bar{{{flavor_str[4:-1]}}}({time})")
         elif len(flavor_str) == 3:
             obj = super().__new__(cls, rf"{flavor_str}({time})")
@@ -84,7 +84,7 @@ class HadronFlavorStructure(Operator):
         self.time = time
 
         if "bar" in flavor_str:
-            # 处理形如 bar{uds} 的情况
+            # Handle cases like bar{uds}
             self.baryon_num = -1
             self.quark_list = []
             self.anti_quark_list = [c for c in flavor_str[4:-1]]
