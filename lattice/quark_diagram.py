@@ -274,7 +274,7 @@ def compute_diagrams(diagrams: List[QuarkDiagram], time_list, vertex_list, propa
 
 
 from typing import Union, List, Dict, Tuple, Any
-from sympy import S, Expr, Symbol, Mul
+from sympy import S, Add, Expr, Symbol, Mul
 import hashlib
 
 
@@ -326,201 +326,6 @@ class Diagram(Symbol):
 
     def __hash__(self):
         return int(hashlib.sha256(str(self).encode()).hexdigest(), 16) % (2**31)
-
-    def remove_redundant(self):
-        """
-        Remove redundant vertices that are not connected to any other vertices
-        Return a new Diagram instance without redundant vertices
-        Also remove unused propagators from propagator_list
-        """
-        # Check if each vertex has connections
-        connected_vertices = set()
-        adjacency_matrix = self.diagram.adjacency_matrix
-        num_vertices = len(adjacency_matrix)
-
-        # Track used propagator indices
-        used_propagators = set([0])
-
-        # Find all vertices with connections and used propagators
-        for i in range(num_vertices):
-            for j in range(num_vertices):
-                value = adjacency_matrix[i][j]
-                if value != 0:
-                    connected_vertices.add(i)
-                    connected_vertices.add(j)
-                    # Record used propagator indices
-                    if isinstance(value, int):
-                        used_propagators.add(value)
-                    elif isinstance(value, list):
-                        for prop_idx in value:
-                            if prop_idx != 0:
-                                used_propagators.add(prop_idx)
-
-        # Find redundant vertices (vertices with no connections)
-        redundant_vertices = [i for i in range(num_vertices) if i not in connected_vertices]
-
-        # If None is not used as a placeholder, check if it needs to be added to used_propagators
-        # If there are no connected vertices, return an empty graph
-        if not connected_vertices:
-            # Return a new graph with the original format but without connections
-            empty_adjacency = [[0 for _ in range(1)] for _ in range(1)]
-            empty_quark_diagram = QuarkDiagram(empty_adjacency)
-            return Diagram(
-                empty_quark_diagram,
-                [0],
-                [self.vertex_list[0] if self.vertex_list else None],
-                [None] if len(self.propagator_list) > 0 and self.propagator_list[0] is None else [],
-            )
-
-        # If there are no redundant vertices and all propagators are used, return self
-        if not redundant_vertices and len(used_propagators) == len(self.propagator_list):
-            return self
-
-        # Create vertex mapping table to reindex non-redundant vertices
-        vertex_map = {}
-        new_vertex_idx = 0
-        for i in range(num_vertices):
-            if i not in redundant_vertices:
-                vertex_map[i] = new_vertex_idx
-                new_vertex_idx += 1
-
-        # Create propagator mapping table and new propagator_list
-        sorted_used_propagators = sorted(list(used_propagators))
-        propagator_map = {old_idx: new_idx for new_idx, old_idx in enumerate(sorted_used_propagators)}
-        new_propagator_list = [self.propagator_list[i] for i in sorted_used_propagators]
-
-        # Create new time_list and vertex_list
-        new_time_list = [self.time_list[i] for i in range(num_vertices) if i not in redundant_vertices]
-        new_vertex_list = [self.vertex_list[i] for i in range(num_vertices) if i not in redundant_vertices]
-
-        # Create new adjacency matrix, removing redundant vertices
-        new_size = len(new_time_list)
-        new_adjacency_matrix = [[0 for _ in range(new_size)] for _ in range(new_size)]
-
-        for i in range(num_vertices):
-            if i in redundant_vertices:
-                continue
-            for j in range(num_vertices):
-                if j in redundant_vertices:
-                    continue
-
-                value = adjacency_matrix[i][j]
-                if value != 0:
-                    new_i = vertex_map[i]
-                    new_j = vertex_map[j]
-                    if isinstance(value, int):
-                        # Update propagator indices
-                        new_adjacency_matrix[new_i][new_j] = propagator_map[value]
-                    elif isinstance(value, list):
-                        # Handle list case
-                        new_value = [propagator_map[v] for v in value if v != 0]
-                        new_adjacency_matrix[new_i][new_j] = new_value if new_value else 0
-
-        # Create new QuarkDiagram instance
-        new_quark_diagram = QuarkDiagram(new_adjacency_matrix)
-
-        # Return new Diagram instance
-        return Diagram(new_quark_diagram, new_time_list, new_vertex_list, new_propagator_list)
-
-    def sort_vertex_and_propagator(self):
-        """
-        Sort vertices and propagators, in ascending order
-        Also update propagator indices in adjacency matrix
-        Note: None is always kept in the propagator list at index 0
-        """
-        # Get current graph information
-        num_vertices = len(self.vertex_list)
-        adjacency_matrix = self.diagram.adjacency_matrix
-
-        # Create time-vertex pairs list, time in front
-        time_vertex_pairs = [(self.time_list[i], self.vertex_list[i]) for i in range(num_vertices)]
-
-        # Sort by time-vertex pairs
-        sorted_pairs = sorted(time_vertex_pairs)
-
-        # Create vertex sorting mapping
-        vertex_map = {}
-        for new_idx, pair in enumerate(sorted_pairs):
-            for old_idx, old_pair in enumerate(time_vertex_pairs):
-                if pair == old_pair and old_idx not in vertex_map.values():
-                    vertex_map[old_idx] = new_idx
-                    break
-
-        # Re-sort vertex list and time list
-        new_vertex_list = [self.vertex_list[i] for i in sorted(vertex_map.keys(), key=lambda k: vertex_map[k])]
-        new_time_list = [self.time_list[i] for i in sorted(vertex_map.keys(), key=lambda k: vertex_map[k])]
-
-        # Create new adjacency matrix
-        new_adjacency_matrix = [[0 for _ in range(num_vertices)] for _ in range(num_vertices)]
-        for old_i in range(num_vertices):
-            for old_j in range(num_vertices):
-                new_i = vertex_map[old_i]
-                new_j = vertex_map[old_j]
-                new_adjacency_matrix[new_i][new_j] = adjacency_matrix[old_i][old_j]
-
-        # Collect all used propagators
-        used_propagators = set()
-        for i in range(num_vertices):
-            for j in range(num_vertices):
-                value = new_adjacency_matrix[i][j]
-                if isinstance(value, int) and value != 0:
-                    used_propagators.add(value)
-                elif isinstance(value, list):
-                    for v in value:
-                        if v != 0:
-                            used_propagators.add(v)
-
-        # Create propagator sorting mapping
-        # Ensure None is kept at index 0 (if exists)
-        has_none = False
-        new_propagator_list = []
-
-        # Check if None is at index 0
-        if len(self.propagator_list) > 0 and self.propagator_list[0] is None:
-            has_none = True
-            new_propagator_list.append(None)
-
-        # Sort non-0 indices propagators
-        sorted_used_propagators = sorted(list(used_propagators - {0}))
-
-        # Create propagator mapping, ensure 0 index reserved for None
-        if has_none:
-            # 0 already reserved for None, other propagators start from 1
-            propagator_map = {0: 0}  # Keep 0->0 mapping
-            for idx, old_idx in enumerate(sorted_used_propagators):
-                propagator_map[old_idx] = idx + 1
-
-            # Add sorted propagators to list
-            for idx in sorted_used_propagators:
-                new_propagator_list.append(self.propagator_list[idx])
-        else:
-            # No None, directly map from 0
-            propagator_map = {old_idx: idx for idx, old_idx in enumerate(sorted_used_propagators)}
-
-            # Add sorted propagators to list
-            for idx in sorted_used_propagators:
-                new_propagator_list.append(self.propagator_list[idx])
-
-        # Update propagator indices in adjacency matrix
-        for i in range(num_vertices):
-            for j in range(num_vertices):
-                value = new_adjacency_matrix[i][j]
-                if isinstance(value, int) and value != 0:
-                    new_adjacency_matrix[i][j] = propagator_map[value]
-                elif isinstance(value, list):
-                    new_value = []
-                    for v in value:
-                        if v != 0:
-                            new_value.append(propagator_map[v])
-                        else:
-                            new_value.append(0)
-                    new_adjacency_matrix[i][j] = new_value
-
-        # Create new QuarkDiagram instance
-        new_quark_diagram = QuarkDiagram(new_adjacency_matrix)
-
-        # Return new Diagram instance
-        return Diagram(new_quark_diagram, new_time_list, new_vertex_list, new_propagator_list)
 
     def simplify(self):
         """
@@ -771,6 +576,38 @@ class Diagram(Symbol):
         for i, time in enumerate(self.time_list):
             if time in time_map:
                 self.time_list[i] = time_map[time]
+
+
+def diagram_vertice_replace(expr: Union[Expr, List, Any], indice_map: Dict) -> Union[Expr, List, Any]:
+    """
+    Replace vertices in all Diagram object in the expr,list,dict,tuple or any data structure
+    """
+    if isinstance(expr, Diagram):
+        # Replace vertices in the Diagram object
+        new_vertice_list = [indice_map[v] for v in expr.vertex_list]
+        new_diagram = Diagram(expr.diagram, expr.time_list, new_vertice_list, expr.propagator_list)
+        return new_diagram
+    elif isinstance(expr, list):
+        # Recursively process list elements
+        return [diagram_vertice_replace(item, indice_map) for item in expr]
+    elif isinstance(expr, tuple):
+        # Recursively process tuple elements
+        return tuple(diagram_vertice_replace(item, indice_map) for item in expr)
+    elif isinstance(expr, dict):
+        # Recursively process dictionary values
+        return {key: diagram_vertice_replace(value, indice_map) for key, value in expr.items()}
+    elif isinstance(expr, Add):
+        # Process sympy Add expression
+        return Add(*[diagram_vertice_replace(arg, indice_map) for arg in expr.args])
+    elif isinstance(expr, Mul):
+        # Process sympy Mul expression
+        return Mul(*[diagram_vertice_replace(arg, indice_map) for arg in expr.args])
+    elif hasattr(expr, "args") and expr.args:
+        # For other expressions with args attribute
+        return expr.func(*[diagram_vertice_replace(arg, indice_map) for arg in expr.args])
+    else:
+        # Return unchanged for other types
+        return expr
 
 
 def diagram_simplify(expr: Union[Expr, List, Any]) -> Union[Expr, List, Any]:

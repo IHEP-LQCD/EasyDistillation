@@ -16,7 +16,7 @@ from .symmetry.gen_hardcoded_rep import (
 from .symmetry.sympy_utils import *
 from .quark_contract import *
 from .hadron_irrep import HadronIrrepRow, HadronIrrep
-from .quark_diagram import diagram_simplify
+from .quark_diagram import diagram_simplify, diagram_vertice_replace
 
 
 class Hadron:
@@ -104,6 +104,7 @@ def gen_correlator(hadrons: List[List[Hadron]], time_slice_list=None):
     Returns:
         Correlation function
     """
+    cache = {}
     if time_slice_list is None:
         time_slice_list = [i for i in range(len(hadrons))]
     for i in range(len(hadrons)):
@@ -132,7 +133,18 @@ def gen_correlator(hadrons: List[List[Hadron]], time_slice_list=None):
                 if isinstance(factor, HadronIrrepRow):
                     insersion_list.append(factor)
                     num_hadrons += 1
-            result += diagram_simplify(quark_contract(flavor_wavefnc, insersion_list, degenerate=True))
+            # Convert to a hashable form suitable for dictionary key
+            factors = flavor_wavefnc.expand().as_ordered_factors()
+            contraction_key = tuple(str(factor) for factor in factors)
+            if contraction_key not in cache:
+                term_of_result = diagram_simplify(
+                    quark_contract(flavor_wavefnc, np.arange(len(insersion_list)), degenerate=True)
+                )
+                cache[contraction_key] = term_of_result
+            else:
+                term_of_result = cache[contraction_key]
+            term_of_result = diagram_vertice_replace(term_of_result, {i: v for i, v in enumerate(insersion_list)})
+            result += term_of_result
 
         # Store hadron_tuple in corresponding position in result
         result_matrix[indices] = sp.simplify(result)
