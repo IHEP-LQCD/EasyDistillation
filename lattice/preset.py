@@ -74,6 +74,21 @@ class EigenvectorNpy(NdarrayFile, Eigenvector):
         return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
 
 
+class EigenvectorHostmem(NdarrayFile, Eigenvector):
+    def __init__(self, host_ndarray, shape: List[int] = [70, 128, 16**3, 3], totNe: int = 70) -> None:
+        super().__init__()
+        if host_ndarray.shape != shape:
+            raise ValueError(
+                f"Please check that host_ndarray shape {host_ndarray.shape} does not match expected shape (totNe, Lt, Lz * Ly * Lx, Nc) = {shape}"
+            )
+        self.Ne = totNe
+        # Initialize data using reference, NOT memcopy of data.
+        self.data = host_ndarray
+
+    def load(self, key: str = None):
+        return self.data
+
+
 class PerambulatorBinary(BinaryFile, Perambulator):
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
         super().__init__()
@@ -94,11 +109,13 @@ class PerambulatorNpy(NdarrayFile, Perambulator):
 
     def load(self, key: str):
         return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
-    
+
+
 class PerambulatorTimeslicesNpy(NdarrayTimeslicesFile, Perambulator):
-    ''' 
-        this Perambulator data class is modified for timeslide solely saved  data.
-    '''
+    """
+    this Perambulator data class is modified for timeslide solely saved  data.
+    """
+
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [128, 128, 4, 4, 70, 70], totNe: int = 70) -> None:
         super().__init__()
         Perambulator.__init__(self, FileMetaData(shape, "<c8", 0), totNe)
@@ -151,6 +168,7 @@ class GaugeFieldBinary(BinaryFile, GaugeField):
 
     def load(self, key: str):
         return super().get_file_data(f"{self.prefix}{key}{self.suffix}", self.elem)
+
 
 class ElementalNpy(NdarrayFile, Elemental):
     def __init__(self, prefix: str, suffix: str, shape: List[int] = [4, 123, 128, 70, 70], totNe: int = 70) -> None:
